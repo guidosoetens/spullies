@@ -10,13 +10,14 @@ class SimpleGame {
         });
     }
     preload() {
-        this.game.load.image("decepticon", "../../assets/sprites/arrow.png");
+        this.game.load.image("decepticon", "../../assets/sprites/aqua_ball.png");
     }
     render() {
         // This renders debug information about physics bodies
         //this.game.debug.body(this.player);
     }
     create() {
+        
         this.player = this.game.add.sprite(this.game.width / 2, 0, "decepticon");
 
         // Start the ARCADE Physics system

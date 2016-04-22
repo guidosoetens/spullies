@@ -6,7 +6,7 @@ var SimpleGame = (function () {
         });
     }
     SimpleGame.prototype.preload = function () {
-        this.game.load.image("decepticon", "../../assets/sprites/arrow.png");
+        this.game.load.image("decepticon", "../../assets/sprites/aqua_ball.png");
     };
     SimpleGame.prototype.render = function () {
         // This renders debug information about physics bodies
