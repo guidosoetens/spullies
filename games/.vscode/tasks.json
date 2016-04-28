@@ -4,7 +4,7 @@
 	"version": "0.1.0",
 	"command": "tsc",
 	"isShellCommand": true,
-	"args": [ "Blokjes/main.ts" ],
+	"args": [ "Blokjes/main" ],
 	"showOutput": "silent",
 	"problemMatcher": "$tsc",
 	"windows": {
