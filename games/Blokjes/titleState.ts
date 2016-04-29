@@ -3,7 +3,7 @@
 module BlokjesGame
 {
     export class TitleScreenState extends Phaser.State {
-        //game: Phaser.Game;
+        
         constructor() {
             super();
         }
