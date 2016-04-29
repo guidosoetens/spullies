@@ -2,24 +2,24 @@
 ///<reference path="titleState.ts"/>
 ///<reference path="gameState.ts"/>
 
-export class SimpleGame {
-    
-    game: Phaser.Game;
-    
-    constructor() {
-        alert('A');
-        this.game = new Phaser.Game(800, 600, Phaser.WEBGL, 'content');
-
-        this.game.state.add("GameRunningState", GameRunningState, false);
+module BlokjesGame
+{
+    export class SimpleGame {
         
-        alert('A2');
+        game: Phaser.Game;
         
-        this.game.state.add("TitleScreenState", TitleScreenState, false);
-        this.game.state.start("TitleScreenState", true, true);
-        alert('B');
+        constructor() {
+            
+            this.game = new Phaser.Game(800, 600, Phaser.WEBGL, 'content');
+            
+            this.game.state.add("GameRunningState", GameRunningState, false);
+            this.game.state.add("TitleScreenState", TitleScreenState, false);
+            this.game.state.start("TitleScreenState", true, true);
+        }
     }
 }
 
 window.onload = () => {
-    var game = new SimpleGame();
+   
+    var game = new BlokjesGame.SimpleGame();
 };
