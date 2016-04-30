@@ -14,7 +14,7 @@ module BlokjesGame
             
             this.game.state.add("GameRunningState", GameRunningState, false);
             this.game.state.add("TitleScreenState", TitleScreenState, false);
-            this.game.state.start("TitleScreenState", true, true);
+            this.game.state.start("GameRunningState", true, true);
         }
     }
 }
