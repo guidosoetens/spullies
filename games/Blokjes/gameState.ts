@@ -248,7 +248,15 @@ module BlokjesGame
             var bg = this.game.add.sprite(0,0,'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
+            
             this.blobsContainer = this.game.add.group();
+            var gr = new Phaser.Graphics(this.game);
+            gr.beginFill(0xffffff, 1);
+            gr.drawRect((this.game.width - columns * gridWidth) / 2, (this.game.height - visibleRows * gridWidth) / 2, columns * gridWidth, visibleRows * gridWidth);
+            gr.drawRect((this.game.width + columns * gridWidth) / 2, (this.game.height - visibleRows * gridWidth) / 2, 300, 300);
+            gr.endFill();
+            this.blobsContainer.mask = gr;
+            
             this.graphics = this.game.add.graphics(0, 0);
             
             //register keyboard events:
@@ -776,12 +784,14 @@ module BlokjesGame
             this.game.debug.text("DROPS: " +  this.totalRowsDrop, 0, 150);
             this.game.debug.text("DEBUG: " +  debugText, 0, this.game.height - 20);
             
+            /*
             this.graphics.lineStyle(0);
             this.graphics.beginFill(0x0, 1);
             this.graphics.drawRect(this.game.width / 2 - columns * gridWidth / 2,
                                     this.game.height / 2 - (rows - topRowCount) * gridWidth / 2 - 100,
                                     columns * gridWidth, 100);
             this.graphics.endFill();
+            */
         }
     }
 }
