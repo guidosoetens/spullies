@@ -35,7 +35,7 @@ var BlokjesGame;
     var visibleRows = 12;
     var rows = visibleRows + topRowCount; //12 at the bottom
     var columns = 6;
-    var colorCodes = [0xff0000, 0x00ff00, 0x0000ff]; //, 0xffff00, 0xff00ff];//, 0x00ffff];
+    var colorCodes = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff]; //, 0x00ffff];
     var tickCount = 1;
     var gridWidth = 40;
     var neighbourDeltaIndices = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
@@ -87,16 +87,21 @@ var BlokjesGame;
             var cross = to.cross(this.renderOrientation);
             var sign = cross < 0 ? 1 : -1;
             this.renderOrientation.rotate(0, 0, sign * .75 * angle);
-            this.blob1.render(graphics, x, y, 1);
-            this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
+            this.blob1.updatePosition(x, y, 1);
+            this.blob2.updatePosition(x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
+            //this.blob1.render(graphics, x, y, 1);
+            //this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
         };
         return BlobTuple;
     }());
     BlokjesGame.BlobTuple = BlobTuple;
-    var Blob = (function () {
-        function Blob() {
+    var Blob = (function (_super) {
+        __extends(Blob, _super);
+        function Blob(game) {
+            _super.call(this, game);
             this.dxs = [gridWidth / 3, 0, -gridWidth / 3, 0];
             this.dys = [0, gridWidth / 3, 0, -gridWidth / 3];
+            this.blendMode = PIXI.blendModes.NORMAL;
             this.isBlocking = false;
             this.typeIndex = 0; //typeIndex;
             this.removing = false;
@@ -104,45 +109,85 @@ var BlokjesGame;
             this.chainedToNeighbor = [false, false, false, false];
             this.dropping = false;
             this.dropFromRow = 0;
+            this.blobShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('blobShader'));
+            this.filters = [this.blobShader];
+            //this.blobShader.uniforms.uSourceColor =  { type: '3f', value: [1.0, 1.0, 0.0] };
+            this.blobShader.uniforms.uSourceColor = { type: '3f', value: { x: 0, y: 0, z: 0 } };
+            this.blobShader.uniforms.uAlpha = { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uWidth = { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uGlobalOrigin = { type: '2f', value: { x: 0, y: 0 } };
+            //this.width = gridWidth;
+            //this.height = gridWidth;
+            this.beginFill(0xffffff, 1);
+            this.drawRect(0, 0, gridWidth, gridWidth);
+            this.endFill();
         }
-        Blob.prototype.render = function (graphics, x, y, alphaParameter) {
-            var alpha = this.removing ? (1.0 - alphaParameter) : 1.0;
+        Blob.prototype.updatePosition = function (x, y, alphaFactor) {
+            this.position.x = x;
+            this.position.y = y;
+            var alpha = this.removing ? Math.pow(1.0 - alphaFactor, 2.0) : 1.0;
+            if (this.removing)
+                debugText = "" + alpha;
+            //alpha = 0.00001;
+            //alpha = 0.0;
+            /*
+            this.clear();
+            this.alpha = alpha;
+            this.beginFill(0x0, alpha);
+            this.drawRect(0,0,gridWidth, gridWidth);
+            this.endFill();
+            */
             var color = colorCodes[this.typeIndex];
             if (this.isBlocking) {
-                color = 0x777777;
+                color = 0xaaaaaa;
             }
-            graphics.lineStyle(0);
-            graphics.beginFill(color, alpha);
-            graphics.drawCircle(x, y, gridWidth);
-            graphics.endFill();
-            for (var i = 0; i < 4; ++i) {
-                if (this.chainedToNeighbor[i]) {
-                    graphics.lineStyle(1, 0x0, 1 * alpha);
-                    graphics.beginFill(0xffffff, 0.8 * alpha);
-                    graphics.drawCircle(x + this.dxs[i], y + this.dys[i], 5);
-                    graphics.endFill();
-                }
-            }
+            var cls = this.getFractColor(color);
+            this.blobShader.update();
+            this.blobShader.uniforms.uSourceColor.value.x = cls[0];
+            this.blobShader.uniforms.uSourceColor.value.y = cls[1];
+            this.blobShader.uniforms.uSourceColor.value.z = cls[2];
+            this.blobShader.uniforms.resolution.value.x = this.game.width;
+            this.blobShader.uniforms.resolution.value.y = this.game.height;
+            this.blobShader.uniforms.uAlpha.value = alpha;
+            this.blobShader.uniforms.uWidth.value = gridWidth; // =  { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uGlobalOrigin.value.x = x; // =  { type: '2f', value: { x:0, y:0 } };
+            this.blobShader.uniforms.uGlobalOrigin.value.y = (this.game.height - y);
+            //debugText = this.blobShader.uniforms.resolution.value.x + " : " + this.blobShader.uniforms.resolution.value.y;
+        };
+        Blob.prototype.getFractColor = function (color) {
+            var blue = color % 0x100; //0x0000XX
+            var green = (color - blue) % 0x10000; //0x00XX00
+            var red = (color - green - blue); //0xXX0000
+            blue = blue / 0xff;
+            green = green / 0xff00;
+            red = red / 0xff0000;
+            return [red, green, blue];
         };
         return Blob;
-    }());
+    }(Phaser.Graphics));
     BlokjesGame.Blob = Blob;
     var GameRunningState = (function (_super) {
         __extends(GameRunningState, _super);
         function GameRunningState() {
             _super.call(this);
         }
+        //blobShader:Phaser.Filter;
         GameRunningState.prototype.preload = function () {
             this.game.load.audio("backgroundMusic", ["music2.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
             this.game.load.shader("blobShader", 'blobShader.frag');
             this.game.load.image('blokje', "blokje.png");
+            this.game.load.image('galaxy', "galaxy.jpg");
         };
         GameRunningState.prototype.create = function () {
             var _this = this;
             this.tickParameter = 0;
             this.totalRowsDrop = 0;
-            //init graphics:
+            //set component containers:
+            var bg = this.game.add.sprite(0, 0, 'galaxy');
+            bg.width = this.game.width;
+            bg.height = this.game.height;
+            this.blobsContainer = this.game.add.group();
             this.graphics = this.game.add.graphics(0, 0);
             //register keyboard events:
             this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -156,27 +201,21 @@ var BlokjesGame;
             this.input.addMoveCallback(this.onMouseMove, this);
             this.input.onDown.add(this.onMouseDown, this);
             //reset button:
-            //this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
             this.game.add.button(0, 0, "button", function () { _this.resetGame(); }, this);
             var sound = this.game.add.audio('backgroundMusic');
             //sound.play('', 0, .2, true);
-            this.blobShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('blobShader'));
-            this.blobShader.uniforms.iChannel0 = { type: 'sampler2D', value: null, textureData: { repeat: true } };
-            this.blobShader.uniforms.yoloSwaggeriez = { type: '1f', value: 1.0 };
-            var sprite = this.game.add.sprite(0, 0, 'blokje');
-            sprite.width = 100;
-            sprite.height = 100;
-            sprite.filters = [this.blobShader];
             this.resetGame();
         };
         GameRunningState.prototype.createRandomBlob = function () {
-            var b = new Blob();
+            var b = new Blob(this.game);
+            this.blobsContainer.add(b);
             b.typeIndex = this.game.rnd.integerInRange(0, colorCodes.length - 1);
             return b;
             //return new Blob(this.game.rnd.integerInRange(0,colorCodes.length - 1));
         };
         GameRunningState.prototype.createBlockingBlob = function () {
-            var b = new Blob();
+            var b = new Blob(this.game);
+            this.blobsContainer.add(b);
             b.isBlocking = true;
             return b;
         };
@@ -198,6 +237,7 @@ var BlokjesGame;
         GameRunningState.prototype.resetGame = function () {
             //set default layout:
             this.slots = [];
+            this.blobsContainer.removeAll();
             for (var i = 0; i < rows; ++i) {
                 this.slots[i] = [];
                 for (var j = 0; j < columns; ++j) {
@@ -477,8 +517,10 @@ var BlokjesGame;
                             for (var i = 0; i < rows; ++i) {
                                 for (var j = 0; j < columns; ++j) {
                                     var b = this.slots[i][j];
-                                    if (b != null && b.removing)
+                                    if (b != null && b.removing) {
                                         this.slots[i][j] = null;
+                                        this.blobsContainer.remove(b);
+                                    }
                                 }
                             }
                             //after resolving chains, do a new drop:
@@ -487,10 +529,12 @@ var BlokjesGame;
                         break;
                     }
             }
+            /*
             this.blobShader.update(this.game.input.mousePointer);
             this.blobShader.uniforms.yoloSwaggeriez.value = 1.0;
-            if (this.gameState == GAMESTATE_PLAYING)
+            if(this.gameState == GAMESTATE_PLAYING)
                 this.blobShader.uniforms.yoloSwaggeriez.value = this.playerBlob.row / rows;
+            */
         };
         GameRunningState.prototype.render = function () {
             this.graphics.clear();
@@ -522,7 +566,7 @@ var BlokjesGame;
                             var dropIdx = blob.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
                             y = srcY + (dropIdx - topRowCount) * gridWidth;
                         }
-                        blob.render(this.graphics, gridLeft + gridWidth / 2, y + gridWidth / 2, resolveAlphaFactor);
+                        blob.updatePosition(gridLeft, y, resolveAlphaFactor);
                     }
                 }
             }
@@ -531,7 +575,7 @@ var BlokjesGame;
             var nextY = this.game.height / 2 - gridWidth * visibleRows / 2;
             this.graphics.lineStyle(1, 0xaaaaaa, 1);
             this.graphics.drawRoundedRect(nextX, nextY, 100, 100, 20);
-            this.nextBlob.render(this.graphics, nextX + 50, nextY + 50 + gridWidth / 2);
+            this.nextBlob.render(this.graphics, nextX + 50 - gridWidth / 2, nextY + 50);
             //render player blob:
             if (this.gameState == GAMESTATE_PLAYING) {
                 // var t:number = Math.min(1,this.tickParameter * 1.5);
@@ -539,7 +583,7 @@ var BlokjesGame;
                 this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
                 gridTop = srcY + (this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (tickCount + 1) - topRowCount) * gridWidth;
                 gridLeft = srcX + this.playerFracColumnBuffer * gridWidth;
-                this.playerBlob.render(this.graphics, gridLeft + gridWidth / 2, gridTop + gridWidth / 2);
+                this.playerBlob.render(this.graphics, gridLeft, gridTop);
                 this.graphics.lineStyle(2, 0xffffff, .5);
                 this.graphics.drawRoundedRect(gridLeft, gridTop, gridWidth, gridWidth, 10);
                 this.game.debug.text("ROW: " + this.playerBlob.row.toString(), 0, 50);
