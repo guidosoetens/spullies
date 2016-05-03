@@ -37,7 +37,7 @@ var BlokjesGame;
     var columns = 6;
     var colorCodes = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff]; //, 0x00ffff];
     var tickCount = 1;
-    var gridWidth = 40;
+    var gridWidth = 45;
     var neighbourDeltaIndices = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
     var GAMESTATE_PLAYING = 0;
     var GAMESTATE_REMOVING = 1;
@@ -139,7 +139,7 @@ var BlokjesGame;
             */
             var color = colorCodes[this.typeIndex];
             if (this.isBlocking) {
-                color = 0xaaaaaa;
+                color = 0x0;
             }
             var cls = this.getFractColor(color);
             this.blobShader.update();
@@ -175,7 +175,7 @@ var BlokjesGame;
         GameRunningState.prototype.preload = function () {
             this.game.load.audio("backgroundMusic", ["music2.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-            this.game.load.shader("blobShader", 'blobShader.frag');
+            this.game.load.shader("blobShader", 'blobShader2.frag');
             this.game.load.image('blokje', "blokje.png");
             this.game.load.image('galaxy', "galaxy.jpg");
         };
@@ -187,6 +187,20 @@ var BlokjesGame;
             var bg = this.game.add.sprite(0, 0, 'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
+            this.gridGraphics = this.game.add.graphics(0, 0);
+            this.gridGraphics.alpha = 0.2;
+            this.gridGraphics.lineStyle(2, 0xffffff, 1);
+            var srcX = (this.game.width - columns * gridWidth) * 0.5;
+            var srcY = (this.game.height - visibleRows * gridWidth) * 0.5;
+            for (var i = 0; i < rows; ++i) {
+                var gridTop = srcY + (i - topRowCount) * gridWidth;
+                for (var j = 0; j < columns; ++j) {
+                    var gridLeft = srcX + j * gridWidth;
+                    if (i >= topRowCount) {
+                        this.gridGraphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
+                    }
+                }
+            }
             this.blobsContainer = this.game.add.group();
             var gr = new Phaser.Graphics(this.game);
             gr.beginFill(0xffffff, 1);
@@ -554,11 +568,13 @@ var BlokjesGame;
                 gridTop = srcY + (i - topRowCount) * gridWidth;
                 for (var j = 0; j < columns; ++j) {
                     gridLeft = srcX + j * gridWidth;
-                    if (i >= topRowCount) {
-                        this.graphics.lineStyle(1, 0xaaaaaa, 1);
+                    /*
+                    if(i >= topRowCount) {
+                        this.graphics.lineStyle(3, 0xffffff, 1);
                         this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
                         this.graphics.lineStyle(0);
                     }
+                    */
                     /*
                     this.graphics.lineStyle(1, 0xaaaaaa, 1);
                     this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
