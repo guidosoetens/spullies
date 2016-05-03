@@ -233,7 +233,7 @@ module BlokjesGame
         //blobShader:Phaser.Filter;
         
         preload() {
-             this.game.load.audio("backgroundMusic", ["music2.mp3"]);
+             this.game.load.audio("backgroundMusic", ["music.mp3"]);
              this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
              this.game.load.shader("blobShader", 'blobShader2.frag');
              this.game.load.image('blokje', "blokje.png");
@@ -295,7 +295,7 @@ module BlokjesGame
             this.game.add.button(0, 0, "button", () => { this.resetGame(); }, this);
             
             var sound = this.game.add.audio('backgroundMusic');
-            //sound.play('', 0, .2, true);
+            sound.play('', 0, .2, true);
             
             this.resetGame();
         }

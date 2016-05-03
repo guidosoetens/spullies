@@ -173,7 +173,7 @@ var BlokjesGame;
         }
         //blobShader:Phaser.Filter;
         GameRunningState.prototype.preload = function () {
-            this.game.load.audio("backgroundMusic", ["music2.mp3"]);
+            this.game.load.audio("backgroundMusic", ["music.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
             this.game.load.shader("blobShader", 'blobShader2.frag');
             this.game.load.image('blokje', "blokje.png");
@@ -223,7 +223,7 @@ var BlokjesGame;
             //reset button:
             this.game.add.button(0, 0, "button", function () { _this.resetGame(); }, this);
             var sound = this.game.add.audio('backgroundMusic');
-            //sound.play('', 0, .2, true);
+            sound.play('', 0, .2, true);
             this.resetGame();
         };
         GameRunningState.prototype.createRandomBlob = function () {
