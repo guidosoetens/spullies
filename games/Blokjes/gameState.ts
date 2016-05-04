@@ -6,7 +6,7 @@ module BlokjesGame
     const visibleRows:number = 12;
     const rows:number = visibleRows + topRowCount; //12 at the bottom
     const columns:number = 6;
-    const colorCodes:number[] = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff];//, 0x00ffff];
+    const colorCodes:number[] = [0xff4444, 0x44ff44, 0x4444ff];//, 0xffff44, 0xff44ff];//, 0x00ffff];
     const tickCount:number = 1;
     const gridWidth:number = 45;
     const neighbourDeltaIndices:number[][] = [[0,1], [1,0], [0,-1], [-1,0]]; //(right, bottom, left, top) [row][column] - format
@@ -109,6 +109,8 @@ module BlokjesGame
             this.blobShader.uniforms.uAlpha =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uWidth =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uGlobalOrigin =  { type: '2f', value: { x:0, y:0 } };
+            this.blobShader.uniforms.uCenterType =  { type: '1i', value: 0 };
+            
             
             //this.width = gridWidth;
             //this.height = gridWidth;
@@ -153,6 +155,7 @@ module BlokjesGame
             this.blobShader.uniforms.resolution.value.x = this.game.width;
             this.blobShader.uniforms.resolution.value.y = this.game.height;
             this.blobShader.uniforms.uAlpha.value = alpha;
+            this.blobShader.uniforms.uCenterType.value = this.isBlocking ? -1 : this.typeIndex;
             
             this.blobShader.uniforms.uWidth.value = gridWidth;// =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uGlobalOrigin.value.x = x;// =  { type: '2f', value: { x:0, y:0 } };
@@ -295,7 +298,7 @@ module BlokjesGame
             this.game.add.button(0, 0, "button", () => { this.resetGame(); }, this);
             
             var sound = this.game.add.audio('backgroundMusic');
-            sound.play('', 0, .2, true);
+            //sound.play('', 0, .2, true);
             
             this.resetGame();
         }
