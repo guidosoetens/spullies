@@ -6,7 +6,7 @@ module BlokjesGame
     const visibleRows:number = 12;
     const rows:number = visibleRows + topRowCount; //12 at the bottom
     const columns:number = 6;
-    const colorCodes:number[] = [0xff4444, 0x44ff44, 0x4444ff];//, 0xffff44, 0xff44ff];//, 0x00ffff];
+    const colorCodes:number[] = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x00ffff];
     const tickCount:number = 1;
     const gridWidth:number = 45;
     const neighbourDeltaIndices:number[][] = [[0,1], [1,0], [0,-1], [-1,0]]; //(right, bottom, left, top) [row][column] - format
@@ -16,6 +16,7 @@ module BlokjesGame
     const GAMESTATE_DROPPING:number = 2;
     
     var debugText:string;
+    var noiseSprite:Phaser.Sprite;
    
     
     export class BlobTuple {
@@ -109,7 +110,12 @@ module BlokjesGame
             this.blobShader.uniforms.uAlpha =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uWidth =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uGlobalOrigin =  { type: '2f', value: { x:0, y:0 } };
-            this.blobShader.uniforms.uCenterType =  { type: '1i', value: 0 };
+            this.blobShader.uniforms.uCenterType = { type: '1i', value: 0 };
+            
+            
+            this.blobShader.uniforms.uNoiseTexture =  { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } }
+            
+            //uNoiseTexture
             
             
             //this.width = gridWidth;
@@ -238,9 +244,10 @@ module BlokjesGame
         preload() {
              this.game.load.audio("backgroundMusic", ["music.mp3"]);
              this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-             this.game.load.shader("blobShader", 'blobShader2.frag');
+             this.game.load.shader("blobShader", 'blobShader3.frag');
              this.game.load.image('blokje', "blokje.png");
              this.game.load.image('galaxy', "galaxy.jpg");
+             this.game.load.image('noise', "noise.jpg");
         }
         
         create() {
@@ -252,6 +259,8 @@ module BlokjesGame
             var bg = this.game.add.sprite(0,0,'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
+            
+            noiseSprite = new Phaser.Sprite(this.game, 0, 0, 'noise');
             
             this.gridGraphics = this.game.add.graphics(0,0);
             this.gridGraphics.alpha = 0.2;

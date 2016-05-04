@@ -35,7 +35,7 @@ var BlokjesGame;
     var visibleRows = 12;
     var rows = visibleRows + topRowCount; //12 at the bottom
     var columns = 6;
-    var colorCodes = [0xff4444, 0x44ff44, 0x4444ff]; //, 0xffff44, 0xff44ff];//, 0x00ffff];
+    var colorCodes = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x00ffff];
     var tickCount = 1;
     var gridWidth = 45;
     var neighbourDeltaIndices = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
@@ -43,6 +43,7 @@ var BlokjesGame;
     var GAMESTATE_REMOVING = 1;
     var GAMESTATE_DROPPING = 2;
     var debugText;
+    var noiseSprite;
     var BlobTuple = (function () {
         function BlobTuple(blob1, blob2) {
             this._orientation = 0;
@@ -117,6 +118,8 @@ var BlokjesGame;
             this.blobShader.uniforms.uWidth = { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uGlobalOrigin = { type: '2f', value: { x: 0, y: 0 } };
             this.blobShader.uniforms.uCenterType = { type: '1i', value: 0 };
+            this.blobShader.uniforms.uNoiseTexture = { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } };
+            //uNoiseTexture
             //this.width = gridWidth;
             //this.height = gridWidth;
             this.beginFill(0xffffff, 1);
@@ -177,9 +180,10 @@ var BlokjesGame;
         GameRunningState.prototype.preload = function () {
             this.game.load.audio("backgroundMusic", ["music.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-            this.game.load.shader("blobShader", 'blobShader2.frag');
+            this.game.load.shader("blobShader", 'blobShader3.frag');
             this.game.load.image('blokje', "blokje.png");
             this.game.load.image('galaxy', "galaxy.jpg");
+            this.game.load.image('noise', "noise.jpg");
         };
         GameRunningState.prototype.create = function () {
             var _this = this;
@@ -189,6 +193,7 @@ var BlokjesGame;
             var bg = this.game.add.sprite(0, 0, 'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
+            noiseSprite = new Phaser.Sprite(this.game, 0, 0, 'noise');
             this.gridGraphics = this.game.add.graphics(0, 0);
             this.gridGraphics.alpha = 0.2;
             this.gridGraphics.lineStyle(2, 0xffffff, 1);
