@@ -3,7 +3,7 @@
 
 module BlokjesGame
 {
-    export class Blob extends Phaser.Graphics {
+    export class Blob {
         
         private dxs:number[] = [GRIDWIDTH / 3,0,-GRIDWIDTH / 3,0];
         private dys:number[] = [0,GRIDWIDTH / 3,0,-GRIDWIDTH / 3];
@@ -15,13 +15,8 @@ module BlokjesGame
         chainedToNeighbor:boolean[];
         dropping:boolean;
         dropFromRow:number;
-        blobShader:Phaser.Filter;
         
         constructor(game:Phaser.Game) {//typeIndex:number) {
-            
-            super(game);
-            
-            this.blendMode = PIXI.blendModes.NORMAL;
             
             this.isBlocking = false;
             this.typeIndex = 0;//typeIndex;
@@ -31,6 +26,7 @@ module BlokjesGame
             this.dropping = false;
             this.dropFromRow = 0;
             
+            /*
             this.blobShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('blobShader'));
             this.filters = [ this.blobShader ];
             //this.blobShader.uniforms.uSourceColor =  { type: '3f', value: [1.0, 1.0, 0.0] };
@@ -42,29 +38,33 @@ module BlokjesGame
             
             
             this.blobShader.uniforms.uNoiseTexture =  { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } }
-            
+            */
             //uNoiseTexture
             
             
             //this.width = gridWidth;
             //this.height = gridWidth;
             
-            
+            /*
             this.beginFill(0xffffff, 1);
             this.drawRect(0,0,GRIDWIDTH, GRIDWIDTH);
             this.endFill();
-            
+            */
             
         }
         
-        updatePosition(x:number, y:number, alphaFactor:number) {
+        renderAtSlot(renderer:BlobRenderer, i:number, j:number, alphaFactor:number) {
             
-            this.position.x = x;
-            this.position.y = y;
+            //this.position.x = x;
+            //this.position.y = y;
             
+            /*
             var alpha:number = this.removing ? Math.pow(1.0 - alphaFactor, 2.0) : 1.0;
             if(this.removing)
                 debugText = "" + alpha;
+                
+            renderer.drawBlob(i, j, this.isBlocking ? -1 : this.typeIndex, alpha);
+                */
             //alpha = 0.00001;
             //alpha = 0.0;
             /*
@@ -74,7 +74,7 @@ module BlokjesGame
             this.drawRect(0,0,gridWidth, gridWidth);
             this.endFill();
             */
-            
+            /*
             var color:number = COLORCODES[this.typeIndex];
             if(this.isBlocking) {
                 color = 0x0;
@@ -94,10 +94,11 @@ module BlokjesGame
             this.blobShader.uniforms.uWidth.value = GRIDWIDTH;// =  { type: '1f', value: 1.0 };
             this.blobShader.uniforms.uGlobalOrigin.value.x = x;// =  { type: '2f', value: { x:0, y:0 } };
             this.blobShader.uniforms.uGlobalOrigin.value.y = (this.game.height - y);
-            
+            */
             //debugText = this.blobShader.uniforms.resolution.value.x + " : " + this.blobShader.uniforms.resolution.value.y;
         }
         
+        /*
         private getFractColor(color:number) : number[] {
             
             var blue:number = color % 0x100;                //0x0000XX
@@ -109,7 +110,7 @@ module BlokjesGame
             red = red / 0xff0000;
             
             return [red, green, blue];
-        }
+        }*/
         
         
         

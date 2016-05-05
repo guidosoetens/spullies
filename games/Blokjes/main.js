@@ -30,12 +30,12 @@ var BlokjesGame;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
 var TOPROWCOUNT = 3;
-var VISIBLEROWCOUNT = 12;
+var VISIBLEROWCOUNT = 4; //12;
 var ROWCOUNT = VISIBLEROWCOUNT + TOPROWCOUNT; //12 at the bottom
-var COLUMNCOUNT = 6;
-var COLORCODES = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x00ffff];
+var COLUMNCOUNT = 4; //6;
+var COLORCODES = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff]; //, 0x00ffff];
 var TICKCOUNT = 1;
-var GRIDWIDTH = 45;
+var GRIDWIDTH = 100; // 45;
 var NEIGHBORDELTAINDICES = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
 var debugText;
 var noiseSprite;
@@ -43,13 +43,10 @@ var noiseSprite;
 ///<reference path="Defs.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
-    var Blob = (function (_super) {
-        __extends(Blob, _super);
+    var Blob = (function () {
         function Blob(game) {
-            _super.call(this, game);
             this.dxs = [GRIDWIDTH / 3, 0, -GRIDWIDTH / 3, 0];
             this.dys = [0, GRIDWIDTH / 3, 0, -GRIDWIDTH / 3];
-            this.blendMode = PIXI.blendModes.NORMAL;
             this.isBlocking = false;
             this.typeIndex = 0; //typeIndex;
             this.removing = false;
@@ -57,28 +54,38 @@ var BlokjesGame;
             this.chainedToNeighbor = [false, false, false, false];
             this.dropping = false;
             this.dropFromRow = 0;
+            /*
             this.blobShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('blobShader'));
-            this.filters = [this.blobShader];
+            this.filters = [ this.blobShader ];
             //this.blobShader.uniforms.uSourceColor =  { type: '3f', value: [1.0, 1.0, 0.0] };
-            this.blobShader.uniforms.uSourceColor = { type: '3f', value: { x: 0, y: 0, z: 0 } };
-            this.blobShader.uniforms.uAlpha = { type: '1f', value: 1.0 };
-            this.blobShader.uniforms.uWidth = { type: '1f', value: 1.0 };
-            this.blobShader.uniforms.uGlobalOrigin = { type: '2f', value: { x: 0, y: 0 } };
+            this.blobShader.uniforms.uSourceColor =  { type: '3f', value: { x:0, y:0, z:0 } };
+            this.blobShader.uniforms.uAlpha =  { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uWidth =  { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uGlobalOrigin =  { type: '2f', value: { x:0, y:0 } };
             this.blobShader.uniforms.uCenterType = { type: '1i', value: 0 };
-            this.blobShader.uniforms.uNoiseTexture = { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } };
+            
+            
+            this.blobShader.uniforms.uNoiseTexture =  { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } }
+            */
             //uNoiseTexture
             //this.width = gridWidth;
             //this.height = gridWidth;
+            /*
             this.beginFill(0xffffff, 1);
-            this.drawRect(0, 0, GRIDWIDTH, GRIDWIDTH);
+            this.drawRect(0,0,GRIDWIDTH, GRIDWIDTH);
             this.endFill();
+            */
         }
-        Blob.prototype.updatePosition = function (x, y, alphaFactor) {
-            this.position.x = x;
-            this.position.y = y;
-            var alpha = this.removing ? Math.pow(1.0 - alphaFactor, 2.0) : 1.0;
-            if (this.removing)
+        Blob.prototype.renderAtSlot = function (renderer, i, j, alphaFactor) {
+            //this.position.x = x;
+            //this.position.y = y;
+            /*
+            var alpha:number = this.removing ? Math.pow(1.0 - alphaFactor, 2.0) : 1.0;
+            if(this.removing)
                 debugText = "" + alpha;
+                
+            renderer.drawBlob(i, j, this.isBlocking ? -1 : this.typeIndex, alpha);
+                */
             //alpha = 0.00001;
             //alpha = 0.0;
             /*
@@ -88,11 +95,14 @@ var BlokjesGame;
             this.drawRect(0,0,gridWidth, gridWidth);
             this.endFill();
             */
-            var color = COLORCODES[this.typeIndex];
-            if (this.isBlocking) {
+            /*
+            var color:number = COLORCODES[this.typeIndex];
+            if(this.isBlocking) {
                 color = 0x0;
             }
-            var cls = this.getFractColor(color);
+            
+            var cls:number[] = this.getFractColor(color);
+            
             this.blobShader.update();
             this.blobShader.uniforms.uSourceColor.value.x = cls[0];
             this.blobShader.uniforms.uSourceColor.value.y = cls[1];
@@ -101,12 +111,81 @@ var BlokjesGame;
             this.blobShader.uniforms.resolution.value.y = this.game.height;
             this.blobShader.uniforms.uAlpha.value = alpha;
             this.blobShader.uniforms.uCenterType.value = this.isBlocking ? -1 : this.typeIndex;
-            this.blobShader.uniforms.uWidth.value = GRIDWIDTH; // =  { type: '1f', value: 1.0 };
-            this.blobShader.uniforms.uGlobalOrigin.value.x = x; // =  { type: '2f', value: { x:0, y:0 } };
+            
+            this.blobShader.uniforms.uWidth.value = GRIDWIDTH;// =  { type: '1f', value: 1.0 };
+            this.blobShader.uniforms.uGlobalOrigin.value.x = x;// =  { type: '2f', value: { x:0, y:0 } };
             this.blobShader.uniforms.uGlobalOrigin.value.y = (this.game.height - y);
+            */
             //debugText = this.blobShader.uniforms.resolution.value.x + " : " + this.blobShader.uniforms.resolution.value.y;
         };
-        Blob.prototype.getFractColor = function (color) {
+        return Blob;
+    }());
+    BlokjesGame.Blob = Blob;
+})(BlokjesGame || (BlokjesGame = {}));
+///<reference path="../../phaser/phaser.d.ts"/>
+///<reference path="Defs.ts"/>
+///<reference path="Blob.ts"/>
+var BlokjesGame;
+(function (BlokjesGame) {
+    var BlobRenderer = (function () {
+        function BlobRenderer(game) {
+            this.game = game;
+            //Create Stamp:
+            var blobStamp = game.make.bitmapData(256, 256);
+            blobStamp.fill(0, 0, 0, 0);
+            for (var i = 0; i < 256.0; ++i) {
+                for (var j = 0; j < 256.0; ++j) {
+                    blobStamp.setPixel(j, i, j, i, 0, false);
+                }
+            }
+            blobStamp.setPixel(0, 0, 0, 0, 0);
+            this.stampImage = game.add.image(0, 0, blobStamp);
+            this.dataTexture = game.make.bitmapData(256, 256);
+            this.dataTexture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
+            var dataSprite = this.game.add.sprite(0, 0, this.dataTexture);
+            var noiseSprite = this.game.add.sprite(0, 0, 'noise'); // new Phaser.Sprite(this.game, 0, 0, 'noise');
+            this.uvBmp = game.add.bitmapData(game.width, game.height);
+            var uvBmpContainerSprite = game.add.sprite(0, 0, this.uvBmp);
+            this.uvBmp.context.globalCompositeOperation = 'lighter';
+            //init shader:
+            this.shader = new Phaser.Filter(game, null, game.cache.getShader('blobShader'));
+            this.shader.uniforms.uNoiseTexture = { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } };
+            this.shader.uniforms.uDataTexture = { type: 'sampler2D', value: this.dataTexture, textureData: { repeat: false } };
+            uvBmpContainerSprite.filters = [this.shader];
+            this.topLeft = new Phaser.Point();
+            this.topLeft.x = (this.game.width - COLUMNCOUNT * GRIDWIDTH) / 2;
+            this.topLeft.y = (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2;
+        }
+        BlobRenderer.prototype.update = function () {
+            this.shader.update();
+        };
+        BlobRenderer.prototype.begin = function (resolveAlphaFactor) {
+            this.uvBmp.clear();
+            this.uvBmp.fill(0, 0, 0, 0);
+            this.blobIndex = 0;
+            this.resolveAlphaFactor = resolveAlphaFactor;
+        };
+        BlobRenderer.prototype.drawBlobAtIndices = function (i, j, blob) {
+            var alpha = blob.removing ? Math.pow(1.0 - this.resolveAlphaFactor, 2.0) : 1.0;
+            var colorIdx = blob.isBlocking ? -1 : (blob.typeIndex % COLORCODES.length);
+            var y = this.topLeft.y + (i - TOPROWCOUNT) * GRIDWIDTH;
+            var x = this.topLeft.x + j * GRIDWIDTH;
+            //set alpha in data texture:
+            this.dataTexture.setPixel(0, this.blobIndex, alpha * 255, 0, 0, false);
+            //set base color in data texture:
+            var cls = this.getFractColor(COLORCODES[colorIdx % COLORCODES.length]);
+            this.dataTexture.setPixel(1, this.blobIndex, cls[0] * 255, cls[1] * 255, cls[2] * 255, false);
+            //set UV + index data:
+            this.uvBmp.draw(this.stampImage, x, y, GRIDWIDTH, GRIDWIDTH);
+            this.uvBmp.rect(x, y, GRIDWIDTH, GRIDWIDTH, 'rgba(0,0,' + this.blobIndex + ',1.0)');
+            ++this.blobIndex;
+        };
+        BlobRenderer.prototype.end = function () {
+            this.dataTexture.setPixel(255, 255, 0, 0, 0, true);
+        };
+        BlobRenderer.prototype.getFractColor = function (color) {
+            if (color < 0)
+                return [0.3, 0.3, 0.3];
             var blue = color % 0x100; //0x0000XX
             var green = (color - blue) % 0x10000; //0x00XX00
             var red = (color - green - blue); //0xXX0000
@@ -115,13 +194,14 @@ var BlokjesGame;
             red = red / 0xff0000;
             return [red, green, blue];
         };
-        return Blob;
-    }(Phaser.Graphics));
-    BlokjesGame.Blob = Blob;
+        return BlobRenderer;
+    }());
+    BlokjesGame.BlobRenderer = BlobRenderer;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Defs.ts"/>
 ///<reference path="Blob.ts"/>
+///<reference path="BlobRenderer.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
     var BlobTuple = (function () {
@@ -162,14 +242,16 @@ var BlokjesGame;
             enumerable: true,
             configurable: true
         });
-        BlobTuple.prototype.render = function (graphics, x, y) {
+        BlobTuple.prototype.drawTupleAtIndices = function (renderer, i, j) {
             var to = new Phaser.Point(NEIGHBORDELTAINDICES[this.orientation][1], NEIGHBORDELTAINDICES[this.orientation][0]);
             var angle = Math.acos(this.renderOrientation.dot(to));
             var cross = to.cross(this.renderOrientation);
             var sign = cross < 0 ? 1 : -1;
             this.renderOrientation.rotate(0, 0, sign * .75 * angle);
-            this.blob1.updatePosition(x, y, 1);
-            this.blob2.updatePosition(x + this.renderOrientation.x * GRIDWIDTH, y + this.renderOrientation.y * GRIDWIDTH, 1);
+            renderer.drawBlobAtIndices(i, j, this.blob1);
+            renderer.drawBlobAtIndices(i + this.renderOrientation.y, j + this.renderOrientation.x, this.blob2);
+            //this.blob1.renderAtSlot(renderer, i, j, 1);
+            //this.blob2.updatePosition(x + this.renderOrientation.x * GRIDWIDTH, y + this.renderOrientation.y * GRIDWIDTH, 1);
             //this.blob1.render(graphics, x, y, 1);
             //this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
         };
@@ -181,18 +263,9 @@ var BlokjesGame;
 ///<reference path="Defs.ts"/>
 ///<reference path="BlobTuple.ts"/>
 ///<reference path="Blob.ts"/>
+///<reference path="BlobRenderer.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
-    /*
-    const topRowCount:number = 3;
-    const visibleRows:number = 12;
-    const rows:number = visibleRows + topRowCount; //12 at the bottom
-    const columns:number = 6;
-    const colorCodes:number[] = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x00ffff];
-    const tickCount:number = 1;
-    const gridWidth:number = 45;
-    const neighbourDeltaIndices:number[][] = [[0,1], [1,0], [0,-1], [-1,0]]; //(right, bottom, left, top) [row][column] - format
-    */
     var GAMESTATE_PLAYING = 0;
     var GAMESTATE_REMOVING = 1;
     var GAMESTATE_DROPPING = 2;
@@ -205,7 +278,7 @@ var BlokjesGame;
         GameState.prototype.preload = function () {
             this.game.load.audio("backgroundMusic", ["assets/music.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-            this.game.load.shader("blobShader", 'assets/blobShader3.frag');
+            this.game.load.shader("blobShader", 'assets/blobShaderFinal.frag');
             this.game.load.image('blokje', "assets/blokje.png");
             this.game.load.image('galaxy', "assets/galaxy.jpg");
             this.game.load.image('noise', "assets/noise.jpg");
@@ -218,6 +291,7 @@ var BlokjesGame;
             var bg = this.game.add.sprite(0, 0, 'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
+            bg.alpha = .4;
             noiseSprite = new Phaser.Sprite(this.game, 0, 0, 'noise');
             this.gridGraphics = this.game.add.graphics(0, 0);
             this.gridGraphics.alpha = 0.2;
@@ -233,6 +307,8 @@ var BlokjesGame;
                     }
                 }
             }
+            this.blobRenderer = new BlokjesGame.BlobRenderer(this.game);
+            /*
             this.blobsContainer = this.game.add.group();
             var gr = new Phaser.Graphics(this.game);
             gr.beginFill(0xffffff, 1);
@@ -240,6 +316,7 @@ var BlokjesGame;
             gr.drawRect((this.game.width + COLUMNCOUNT * GRIDWIDTH) / 2, (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2, 300, 300);
             gr.endFill();
             this.blobsContainer.mask = gr;
+            */
             this.graphics = this.game.add.graphics(0, 0);
             //register keyboard events:
             this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -260,14 +337,14 @@ var BlokjesGame;
         };
         GameState.prototype.createRandomBlob = function () {
             var b = new BlokjesGame.Blob(this.game);
-            this.blobsContainer.add(b);
+            //this.blobsContainer.add(b);
             b.typeIndex = this.game.rnd.integerInRange(0, COLORCODES.length - 1);
             return b;
             //return new Blob(this.game.rnd.integerInRange(0,colorCodes.length - 1));
         };
         GameState.prototype.createBlockingBlob = function () {
             var b = new BlokjesGame.Blob(this.game);
-            this.blobsContainer.add(b);
+            //this.blobsContainer.add(b);
             b.isBlocking = true;
             return b;
         };
@@ -289,7 +366,7 @@ var BlokjesGame;
         GameState.prototype.resetGame = function () {
             //set default layout:
             this.slots = [];
-            this.blobsContainer.removeAll();
+            //this.blobsContainer.removeAll();
             for (var i = 0; i < ROWCOUNT; ++i) {
                 this.slots[i] = [];
                 for (var j = 0; j < COLUMNCOUNT; ++j) {
@@ -571,7 +648,6 @@ var BlokjesGame;
                                     var b = this.slots[i][j];
                                     if (b != null && b.removing) {
                                         this.slots[i][j] = null;
-                                        this.blobsContainer.remove(b);
                                     }
                                 }
                             }
@@ -587,6 +663,34 @@ var BlokjesGame;
             if(this.gameState == GAMESTATE_PLAYING)
                 this.blobShader.uniforms.yoloSwaggeriez.value = this.playerBlob.row / rows;
             */
+            this.blobRenderer.update();
+            this.drawBlobs();
+        };
+        GameState.prototype.drawBlobs = function () {
+            var resolveAlphaFactor = this.gameState == GAMESTATE_REMOVING ? this.gameStateParameter : 1;
+            this.blobRenderer.begin(resolveAlphaFactor);
+            for (var i = 0; i < ROWCOUNT; ++i) {
+                for (var j = 0; j < COLUMNCOUNT; ++j) {
+                    var blob = this.slots[i][j];
+                    if (blob != null) {
+                        var iIdx = i;
+                        if (this.gameState == GAMESTATE_DROPPING && blob.dropping) {
+                            var totalDrop = i - blob.dropFromRow;
+                            var dropIdx = blob.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
+                            iIdx = (dropIdx);
+                        }
+                        this.blobRenderer.drawBlobAtIndices(iIdx, j, blob);
+                    }
+                }
+            }
+            if (this.gameState == GAMESTATE_PLAYING) {
+                //var t:number = Math.min(1,this.tickParameter * 1.5);
+                var tickBufferOffset = Math.sin(Math.min(1, this.tickParameter * 1.5) * .5 * Math.PI); // (1 - Math.cos(this.tickParameter * Math.PI)) / 2;
+                this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
+                var fracPlayerRow = this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1);
+                this.playerBlob.drawTupleAtIndices(this.blobRenderer, fracPlayerRow, this.playerFracColumnBuffer);
+            }
+            this.blobRenderer.end();
         };
         GameState.prototype.render = function () {
             this.graphics.clear();
@@ -600,28 +704,6 @@ var BlokjesGame;
                 gridTop = srcY + (i - TOPROWCOUNT) * GRIDWIDTH;
                 for (var j = 0; j < COLUMNCOUNT; ++j) {
                     gridLeft = srcX + j * GRIDWIDTH;
-                    /*
-                    if(i >= topRowCount) {
-                        this.graphics.lineStyle(3, 0xffffff, 1);
-                        this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
-                        this.graphics.lineStyle(0);
-                    }
-                    */
-                    /*
-                    this.graphics.lineStyle(1, 0xaaaaaa, 1);
-                    this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
-                    this.graphics.lineStyle(0);
-                    */
-                    var blob = this.slots[i][j];
-                    if (blob != null) {
-                        var y = gridTop;
-                        if (this.gameState == GAMESTATE_DROPPING && blob.dropping) {
-                            var totalDrop = i - blob.dropFromRow;
-                            var dropIdx = blob.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
-                            y = srcY + (dropIdx - TOPROWCOUNT) * GRIDWIDTH;
-                        }
-                        blob.updatePosition(gridLeft, y, resolveAlphaFactor);
-                    }
                 }
             }
             //render next blob:
@@ -629,7 +711,7 @@ var BlokjesGame;
             var nextY = this.game.height / 2 - GRIDWIDTH * VISIBLEROWCOUNT / 2;
             this.graphics.lineStyle(1, 0xaaaaaa, 1);
             this.graphics.drawRoundedRect(nextX, nextY, 100, 100, 20);
-            this.nextBlob.render(this.graphics, nextX + 50 - GRIDWIDTH / 2, nextY + 50);
+            //this.nextBlob.render(this.graphics, nextX + 50 - GRIDWIDTH / 2, nextY + 50);
             //render player blob:
             if (this.gameState == GAMESTATE_PLAYING) {
                 // var t:number = Math.min(1,this.tickParameter * 1.5);
@@ -637,7 +719,7 @@ var BlokjesGame;
                 this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
                 gridTop = srcY + (this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1) - TOPROWCOUNT) * GRIDWIDTH;
                 gridLeft = srcX + this.playerFracColumnBuffer * GRIDWIDTH;
-                this.playerBlob.render(this.graphics, gridLeft, gridTop);
+                //this.playerBlob.render(this.graphics, gridLeft, gridTop);
                 this.graphics.lineStyle(2, 0xffffff, .5);
                 this.graphics.drawRoundedRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH, 10);
                 this.game.debug.text("ROW: " + this.playerBlob.row.toString(), 0, 50);

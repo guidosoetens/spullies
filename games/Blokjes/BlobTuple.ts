@@ -1,6 +1,7 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Defs.ts"/>
 ///<reference path="Blob.ts"/>
+///<reference path="BlobRenderer.ts"/>
 
 module BlokjesGame 
 {
@@ -41,7 +42,7 @@ module BlokjesGame
             this.column = COLUMNCOUNT / 2 - 1;
         }
         
-        render(graphics:Phaser.Graphics, x:number, y:number) {
+        drawTupleAtIndices(renderer:BlobRenderer, i:number, j:number) {
             
             var to:Phaser.Point = new Phaser.Point( NEIGHBORDELTAINDICES[this.orientation][1], 
                                                     NEIGHBORDELTAINDICES[this.orientation][0]);
@@ -52,8 +53,12 @@ module BlokjesGame
             
             this.renderOrientation.rotate(0, 0, sign * .75 * angle);
             
-            this.blob1.updatePosition(x, y, 1);
-            this.blob2.updatePosition(x + this.renderOrientation.x * GRIDWIDTH, y + this.renderOrientation.y * GRIDWIDTH, 1);
+            renderer.drawBlobAtIndices(i, j, this.blob1);
+            renderer.drawBlobAtIndices(i + this.renderOrientation.y, j + this.renderOrientation.x, this.blob2);
+            
+            
+            //this.blob1.renderAtSlot(renderer, i, j, 1);
+            //this.blob2.updatePosition(x + this.renderOrientation.x * GRIDWIDTH, y + this.renderOrientation.y * GRIDWIDTH, 1);
             
             //this.blob1.render(graphics, x, y, 1);
             //this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
