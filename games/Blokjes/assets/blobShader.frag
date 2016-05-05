@@ -15,7 +15,6 @@ uniform float uWidth;
 uniform vec2 uGlobalOrigin;
 uniform vec3 uSourceColor;
 uniform float uAlpha;
-
 uniform int uCenterType;
 
 const float pi = 3.1415926535;

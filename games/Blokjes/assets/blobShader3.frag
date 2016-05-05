@@ -14,23 +14,12 @@ uniform int uCenterType;
 
 uniform sampler2D uNoiseTexture;
 
-const float pi = 3.1415926535;
-
-//XTRA
-
+#define pi 3.1415926535;
 #define time2 (time*0.15)
 #define tau 6.2831853
 
-vec3 srcColor = vec3(0.15,0.15,0.15);// vec3(.2,0.1,0.4);
-
 mat2 makem2(in float theta){float c = cos(theta);float s = sin(theta);return mat2(c,-s,s,c);}
 float noise( in vec2 x ){return texture2D(uNoiseTexture, x*.01).x;}
-
-/*
-float noise(vec2 co)
-{
-   return fract(sin(dot(co.xy + vec2(0, 0),vec2(12.9898,78.233))) * 43758.5453);
-}*/
 
 float fbm(in vec2 p)
 {	
@@ -120,20 +109,18 @@ void main( void )
             
             vec2 p = uv - .5;
             
-            vec3 srcColor = uSourceColor * .3 + .1;//  vec3(.2,0.1,0.4);
+            vec3 srcColor = uSourceColor * .5 + .1;
             
             //noise:
             float rz = dualfbm((0.7 + 0.5 * sin(.1 * time)) * p);
             
             //circle:
-            float brimStrength = 7.0;
+            float brimStrength = 20.0;
             rz *= pow((1.0 - 2.0 * length(p)) * brimStrength, .9);
 
             //final color
-            //getCenterValue(uv - .5);
             vec3 col = srcColor / rz * (1.0 + getCenterValue(uv));
             col=pow(abs(col),vec3(.99));
-            //fragColor = vec4(col,1.);
             
 			result = vec4(col,1.);// getCenterValue(uv - .5);
 		}
