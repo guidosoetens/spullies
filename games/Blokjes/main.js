@@ -1,9 +1,9 @@
+///<reference path="../../phaser/phaser.d.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-///<reference path="../../phaser/phaser.d.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
     var TitleState = (function (_super) {
@@ -25,17 +25,17 @@ var BlokjesGame;
             //this.game.scale.startFullScreen(true);
         };
         return TitleState;
-    }(Phaser.State));
+    })(Phaser.State);
     BlokjesGame.TitleState = TitleState;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
 var TOPROWCOUNT = 3;
-var VISIBLEROWCOUNT = 4; //12;
+var VISIBLEROWCOUNT = 6; //12;
 var ROWCOUNT = VISIBLEROWCOUNT + TOPROWCOUNT; //12 at the bottom
-var COLUMNCOUNT = 4; //6;
+var COLUMNCOUNT = 12; // 6;
 var COLORCODES = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff]; //, 0x00ffff];
 var TICKCOUNT = 1;
-var GRIDWIDTH = 100; // 45;
+var GRIDWIDTH = 50; // 45;
 var NEIGHBORDELTAINDICES = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
 var debugText;
 var noiseSprite;
@@ -119,7 +119,7 @@ var BlokjesGame;
             //debugText = this.blobShader.uniforms.resolution.value.x + " : " + this.blobShader.uniforms.resolution.value.y;
         };
         return Blob;
-    }());
+    })();
     BlokjesGame.Blob = Blob;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -195,7 +195,7 @@ var BlokjesGame;
             return [red, green, blue];
         };
         return BlobRenderer;
-    }());
+    })();
     BlokjesGame.BlobRenderer = BlobRenderer;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -256,7 +256,7 @@ var BlokjesGame;
             //this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
         };
         return BlobTuple;
-    }());
+    })();
     BlokjesGame.BlobTuple = BlobTuple;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -278,7 +278,7 @@ var BlokjesGame;
         GameState.prototype.preload = function () {
             this.game.load.audio("backgroundMusic", ["assets/music.mp3"]);
             this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-            this.game.load.shader("blobShader", 'assets/blobShaderFinal.frag');
+            this.game.load.shader("blobShader", 'assets/blobShader.frag');
             this.game.load.image('blokje', "assets/blokje.png");
             this.game.load.image('galaxy', "assets/galaxy.jpg");
             this.game.load.image('noise', "assets/noise.jpg");
@@ -737,7 +737,7 @@ var BlokjesGame;
             */
         };
         return GameState;
-    }(Phaser.State));
+    })(Phaser.State);
     BlokjesGame.GameState = GameState;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -753,7 +753,7 @@ var BlokjesGame;
             this.game.state.start("GameRunningState", true, true);
         }
         return SimpleGame;
-    }());
+    })();
     BlokjesGame.SimpleGame = SimpleGame;
 })(BlokjesGame || (BlokjesGame = {}));
 window.onload = function () {

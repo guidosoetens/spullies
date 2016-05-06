@@ -39,7 +39,7 @@ module BlokjesGame
         preload() {
              this.game.load.audio("backgroundMusic", ["assets/music.mp3"]);
              this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
-             this.game.load.shader("blobShader", 'assets/blobShaderFinal.frag');
+             this.game.load.shader("blobShader", 'assets/blobShader.frag');
              this.game.load.image('blokje', "assets/blokje.png");
              this.game.load.image('galaxy', "assets/galaxy.jpg");
              this.game.load.image('noise', "assets/noise.jpg");
@@ -49,6 +49,7 @@ module BlokjesGame
             
             this.tickParameter = 0;
             this.totalRowsDrop = 0;
+           
             
             //set component containers:
             var bg = this.game.add.sprite(0,0,'galaxy');
