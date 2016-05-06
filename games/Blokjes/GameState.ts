@@ -55,11 +55,11 @@ module BlokjesGame
             var bg = this.game.add.sprite(0,0,'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
-            bg.alpha = .4;
+            bg.alpha = .8;
             
             this.gridGraphics = this.game.add.graphics(0,0);
-            this.gridGraphics.alpha = 0.2;
-            this.gridGraphics.lineStyle(2, 0xffffff, 1);
+            //this.gridGraphics.lineStyle(1, 0x777777);
+            this.gridGraphics.beginFill(0xaaaaaa, .5);
             var srcX:number = (this.game.width - COLUMNCOUNT * GRIDWIDTH) * 0.5;
             var srcY:number = (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) * 0.5;
             for(var i:number=0; i<ROWCOUNT; ++i) {
@@ -70,24 +70,20 @@ module BlokjesGame
                     var gridLeft = srcX + j * GRIDWIDTH;
                     
                     if(i >= TOPROWCOUNT) {
-                        this.gridGraphics.drawRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH);
+                        this.gridGraphics.drawRoundedRect(gridLeft + 4, gridTop + 4, GRIDWIDTH - 8, GRIDWIDTH - 8, 5);
                     }
                 }
             }
             
-            this.blobRenderer = new BlobRenderer(this.game);
-            
             /*
-            this.blobsContainer = this.game.add.group();
-            var gr = new Phaser.Graphics(this.game);
-            gr.beginFill(0xffffff, 1);
-            gr.drawRect((this.game.width - COLUMNCOUNT * GRIDWIDTH) / 2, (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2, COLUMNCOUNT * GRIDWIDTH, VISIBLEROWCOUNT * GRIDWIDTH);
-            gr.drawRect((this.game.width + COLUMNCOUNT * GRIDWIDTH) / 2, (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2, 300, 300);
-            gr.endFill();
-            this.blobsContainer.mask = gr;
+            var bmd = this.game.add.bitmapData(this.game.width, this.game.height);
+            bmd.fill(255,0,0);
+            bmd.addToWorld();
+            bmd.draw(this.gridGraphics, 0, 0, this.game.width, this.game.height);
             */
-            
             this.graphics = this.game.add.graphics(0, 0);
+            
+            this.blobRenderer = new BlobRenderer(this.game);
             
             //register keyboard events:
             this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -472,7 +468,6 @@ module BlokjesGame
 
         update() {
           
-            
             var dt:number = this.game.time.physicsElapsed;
             
             switch(this.gameState) {
@@ -523,15 +518,9 @@ module BlokjesGame
                 }
             }
             
-            /*
-            this.blobShader.update(this.game.input.mousePointer);
-            this.blobShader.uniforms.yoloSwaggeriez.value = 1.0;
-            if(this.gameState == GAMESTATE_PLAYING)
-                this.blobShader.uniforms.yoloSwaggeriez.value = this.playerBlob.row / rows;
-            */
+            //update graphics:
             
             this.blobRenderer.update();
-            
             this.drawBlobs();
         }
         
@@ -587,54 +576,13 @@ module BlokjesGame
             var gridLeft:number = 0;
             var color:number = 0x0;
             
-            var resolveAlphaFactor:number = this.gameState == GAMESTATE_REMOVING ? this.gameStateParameter : 1;
-            
-            for(var i:number=0; i<ROWCOUNT; ++i) {
-                
-                gridTop = srcY + (i - TOPROWCOUNT) * GRIDWIDTH;
-                
-                for(var j:number=0; j<COLUMNCOUNT; ++j) {
-                    
-                    gridLeft = srcX + j * GRIDWIDTH;
-                    
-                    /*
-                    if(i >= topRowCount) {
-                        this.graphics.lineStyle(3, 0xffffff, 1);
-                        this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
-                        this.graphics.lineStyle(0);
-                    }
-                    */ 
-                    
-                    /*
-                    this.graphics.lineStyle(1, 0xaaaaaa, 1);
-                    this.graphics.drawRect(gridLeft, gridTop, gridWidth, gridWidth);
-                    this.graphics.lineStyle(0);
-                    */
-                    
-                    /*
-                    var blob:Blob = this.slots[i][j];
-                    if(blob != null) {
-                        
-                        var y:number = gridTop;
-                        if(this.gameState == GAMESTATE_DROPPING && blob.dropping) {
-                            
-                            var totalDrop:number = i - blob.dropFromRow;
-                            var dropIdx:number = blob.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
-                            y = srcY + (dropIdx - TOPROWCOUNT) * GRIDWIDTH;
-                        }
-                        
-                        blob.updatePosition(gridLeft, y, resolveAlphaFactor);
-                        
-                        //blob.render(this.graphics, gridLeft + gridWidth / 2, y + gridWidth / 2, resolveAlphaFactor);
-                    }*/
-                }
-            }
-            
             //render next blob:
             var nextX:number = this.game.width / 2 + GRIDWIDTH * COLUMNCOUNT / 2 + 50;
             var nextY:number = this.game.height / 2 - GRIDWIDTH * VISIBLEROWCOUNT / 2;
-            this.graphics.lineStyle(1, 0xaaaaaa, 1);
-            this.graphics.drawRoundedRect(nextX, nextY, 100, 100, 20);
+            this.graphics.lineStyle(3, 0xaaaaaa, 1);
+            this.graphics.beginFill(0x0, .5);
+            this.graphics.drawRoundedRect(nextX - 10, nextY - 10, 120, 120, 20);
+            this.graphics.endFill();
             //this.nextBlob.render(this.graphics, nextX + 50 - GRIDWIDTH / 2, nextY + 50);
             
             //render player blob:

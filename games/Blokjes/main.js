@@ -229,10 +229,10 @@ var BlokjesGame;
             var bg = this.game.add.sprite(0, 0, 'galaxy');
             bg.width = this.game.width;
             bg.height = this.game.height;
-            bg.alpha = .4;
+            bg.alpha = .8;
             this.gridGraphics = this.game.add.graphics(0, 0);
-            this.gridGraphics.alpha = 0.2;
-            this.gridGraphics.lineStyle(2, 0xffffff, 1);
+            //this.gridGraphics.lineStyle(1, 0x777777);
+            this.gridGraphics.beginFill(0xaaaaaa, .5);
             var srcX = (this.game.width - COLUMNCOUNT * GRIDWIDTH) * 0.5;
             var srcY = (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) * 0.5;
             for (var i = 0; i < ROWCOUNT; ++i) {
@@ -240,21 +240,18 @@ var BlokjesGame;
                 for (var j = 0; j < COLUMNCOUNT; ++j) {
                     var gridLeft = srcX + j * GRIDWIDTH;
                     if (i >= TOPROWCOUNT) {
-                        this.gridGraphics.drawRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH);
+                        this.gridGraphics.drawRoundedRect(gridLeft + 4, gridTop + 4, GRIDWIDTH - 8, GRIDWIDTH - 8, 5);
                     }
                 }
             }
-            this.blobRenderer = new BlokjesGame.BlobRenderer(this.game);
             /*
-            this.blobsContainer = this.game.add.group();
-            var gr = new Phaser.Graphics(this.game);
-            gr.beginFill(0xffffff, 1);
-            gr.drawRect((this.game.width - COLUMNCOUNT * GRIDWIDTH) / 2, (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2, COLUMNCOUNT * GRIDWIDTH, VISIBLEROWCOUNT * GRIDWIDTH);
-            gr.drawRect((this.game.width + COLUMNCOUNT * GRIDWIDTH) / 2, (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) / 2, 300, 300);
-            gr.endFill();
-            this.blobsContainer.mask = gr;
+            var bmd = this.game.add.bitmapData(this.game.width, this.game.height);
+            bmd.fill(255,0,0);
+            bmd.addToWorld();
+            bmd.draw(this.gridGraphics, 0, 0, this.game.width, this.game.height);
             */
             this.graphics = this.game.add.graphics(0, 0);
+            this.blobRenderer = new BlokjesGame.BlobRenderer(this.game);
             //register keyboard events:
             this.cursors = this.game.input.keyboard.createCursorKeys();
             var keys = [Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR, Phaser.Keyboard.DOWN];
@@ -592,12 +589,7 @@ var BlokjesGame;
                         break;
                     }
             }
-            /*
-            this.blobShader.update(this.game.input.mousePointer);
-            this.blobShader.uniforms.yoloSwaggeriez.value = 1.0;
-            if(this.gameState == GAMESTATE_PLAYING)
-                this.blobShader.uniforms.yoloSwaggeriez.value = this.playerBlob.row / rows;
-            */
+            //update graphics:
             this.blobRenderer.update();
             this.drawBlobs();
         };
@@ -635,18 +627,13 @@ var BlokjesGame;
             var gridTop = 0;
             var gridLeft = 0;
             var color = 0x0;
-            var resolveAlphaFactor = this.gameState == GAMESTATE_REMOVING ? this.gameStateParameter : 1;
-            for (var i = 0; i < ROWCOUNT; ++i) {
-                gridTop = srcY + (i - TOPROWCOUNT) * GRIDWIDTH;
-                for (var j = 0; j < COLUMNCOUNT; ++j) {
-                    gridLeft = srcX + j * GRIDWIDTH;
-                }
-            }
             //render next blob:
             var nextX = this.game.width / 2 + GRIDWIDTH * COLUMNCOUNT / 2 + 50;
             var nextY = this.game.height / 2 - GRIDWIDTH * VISIBLEROWCOUNT / 2;
-            this.graphics.lineStyle(1, 0xaaaaaa, 1);
-            this.graphics.drawRoundedRect(nextX, nextY, 100, 100, 20);
+            this.graphics.lineStyle(3, 0xaaaaaa, 1);
+            this.graphics.beginFill(0x0, .5);
+            this.graphics.drawRoundedRect(nextX - 10, nextY - 10, 120, 120, 20);
+            this.graphics.endFill();
             //this.nextBlob.render(this.graphics, nextX + 50 - GRIDWIDTH / 2, nextY + 50);
             //render player blob:
             if (this.gameState == GAMESTATE_PLAYING) {
