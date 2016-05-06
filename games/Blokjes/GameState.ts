@@ -57,8 +57,6 @@ module BlokjesGame
             bg.height = this.game.height;
             bg.alpha = .4;
             
-            noiseSprite = new Phaser.Sprite(this.game, 0, 0, 'noise');
-            
             this.gridGraphics = this.game.add.graphics(0,0);
             this.gridGraphics.alpha = 0.2;
             this.gridGraphics.lineStyle(2, 0xffffff, 1);
@@ -103,9 +101,6 @@ module BlokjesGame
             //register mouse/touch events:
             this.input.addMoveCallback(this.onMouseMove, this);
             this.input.onDown.add(this.onMouseDown, this);
-            
-            //reset button:
-            this.game.add.button(0, 0, "button", () => { this.resetGame(); }, this);
             
             var sound = this.game.add.audio('backgroundMusic');
             //sound.play('', 0, .2, true);
@@ -562,38 +557,20 @@ module BlokjesGame
                         }
                         
                         this.blobRenderer.drawBlobAtIndices(iIdx, j, blob);
-                        
-                        //blob.updatePosition(gridLeft, y, resolveAlphaFactor);
-                        
-                        //blob.render(this.graphics, gridLeft + gridWidth / 2, y + gridWidth / 2, resolveAlphaFactor);
                     }
                 }
             }
             
             if(this.gameState == GAMESTATE_PLAYING) {
                 
-                //var t:number = Math.min(1,this.tickParameter * 1.5);
-                var tickBufferOffset:number = Math.sin(Math.min(1,this.tickParameter * 1.5) * .5 * Math.PI);// (1 - Math.cos(this.tickParameter * Math.PI)) / 2;
-                
+                var tickBufferOffset:number = Math.sin(Math.min(1,this.tickParameter * 1.5) * .5 * Math.PI);
                 this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
-                
                 var fracPlayerRow:number = this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1);
                 this.playerBlob.drawTupleAtIndices(this.blobRenderer, fracPlayerRow, this.playerFracColumnBuffer);
-                
-                /*
-                this.blobRenderer.drawBlobAtIndices( this.playerFracColumnBuffer, );
-                
-                //gridTop = srcY + (this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1) - TOPROWCOUNT) * GRIDWIDTH;
-                //gridLeft = srcX + this.playerFracColumnBuffer * GRIDWIDTH;
-                
-                this.playerBlob.render(this.graphics, gridLeft, gridTop);
-                this.graphics.lineStyle(2, 0xffffff, .5);
-                this.graphics.drawRoundedRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH, 10);  
-                
-                this.game.debug.text("ROW: " + this.playerBlob.row.toString(), 0, 50);
-                this.game.debug.text("TICK: " + this.playerCurrentTick.toString(), 0, 100);
-                */
             }
+            
+            //render next blob:
+            this.nextBlob.drawTupleAtIndices(this.blobRenderer, TOPROWCOUNT + 1, COLUMNCOUNT + 1.5);
             
             
             this.blobRenderer.end();
@@ -674,22 +651,7 @@ module BlokjesGame
                 //this.playerBlob.render(this.graphics, gridLeft, gridTop);
                 this.graphics.lineStyle(2, 0xffffff, .5);
                 this.graphics.drawRoundedRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH, 10);  
-                
-                this.game.debug.text("ROW: " + this.playerBlob.row.toString(), 0, 50);
-                this.game.debug.text("TICK: " + this.playerCurrentTick.toString(), 0, 100);
             }
-            
-            this.game.debug.text("DROPS: " +  this.totalRowsDrop, 0, 150);
-            this.game.debug.text("DEBUG: " +  debugText, 0, this.game.height - 20);
-            
-            /*
-            this.graphics.lineStyle(0);
-            this.graphics.beginFill(0x0, 1);
-            this.graphics.drawRect(this.game.width / 2 - columns * gridWidth / 2,
-                                    this.game.height / 2 - (rows - topRowCount) * gridWidth / 2 - 100,
-                                    columns * gridWidth, 100);
-            this.graphics.endFill();
-            */
         }
     }
 }

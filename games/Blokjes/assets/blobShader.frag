@@ -88,21 +88,7 @@ void main( void )
 	
 	float yData = texColor.z;
     float alpha = texture2D(uDataTexture, vec2(texStep, yData)).x;
-	vec3 srcColor = texture2D(uDataTexture, vec2(3.0 * texStep, yData)).xyz;
-	//float clrIdx = data.x;
-	//float alpha = data.y;
-    
-	/*
-    vec3 srcColor = vec3(1,0,0);
-    
-    if(clrIdx < 1.0)
-        srcColor = vec3(0,1,0);
-    else if(clrIdx < 2.0)
-        srcColor = vec3(0,0,1);
-    else if(clrIdx < 3.0)
-        srcColor = vec3(1,1,0);
-	*/
-    
+	vec3 srcColor =  .2 + .8 * texture2D(uDataTexture, vec2(3.0 * texStep, yData)).xyz;
 	
 	vec2 to = 2.0 * uv - 1.0;
 	float len = length(to);
@@ -111,7 +97,6 @@ void main( void )
 	float bigFactor = sin(time);
 	
 	vec4 result = vec4(1);
-	
 	float outAlpha = 1.0;
 	
 	if(len < 1.0) {
@@ -119,30 +104,27 @@ void main( void )
 		float offset = 0.05 + 0.02 * bigFactor;
 		float rad = (1.0 + offset) * len;
 		if(rad > 1.0) {
-			outAlpha = 1.0 - (rad - 1.0) / offset;
+			result.a = 1.0 - (rad - 1.0) / offset;
 		}
 		
 		vec2 p = uv - .5;
-		
-		srcColor = srcColor * .5 + .1;
 		
 		//noise:
 		float rz = dualfbm((0.7 + 0.5 * sin(.1 * time)) * p);
 		
 		//circle:
-		float brimStrength = 10.0 + 3.0 * sin(time);
-		rz *= pow((1.0 - 2.0 * length(p)) * brimStrength, .9);
+		float brimStrength = 50.0;// 500.0;// 10.0 + 3.0 * sin(time);
+		rz *= pow((1.0 - 2.0 * length(p)) * brimStrength, 0.8);
 
 		//final color
 		vec3 col = srcColor / rz * (1.0 + getCenterValue(uv));
-		col=pow(abs(col),vec3(.99));
-		result = vec4(col,1.);
+		result.xyz = col;// pow(abs(col),vec3(.5));
 	}
 	else
 		discard;
 	
 	result = clamp(result, 0.0, 1.0);
-	float calcAlpha = result.a * alpha * outAlpha;// * texColor.a;
+	float calcAlpha = result.a * alpha;// * texColor.a;
 		
 	gl_FragColor = vec4(calcAlpha * result.rgb, calcAlpha);
 }

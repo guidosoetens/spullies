@@ -9,7 +9,7 @@ module BlokjesGame
         game:Phaser.Game;
         
         topLeft:Phaser.Point;
-        stampImage:Phaser.Image;
+        blobStamp:Phaser.BitmapData;
         uvBmp:Phaser.BitmapData;
         shader:Phaser.Filter;
         dataTexture:Phaser.BitmapData;
@@ -17,40 +17,38 @@ module BlokjesGame
         blobIndex:number;
         resolveAlphaFactor:number;
         
-        
-        
-        
         constructor(game:Phaser.Game) {
             
             this.game = game;
             
             //Create Stamp:
-            var blobStamp = game.make.bitmapData(256, 256);
-            blobStamp.fill(0, 0, 0, 0);
-            for(var i:number=0; i<256.0; ++i) {
-                for(var j:number=0; j<256.0; ++j) {
-                    blobStamp.setPixel(j, i, j, i, 0, false);
+            this.blobStamp = game.make.bitmapData(GRIDWIDTH, GRIDWIDTH);
+            this.blobStamp.fill(0, 0, 0, 0);
+            var delta:number = 255.0 / (GRIDWIDTH - 1);
+            for(var i:number=0; i<GRIDWIDTH; ++i) {
+                for(var j:number=0; j<GRIDWIDTH; ++j) {
+                    this.blobStamp.setPixel(j, i, j * delta, i * delta, 0, false);
                 }
             }
-            blobStamp.setPixel(0,0,0,0,0);
-            this.stampImage = game.add.image(0, 0, blobStamp);
+            this.blobStamp.setPixel(0,0,0,0,0);
             
+            //make textures (noise + data texture):
             this.dataTexture = game.make.bitmapData(256, 256);
             this.dataTexture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
-            var dataSprite = this.game.add.sprite(0, 0, this.dataTexture);
+            this.game.add.image(0,0,this.dataTexture);//.alpha = .2;
             
-            var noiseSprite = this.game.add.sprite(0,0,'noise');// new Phaser.Sprite(this.game, 0, 0, 'noise');
-            
+            var noiseSprite = game.add.sprite(-256,0,'noise');
+           
+            //set main BitmapData:
             this.uvBmp = game.add.bitmapData(game.width, game.height);
             var uvBmpContainerSprite = game.add.sprite(0, 0, this.uvBmp);
             this.uvBmp.context.globalCompositeOperation = 'lighter';
             
             //init shader:
             this.shader = new Phaser.Filter(game, null, game.cache.getShader('blobShader'));
-            this.shader.uniforms.uNoiseTexture =  { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } };
-            this.shader.uniforms.uDataTexture =  { type: 'sampler2D', value: this.dataTexture, textureData: { repeat: false } };
+            this.shader.uniforms.uNoiseTexture = { type: 'sampler2D', value: noiseSprite.texture, textureData: { repeat: true } };
+            this.shader.uniforms.uDataTexture = { type: 'sampler2D', value: this.dataTexture, textureData: { repeat: false } };
             uvBmpContainerSprite.filters = [ this.shader ];
-            
             
             this.topLeft = new Phaser.Point();
             this.topLeft.x = (this.game.width - COLUMNCOUNT * GRIDWIDTH) / 2;
@@ -75,6 +73,8 @@ module BlokjesGame
             
             var y:number = this.topLeft.y + (i - TOPROWCOUNT) * GRIDWIDTH;
             var x:number = this.topLeft.x + j * GRIDWIDTH;
+            x = Math.round(x);
+            y = Math.round(y);
             
             //set alpha in data texture:
             this.dataTexture.setPixel(0, this.blobIndex, alpha * 255, 0, 0, false);
@@ -84,7 +84,7 @@ module BlokjesGame
             this.dataTexture.setPixel(1, this.blobIndex, cls[0] * 255, cls[1] * 255, cls[2] * 255, false);
             
             //set UV + index data:
-            this.uvBmp.draw(this.stampImage, x, y, GRIDWIDTH, GRIDWIDTH);
+            this.uvBmp.draw(this.blobStamp, x, y, GRIDWIDTH, GRIDWIDTH);
             this.uvBmp.rect(x, y, GRIDWIDTH, GRIDWIDTH, 'rgba(0,0,' + this.blobIndex + ',1.0)');
             
             ++this.blobIndex;
