@@ -58,8 +58,8 @@ module BlokjesGame
             bg.alpha = .8;
             
             this.gridGraphics = this.game.add.graphics(0,0);
-            //this.gridGraphics.lineStyle(1, 0x777777);
-            this.gridGraphics.beginFill(0xaaaaaa, .5);
+            this.gridGraphics.lineStyle(1, 0x777777);
+            this.gridGraphics.beginFill(0x0, .3);
             var srcX:number = (this.game.width - COLUMNCOUNT * GRIDWIDTH) * 0.5;
             var srcY:number = (this.game.height - VISIBLEROWCOUNT * GRIDWIDTH) * 0.5;
             for(var i:number=0; i<ROWCOUNT; ++i) {
@@ -70,7 +70,7 @@ module BlokjesGame
                     var gridLeft = srcX + j * GRIDWIDTH;
                     
                     if(i >= TOPROWCOUNT) {
-                        this.gridGraphics.drawRoundedRect(gridLeft + 4, gridTop + 4, GRIDWIDTH - 8, GRIDWIDTH - 8, 5);
+                        this.gridGraphics.drawRoundedRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH, 5);
                     }
                 }
             }
@@ -600,6 +600,8 @@ module BlokjesGame
                 this.graphics.lineStyle(2, 0xffffff, .5);
                 this.graphics.drawRoundedRect(gridLeft, gridTop, GRIDWIDTH, GRIDWIDTH, 10);  
             }
+            
+            this.game.debug.text("DEBUG: " + debugText, 0, this.game.height - 30);
         }
     }
 }

@@ -35,7 +35,7 @@ module BlokjesGame
             //make textures (noise + data texture):
             this.dataTexture = game.make.bitmapData(256, 256);
             this.dataTexture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
-            this.game.add.image(0,0,this.dataTexture);//.alpha = .2;
+            this.game.add.image(-256,0,this.dataTexture);//.alpha = .2;
             
             var noiseSprite = game.add.sprite(-256,0,'noise');
            
@@ -64,6 +64,14 @@ module BlokjesGame
             this.uvBmp.fill(0,0,0,0);
             this.blobIndex = 0;
             this.resolveAlphaFactor = resolveAlphaFactor;
+            this.drawDebugBlob();
+        }
+        
+        drawDebugBlob() {
+            var i:number = TOPROWCOUNT - (.5 * this.game.height / GRIDWIDTH - .5 * VISIBLEROWCOUNT);
+            var j:number = -(.5 * this.game.width / GRIDWIDTH - .5 * COLUMNCOUNT)
+            debugText = "[" + i + ", " + j + "]";
+            this.drawBlobAtIndices(i,j,new Blob(this.game));
         }
         
         drawBlobAtIndices(i:number, j:number, blob:Blob) {
