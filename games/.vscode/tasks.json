@@ -4,7 +4,7 @@
     "version": "0.1.0",
     "command": "tsc",
     "isShellCommand": true,
-    "args": [ "--out", "UniformKernel/main.js", "UniformKernel/main.ts", "--target", "ES5" ],
+    "args": [ "--out", "TvShaderTest/main.js", "TvShaderTest/main.ts", "--target", "ES5" ],
     "showOutput": "always",
     "problemMatcher": "$tsc"
 }
