@@ -120,16 +120,20 @@ vec4 scanlineEffect(vec2 vUv, vec4 clr) {
 
 			}
             */
-            
+            /*
             float gray = cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11;
             gray = .3 + .6 * gray;
             cResult = .3 * gray * vec3(.6, 1.0, 0.8) + .15 * cResult;// vec3( cResult.r * 0.3 + cResult.g * 0.6 + cResult.b * 0.3 );
-            
+            */
             vec3 termColor = vec3(0.7, 0.95, 1.0);
             termColor = vec3(1.0, 0.7, 0.4);    //ORANGE    (2.5)
-            termColor = vec3(0.3, 0.85, 1.0);   //BLUE
+            //termColor = vec3(0.3, 0.85, 1.0);   //BLUE
             //termColor = vec3(0.3, 1.0, 0.5);    //GREEN
             //termColor = vec3(0.95, 0.8, 1.0);   //LIGHTPINK
+            
+            float gray = cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11;
+            gray = .3 + .6 * gray;
+            cResult = .3 * gray * termColor + .15 * cResult;// vec3( cResult.r * 0.3 + cResult.g * 0.6 + cResult.b * 0.3 );
             
             vec2 hudUv = vUv;
             float timeFrac = fract(time / 10.0);

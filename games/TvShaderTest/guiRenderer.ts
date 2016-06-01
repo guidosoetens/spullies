@@ -95,7 +95,7 @@ module BlokjesGame
                         starString += "☆";
                     txt = this.game.make.text(x, y, starString, starStyle);
                     txt.addColor('#' + lineColor.toString(16), 0);
-                    txt.addColor('#444444', starCount);
+                    //txt.addColor('#888888', starCount);
                     txt.y -= .5 * txt.height - 15;
                     txt.x -= .5 * txt.width;
                     group.addChild(txt);
