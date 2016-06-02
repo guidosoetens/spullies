@@ -13,7 +13,7 @@ uniform sampler2D uBackground;
 uniform sampler2D uMenuTexture;
 uniform sampler2D uTextTexture;
 
-const float barrelPower = 5.5;
+const float barrelPower = 10.5;
 
 const float distortion = 0.4;
 const float distortion2 = 0.8;
@@ -135,8 +135,8 @@ vec4 scanlineEffect(vec2 vUv, vec4 clr) {
             
             vec2 hudUv = vUv;
             float timeFrac = fract(time / 10.0);
-            if(timeFrac < 0.2) 
-                hudUv += vec2(.5 - .5 * cos(pi * timeFrac / 0.2), 0.0);
+            if(timeFrac < 0.05) 
+                hudUv += vec2(.5 - .5 * cos(pi * timeFrac / 0.05), 0.0);
             hudUv.x = fract(hudUv.x);
             
             float b = max(texture2D(uMenuTexture,  hudUv).x, texture2D(uTextTexture,  hudUv).x);

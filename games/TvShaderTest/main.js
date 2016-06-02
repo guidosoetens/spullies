@@ -78,18 +78,18 @@ var BlokjesGame;
                 }
             }
             this.renderHex(menuGraphics, 0xffffff, 160, 160, 120);
-            txt = this.game.make.text(160, 160, "➜", arrowStyle);
+            txt = this.game.make.text(160, 160, "▶", arrowStyle);
             txt.scale.x = -1;
-            txt.y -= .5 * txt.height;
-            txt.x -= .5 * txt.width;
+            txt.y -= .45 * txt.height;
+            txt.x -= .4 * txt.width;
             group.addChild(txt);
             this.renderHex(menuGraphics, 0xffffff, this.game.width - 160, 160, 120);
-            txt = this.game.make.text(this.game.width - 160, 160, "➜", arrowStyle);
-            txt.y -= .5 * txt.height;
-            txt.x -= .5 * txt.width;
+            txt = this.game.make.text(this.game.width - 160, 160, "▶", arrowStyle);
+            txt.y -= .45 * txt.height;
+            txt.x -= .4 * txt.width;
             group.addChild(txt);
             this.renderHex(menuGraphics, 0xffffff, 310, this.game.height - 130, 140);
-            txt = this.game.make.text(310, this.game.height - 130, "⏩", style);
+            txt = this.game.make.text(310, this.game.height - 130, "⏰", style);
             txt.y -= .5 * txt.height;
             txt.x -= .5 * txt.width;
             group.addChild(txt);
@@ -100,7 +100,7 @@ var BlokjesGame;
             group.addChild(txt);
         };
         return GuiRenderer;
-    }());
+    })();
     BlokjesGame.GuiRenderer = GuiRenderer;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -147,7 +147,7 @@ var BlokjesGame;
         SimpleGame.prototype.render = function () {
         };
         return SimpleGame;
-    }());
+    })();
     BlokjesGame.SimpleGame = SimpleGame;
 })(BlokjesGame || (BlokjesGame = {}));
 window.onload = function () {
