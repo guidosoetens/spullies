@@ -34,7 +34,7 @@ const vec3 TERM_ORANGE = vec3(1.0, 0.7, 0.4);    //ORANGE    (2.5)
 const vec3 TERM_BLUE = vec3(0.3, 0.85, 1.0);   //BLUE
 const vec3 TERM_GREEN = vec3(0.3, 1.0, 0.5);    //GREEN
 const vec3 TERM_PINK = vec3(0.95, 0.8, 1.0);   //LIGHTPINK
-const vec3 TERMINAL_COLOR = TERM_ORANGE;
+const vec3 TERMINAL_COLOR = TERM_GREEN;
 		
 // Start Ashima 2D Simplex Noise
 
