@@ -1,10 +1,16 @@
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 ///<reference path="../../phaser/phaser.d.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
     var WIDTH = 1024;
     var HEIGHT = 768;
     var GuiRenderer = (function () {
-        function GuiRenderer() {
+        function GuiRenderer(game) {
+            this.game = game;
         }
         GuiRenderer.prototype.renderHex = function (gr, lineColor, x, y, width) {
             var dAng = 2 * Math.PI / 6;
@@ -18,15 +24,45 @@ var BlokjesGame;
             }
             gr.endFill();
         };
-        GuiRenderer.prototype.renderGui = function (game, menuGraphics, group) {
-            this.game = game;
+        GuiRenderer.prototype.renderPause = function (menuGraphics, group) {
+            menuGraphics.clear();
+            group.removeAll(true);
             //text container:
             var style = { font: "65px Courier New", fill: "#ffffff", align: "center" };
             var scoreStyle = { font: "32px Courier New", fill: "#ffffff", align: "center" };
             var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
             var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
             var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
-            var txt = this.game.make.text(this.game.width / 2, 160, "W 1", style);
+            var txt = this.game.make.text(this.game.width / 2, 160, "PAUSE", style);
+            txt.x -= .5 * txt.width;
+            txt.y -= .5 * txt.height;
+            txt.fontWeight = 'bold';
+            var groupBg = this.game.make.graphics(0, 0);
+            groupBg.beginFill(0);
+            groupBg.drawRect(0, 0, WIDTH, HEIGHT);
+            group.addChild(groupBg);
+            group.addChild(txt);
+            //create levels grid:
+            menuGraphics.beginFill(0);
+            menuGraphics.drawRect(0, 0, WIDTH, HEIGHT);
+            menuGraphics.endFill();
+            //menuGraphics.lineStyle(4, 0x555555, 255);
+            //menuGraphics.drawRect(20, 100, WIDTH - 40, 70);
+            menuGraphics.lineStyle(4, 0xffffff, 255);
+            menuGraphics.drawRect(20, 20, WIDTH - 40, HEIGHT - 40);
+            menuGraphics.lineStyle(6, 0xffffff, 255);
+            menuGraphics.drawRect(30, 30, WIDTH - 60, HEIGHT - 60);
+        };
+        GuiRenderer.prototype.renderLevelSelect = function (menuGraphics, group) {
+            menuGraphics.clear();
+            group.removeAll(true);
+            //text container:
+            var style = { font: "65px Courier New", fill: "#ffffff", align: "center" };
+            var scoreStyle = { font: "32px Courier New", fill: "#ffffff", align: "center" };
+            var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
+            var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
+            var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
+            var txt = this.game.make.text(this.game.width / 2, 160, "WORLD 1", style);
             txt.x -= .5 * txt.width;
             txt.y -= .5 * txt.height;
             txt.fontWeight = 'bold';
@@ -80,12 +116,12 @@ var BlokjesGame;
             this.renderHex(menuGraphics, 0xffffff, 160, 160, 120);
             txt = this.game.make.text(160, 160, "▶", arrowStyle);
             txt.scale.x = -1;
-            txt.y -= .45 * txt.height;
+            txt.y -= .5 * txt.height;
             txt.x -= .4 * txt.width;
             group.addChild(txt);
             this.renderHex(menuGraphics, 0xffffff, this.game.width - 160, 160, 120);
             txt = this.game.make.text(this.game.width - 160, 160, "▶", arrowStyle);
-            txt.y -= .45 * txt.height;
+            txt.y -= .5 * txt.height;
             txt.x -= .4 * txt.width;
             group.addChild(txt);
             this.renderHex(menuGraphics, 0xffffff, 310, this.game.height - 130, 140);
@@ -100,54 +136,86 @@ var BlokjesGame;
             group.addChild(txt);
         };
         return GuiRenderer;
-    })();
+    }());
     BlokjesGame.GuiRenderer = GuiRenderer;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="guiRenderer.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
+    var MainState = (function (_super) {
+        __extends(MainState, _super);
+        function MainState() {
+            _super.call(this);
+        }
+        MainState.prototype.preload = function () {
+            this.game.load.shader("tvShader", 'tvShader.frag');
+            this.game.load.image("background", "background.png");
+            this.game.load.image("button", "btn.png");
+        };
+        MainState.prototype.create = function () {
+            //background image:
+            var img = this.game.add.image(0, 0, "background");
+            //create levels grid:
+            this.textGroup = this.game.add.group();
+            this.menuGraphics = this.game.make.graphics(0, 0);
+            this.renderer = new BlokjesGame.GuiRenderer(this.game);
+            //renderer.renderGui(menuGraphics, group);
+            //create shader
+            this.shader = new Phaser.Filter(this.game, null, this.game.cache.getShader('tvShader'));
+            this.shader.uniforms.uBackground = { type: 'sampler2D', value: img.texture, textureData: { repeat: false } };
+            //render shader on quad:
+            var gr = this.game.add.graphics(0, 0);
+            gr.beginFill(0x0);
+            gr.drawRect(0, 0, this.game.width, this.game.height);
+            gr.endFill();
+            gr.filters = [this.shader];
+            var funcs = [this.renderLevelSelect, this.renderPause, this.unimplClick];
+            for (var i = 0; i < 3; ++i) {
+                var btn = this.game.add.button(0, this.game.height, 'button', funcs[i], this);
+                btn.scale = new Phaser.Point(.25, .25);
+                btn.y -= btn.height + 5;
+                btn.x = 5 + i * (btn.width + 5);
+            }
+            this.renderLevelSelect();
+        };
+        MainState.prototype.unimplClick = function () {
+            alert('not yet implemented...');
+        };
+        MainState.prototype.bindTextures = function () {
+            this.shader.uniforms.uMenuTexture = { type: 'sampler2D', value: this.menuGraphics.generateTexture(), textureData: { repeat: false } };
+            this.shader.uniforms.uTextTexture = { type: 'sampler2D', value: this.textGroup.generateTexture(), textureData: { repeat: false } };
+        };
+        MainState.prototype.renderLevelSelect = function () {
+            this.renderer.renderLevelSelect(this.menuGraphics, this.textGroup);
+            this.bindTextures();
+        };
+        MainState.prototype.renderPause = function () {
+            this.renderer.renderPause(this.menuGraphics, this.textGroup);
+            this.bindTextures();
+        };
+        MainState.prototype.render = function () {
+        };
+        MainState.prototype.update = function () {
+            this.shader.update(this.game.input.mousePointer);
+        };
+        return MainState;
+    }(Phaser.State));
+    BlokjesGame.MainState = MainState;
+})(BlokjesGame || (BlokjesGame = {}));
+///<reference path="../../phaser/phaser.d.ts"/>
+///<reference path="MainState.ts"/>
+var BlokjesGame;
+(function (BlokjesGame) {
     var WIDTH = 1024;
     var HEIGHT = 768;
     var SimpleGame = (function () {
         function SimpleGame() {
-            this.game = new Phaser.Game(WIDTH, HEIGHT, Phaser.AUTO, 'content', { preload: this.preload, create: this.create, update: this.update, preRender: this.preRender, render: this.render });
+            this.game = new Phaser.Game(WIDTH, HEIGHT, Phaser.AUTO, 'content');
+            this.game.state.add("MainState", BlokjesGame.MainState, true);
         }
-        SimpleGame.prototype.preload = function () {
-            this.game.load.shader("tvShader", 'tvShader.frag');
-            this.game.load.image("background", "background.png");
-        };
-        SimpleGame.prototype.doSomething = function () {
-        };
-        SimpleGame.prototype.create = function () {
-            //background image:
-            var img = this.game.add.image(0, 0, "background");
-            //create levels grid:
-            var group = this.game.add.group();
-            var menuGraphics = this.game.make.graphics(0, 0);
-            var renderer = new BlokjesGame.GuiRenderer();
-            renderer.renderGui(this.game, menuGraphics, group);
-            //create shader
-            this.shader = new Phaser.Filter(this.game, null, this.game.cache.getShader('tvShader'));
-            this.shader.uniforms.uBackground = { type: 'sampler2D', value: img.texture, textureData: { repeat: false } };
-            this.shader.uniforms.uMenuTexture = { type: 'sampler2D', value: menuGraphics.generateTexture(), textureData: { repeat: false } };
-            this.shader.uniforms.uTextTexture = { type: 'sampler2D', value: group.generateTexture(), textureData: { repeat: false } };
-            //render shader on quad:
-            var gr = this.game.add.graphics(0, 0);
-            gr.beginFill(0x0);
-            gr.drawRect(0, 0, WIDTH, HEIGHT);
-            gr.endFill();
-            gr.filters = [this.shader];
-        };
-        SimpleGame.prototype.update = function () {
-            this.shader.update(this.game.input.mousePointer);
-        };
-        SimpleGame.prototype.preRender = function () {
-        };
-        SimpleGame.prototype.render = function () {
-        };
         return SimpleGame;
-    })();
+    }());
     BlokjesGame.SimpleGame = SimpleGame;
 })(BlokjesGame || (BlokjesGame = {}));
 window.onload = function () {

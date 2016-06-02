@@ -17,13 +17,24 @@ const float barrelPower = 10.5;
 
 const float distortion = 0.4;
 const float distortion2 = 0.8;
-const float speed = 0.05;
+const float speed = 0.02;
 
 const float nIntensity = 0.1;
 const float sIntensity = 0.8;
 const float sCount = 800.0; //4096
 
 const float pi = 3.14159265359;
+
+const int kernelSideWidth = 2;
+const int kStart = -kernelSideWidth;
+const int kEnd = kernelSideWidth + 1;
+const int kMaxWeight = 1 + 2 * kernelSideWidth;
+
+const vec3 TERM_ORANGE = vec3(1.0, 0.7, 0.4);    //ORANGE    (2.5)
+const vec3 TERM_BLUE = vec3(0.3, 0.85, 1.0);   //BLUE
+const vec3 TERM_GREEN = vec3(0.3, 1.0, 0.5);    //GREEN
+const vec3 TERM_PINK = vec3(0.95, 0.8, 1.0);   //LIGHTPINK
+const vec3 TERMINAL_COLOR = TERM_ORANGE;
 		
 // Start Ashima 2D Simplex Noise
 
@@ -74,6 +85,7 @@ float snoise(vec2 v)
     return 130.0 * dot(m, g);
 }
 
+/*
 vec4 getTvColor(vec2 uv) {
     
     float ty = time*speed;
@@ -88,8 +100,52 @@ vec4 getTvColor(vec2 uv) {
     return  texture2D(uBackground,  vec2(fract(uv.x + offset), uv.y));
 
 }
+*/
 
-vec4 scanlineEffect(vec2 vUv, vec4 clr) {
+vec2 convertToJitterUv(vec2 uv) {
+    
+    float ty = time*speed;
+    float yt = uv.y - ty;
+    float offset = snoise(vec2(yt*3.0,0.0))*0.2;
+    offset = offset*distortion * offset*distortion * offset;
+    offset += snoise(vec2(yt*50.0,0.0))*distortion2*0.001;
+    return vec2(fract(uv.x + offset), uv.y);
+    
+}
+
+float sampleGuiBrightness(vec2 uv) {
+    
+    vec2 step = vec2(0.5 / resolution.x, 0.5 / resolution.y);
+    
+    float sumVal = 0.0;
+    float sumWeight = 0.0;
+    
+    for(int i=kStart; i<kEnd; ++i) {
+        
+        for(int j=kStart; j<kEnd; ++j) {
+            
+            vec2 sUv = uv + vec2(j, i) * step;
+            float b = max(texture2D(uMenuTexture,  sUv).x, texture2D(uTextTexture,  sUv).x);
+            int weight = kMaxWeight;
+            weight -= (i < 0) ? -i : i;
+            weight -= (j < 0) ? -j : j;
+            //weight = weight * weight * weight;
+            
+            if(i == 0 && j == 0)
+                weight *= 10;
+            
+            
+            sumVal += b * float(weight);
+            sumWeight += float(weight);
+        }
+    }
+    
+    return sumVal / sumWeight;
+}
+
+vec4 scanlineEffect(vec2 vUv) {
+    
+    vec4 clr = texture2D(uBackground, vUv);
     
     
             // make some noise
@@ -109,29 +165,17 @@ vec4 scanlineEffect(vec2 vUv, vec4 clr) {
 			// interpolate between source and result by intensity
 			cResult = clr.rgb + clamp( nIntensity, 0.0,1.0 ) * ( cResult - clr.rgb );
 
-             
-            /* 
-			// convert to grayscale if desired
-			if( true ) {
-
-				cResult = .25 * cResult + .3 * vec3( cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11 );
-
-			}
-            */
             /*
-            float gray = cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11;
-            gray = .3 + .6 * gray;
-            cResult = .3 * gray * vec3(.6, 1.0, 0.8) + .15 * cResult;// vec3( cResult.r * 0.3 + cResult.g * 0.6 + cResult.b * 0.3 );
-            */
             vec3 termColor = vec3(0.7, 0.95, 1.0);
             termColor = vec3(1.0, 0.7, 0.4);    //ORANGE    (2.5)
-            termColor = vec3(0.3, 0.85, 1.0);   //BLUE
+            //termColor = vec3(0.3, 0.85, 1.0);   //BLUE
             //termColor = vec3(0.3, 1.0, 0.5);    //GREEN
             //termColor = vec3(0.95, 0.8, 1.0);   //LIGHTPINK
+            */
             
             float gray = cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11;
             gray = .3 + .6 * gray;
-            cResult = .3 * gray * termColor + .15 * cResult;// vec3( cResult.r * 0.3 + cResult.g * 0.6 + cResult.b * 0.3 );
+            cResult = .3 * gray * TERMINAL_COLOR + .15 * cResult;// vec3( cResult.r * 0.3 + cResult.g * 0.6 + cResult.b * 0.3 );
             
             vec2 hudUv = vUv;
             float timeFrac = fract(time / 10.0);
@@ -139,9 +183,10 @@ vec4 scanlineEffect(vec2 vUv, vec4 clr) {
                 hudUv += vec2(.5 - .5 * cos(pi * timeFrac / 0.05), 0.0);
             hudUv.x = fract(hudUv.x);
             
-            float b = max(texture2D(uMenuTexture,  hudUv).x, texture2D(uTextTexture,  hudUv).x);
+            float backB = sampleGuiBrightness(vec2(.5) + 1.075 * (hudUv - vec2(.5)));
+            float b = .1 * backB + sampleGuiBrightness(hudUv);// max(texture2D(uMenuTexture,  hudUv).x, texture2D(uTextTexture,  hudUv).x);
             b = 2.0 * clamp(b * (.6 + .4 * sc.y * sc.x), 0.0, 1.0);
-            cResult = b * termColor + (1.0-b) * cResult;
+            cResult = b * TERMINAL_COLOR + (1.0-b) * cResult;
 
 			return  vec4( cResult, clr.a );
 }
@@ -185,8 +230,9 @@ void main( void )
         gl_FragColor = vec4(0, 0, 0, 1);
     else {
         
-        vec4 tvClr = getTvColor(uv);
-        gl_FragColor = scanlineEffect(uv, tvClr);
+        vec2 jUv = convertToJitterUv(uv);
+        //vec4 tvClr = getTvColor(uv);
+        gl_FragColor = scanlineEffect(jUv);
         
         if(offset < .02) {
             float b = 1.0 - offset / .02;

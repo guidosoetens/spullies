@@ -9,8 +9,8 @@ module BlokjesGame
         
         game:Phaser.Game;
         
-        constructor() {
-            
+        constructor(game:Phaser.Game) {
+            this.game = game;
         }
         
         renderHex(gr:Phaser.Graphics, lineColor:number, x:number, y:number, width:number) {
@@ -31,9 +31,9 @@ module BlokjesGame
             
         }
         
-        renderGui(game:Phaser.Game, menuGraphics:Phaser.Graphics, group:Phaser.Group) {
-            
-            this.game = game;
+        renderPause(menuGraphics:Phaser.Graphics, group:Phaser.Group) {
+            menuGraphics.clear();
+            group.removeAll(true);
             
             //text container:
             var style = { font: "65px Courier New", fill: "#ffffff", align: "center" };
@@ -41,7 +41,41 @@ module BlokjesGame
             var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
             var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
             var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
-            var txt = this.game.make.text(this.game.width / 2, 160, "W 1", style);
+            var txt = this.game.make.text(this.game.width / 2, 160, "PAUSE", style);
+            txt.x -= .5 * txt.width;
+            txt.y -= .5 * txt.height;
+            txt.fontWeight = 'bold';
+            var groupBg = this.game.make.graphics(0,0);
+            groupBg.beginFill(0);
+            groupBg.drawRect(0,0,WIDTH,HEIGHT);
+            group.addChild(groupBg);
+            group.addChild(txt);
+            
+            //create levels grid:
+            menuGraphics.beginFill(0);
+            menuGraphics.drawRect(0,0,WIDTH,HEIGHT);
+            menuGraphics.endFill();
+            
+            //menuGraphics.lineStyle(4, 0x555555, 255);
+            //menuGraphics.drawRect(20, 100, WIDTH - 40, 70);
+            menuGraphics.lineStyle(4, 0xffffff, 255);
+            menuGraphics.drawRect(20, 20, WIDTH - 40,HEIGHT - 40);
+            menuGraphics.lineStyle(6, 0xffffff, 255);
+            menuGraphics.drawRect(30, 30, WIDTH - 60,HEIGHT - 60);
+        }
+        
+        renderLevelSelect(menuGraphics:Phaser.Graphics, group:Phaser.Group) {
+            
+            menuGraphics.clear();
+            group.removeAll(true);
+            
+            //text container:
+            var style = { font: "65px Courier New", fill: "#ffffff", align: "center" };
+            var scoreStyle = { font: "32px Courier New", fill: "#ffffff", align: "center" };
+            var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
+            var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
+            var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
+            var txt = this.game.make.text(this.game.width / 2, 160, "WORLD 1", style);
             txt.x -= .5 * txt.width;
             txt.y -= .5 * txt.height;
             txt.fontWeight = 'bold';
@@ -105,13 +139,13 @@ module BlokjesGame
             this.renderHex(menuGraphics, 0xffffff, 160, 160, 120);
             txt = this.game.make.text(160, 160, "▶", arrowStyle);
             txt.scale.x = -1;
-            txt.y -= .45 * txt.height;
+            txt.y -= .5 * txt.height;
             txt.x -= .4 * txt.width;
             group.addChild(txt);
                     
             this.renderHex(menuGraphics, 0xffffff, this.game.width - 160, 160, 120);
             txt = this.game.make.text(this.game.width - 160, 160, "▶", arrowStyle);
-            txt.y -= .45 * txt.height;
+            txt.y -= .5 * txt.height;
             txt.x -= .4 * txt.width;
             group.addChild(txt);
             
