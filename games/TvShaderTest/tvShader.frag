@@ -18,7 +18,6 @@ const float barrelPower = 5.5;
 const float distortion = 0.4;
 const float distortion2 = 0.8;
 const float speed = 0.05;
-const float rollSpeed = 0.0;
 
 const float nIntensity = 0.1;
 const float sIntensity = 0.8;
@@ -77,7 +76,6 @@ float snoise(vec2 v)
 
 vec4 getTvColor(vec2 uv) {
     
-
     float ty = time*speed;
     float yt = uv.y - ty;
     //smooth distortion
@@ -87,7 +85,7 @@ vec4 getTvColor(vec2 uv) {
     //add fine grain distortion
     offset += snoise(vec2(yt*50.0,0.0))*distortion2*0.001;
     //combine distortion on X with roll on Y
-    return  texture2D(uBackground,  vec2(fract(uv.x + offset),fract(uv.y-time*rollSpeed) ));
+    return  texture2D(uBackground,  vec2(fract(uv.x + offset), uv.y));
 
 }
 
@@ -127,7 +125,7 @@ vec4 scanlineEffect(vec2 vUv, vec4 clr) {
             */
             vec3 termColor = vec3(0.7, 0.95, 1.0);
             termColor = vec3(1.0, 0.7, 0.4);    //ORANGE    (2.5)
-            //termColor = vec3(0.3, 0.85, 1.0);   //BLUE
+            termColor = vec3(0.3, 0.85, 1.0);   //BLUE
             //termColor = vec3(0.3, 1.0, 0.5);    //GREEN
             //termColor = vec3(0.95, 0.8, 1.0);   //LIGHTPINK
             
