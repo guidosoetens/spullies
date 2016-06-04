@@ -33,7 +33,7 @@ var BlokjesGame;
             var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
             var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
             var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
-            var txt = this.game.make.text(this.game.width / 2, 160, "PAUSE", style);
+            var txt = this.game.make.text(this.game.width / 2, 160, "- PAUSE -", style);
             txt.x -= .5 * txt.width;
             txt.y -= .5 * txt.height;
             txt.fontWeight = 'bold';
@@ -150,41 +150,59 @@ var BlokjesGame;
         }
         MainState.prototype.preload = function () {
             this.game.load.shader("tvShader", 'tvShader.frag');
+            this.game.load.shader("bgShader", 'backgroundShader.frag');
             this.game.load.image("background", "background.png");
             this.game.load.image("button", "btn.png");
         };
         MainState.prototype.create = function () {
+            /*
             //background image:
-            var img = this.game.add.image(0, 0, "background");
+            var img = this.game.add.image(0,0,"background");
+            */
+            //background graphics:
+            var bgGraphics = this.game.add.graphics(0, 0);
+            bgGraphics.beginFill(0xff0000);
+            bgGraphics.drawRect(0, 0, this.game.width, this.game.height);
+            bgGraphics.endFill();
             //create levels grid:
             this.textGroup = this.game.add.group();
             this.menuGraphics = this.game.make.graphics(0, 0);
             this.renderer = new BlokjesGame.GuiRenderer(this.game);
             //renderer.renderGui(menuGraphics, group);
-            //create shader
-            this.shader = new Phaser.Filter(this.game, null, this.game.cache.getShader('tvShader'));
-            this.shader.uniforms.uBackground = { type: 'sampler2D', value: img.texture, textureData: { repeat: false } };
+            //create shaders
+            this.bgShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('bgShader'));
+            this.tvShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('tvShader'));
+            this.bgGroup = this.game.add.group();
+            this.bgGroup.addChild(bgGraphics);
+            bgGraphics.filters = [this.bgShader];
             //render shader on quad:
-            var gr = this.game.add.graphics(0, 0);
-            gr.beginFill(0x0);
-            gr.drawRect(0, 0, this.game.width, this.game.height);
-            gr.endFill();
-            gr.filters = [this.shader];
+            this.tvGraphics = this.game.add.graphics(0, 0);
+            this.tvGraphics.beginFill(0x0);
+            this.tvGraphics.drawRect(0, 0, this.game.width, this.game.height);
+            this.tvGraphics.endFill();
+            this.tvGraphics.filters = [this.tvShader];
+            var btn;
             var funcs = [this.renderLevelSelect, this.renderPause, this.unimplClick];
             for (var i = 0; i < 3; ++i) {
-                var btn = this.game.add.button(0, this.game.height, 'button', funcs[i], this);
+                btn = this.game.add.button(0, this.game.height, 'button', funcs[i], this);
                 btn.scale = new Phaser.Point(.25, .25);
                 btn.y -= btn.height + 5;
                 btn.x = 5 + i * (btn.width + 5);
             }
             this.renderLevelSelect();
+            btn = this.game.add.button(5, 5, 'button', this.swapTerminalEffect, this);
+            btn.scale = new Phaser.Point(.25, .25);
         };
         MainState.prototype.unimplClick = function () {
             alert('not yet implemented...');
         };
+        MainState.prototype.swapTerminalEffect = function () {
+            this.tvGraphics.visible = !this.tvGraphics.visible;
+        };
         MainState.prototype.bindTextures = function () {
-            this.shader.uniforms.uMenuTexture = { type: 'sampler2D', value: this.menuGraphics.generateTexture(), textureData: { repeat: false } };
-            this.shader.uniforms.uTextTexture = { type: 'sampler2D', value: this.textGroup.generateTexture(), textureData: { repeat: false } };
+            this.tvShader.uniforms.uMenuTexture = { type: 'sampler2D', value: this.menuGraphics.generateTexture(), textureData: { repeat: false } };
+            this.tvShader.uniforms.uTextTexture = { type: 'sampler2D', value: this.textGroup.generateTexture(), textureData: { repeat: false } };
+            this.tvShader.uniforms.uBackground = { type: 'sampler2D', value: this.bgGroup.generateTexture() /*img.texture*/, textureData: { repeat: false } };
         };
         MainState.prototype.renderLevelSelect = function () {
             this.renderer.renderLevelSelect(this.menuGraphics, this.textGroup);
@@ -197,7 +215,10 @@ var BlokjesGame;
         MainState.prototype.render = function () {
         };
         MainState.prototype.update = function () {
-            this.shader.update(this.game.input.mousePointer);
+            var pt = this.game.input.mousePointer;
+            this.tvShader.update(pt);
+            this.bgShader.update(pt);
+            this.tvShader.uniforms.uBackground.value = this.bgGroup.generateTexture();
         };
         return MainState;
     }(Phaser.State));

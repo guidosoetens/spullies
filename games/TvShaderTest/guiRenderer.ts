@@ -41,7 +41,7 @@ module BlokjesGame
             var numStyle = { font: "46px Courier New", fill: "#ffffff", align: "center" };
             var starStyle = { font: "32px Roboto", fill: "#ffffff", align: "center" };
             var arrowStyle = { font: "54px Roboto", fill: "#ffffff", align: "center" };
-            var txt = this.game.make.text(this.game.width / 2, 160, "PAUSE", style);
+            var txt = this.game.make.text(this.game.width / 2, 160, "- PAUSE -", style);
             txt.x -= .5 * txt.width;
             txt.y -= .5 * txt.height;
             txt.fontWeight = 'bold';
