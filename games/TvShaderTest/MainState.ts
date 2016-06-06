@@ -60,6 +60,7 @@ module BlokjesGame
             this.tvGraphics.drawRect(0, 0, this.game.width, this.game.height);
             this.tvGraphics.endFill();
             this.tvGraphics.filters = [ this.tvShader ];
+            this.tvGraphics.visible = false;
             
             var btn:Phaser.Button;
             var funcs = [this.renderLevelSelect, this.renderPause, this.unimplClick];
