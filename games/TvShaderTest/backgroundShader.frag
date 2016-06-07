@@ -33,12 +33,11 @@ vec4 randomColor(vec2 root) {
     
 }
 
-void main() {
+float sampleHexHeight(vec2 xy) {
+        
+    float numHexHeight = 10.0 * mouse.y / 768.0;
     
-    float numHexHeight = 3.0;
-    
-    vec2 uv = vTextureCoord;
-    vec2 xy = (uv - .5) * vec2(1024, 768); //(0,0) is center screen. Each step corresponds to 1 pixel
+    //vec2 xy = (uv - .5) * vec2(1024, 768); //(0,0) is center screen. Each step corresponds to 1 pixel
     
     float hexHeight = 768.0 / numHexHeight; //i.e: 5 stacked on top of each other -> fills screen
     float hexRad = .5 * hexHeight / cos(pi / 6.0);
@@ -114,107 +113,51 @@ void main() {
     hexLoc *= vec2(3.0 * hexRad, hexHeight);
     
     vec2 to = xy - hexLoc;
-    float angle = atan(to.y, to.x);
+    float angleFactor = mod(abs(atan(to.y, to.x)) / pi, 1.0 / 3.0) * 3.0;
+    float t = 2.0 * abs(angleFactor - .5);
+    t = pow(t, mouse.x);
+    //t = 1.0 - cos(t * .5 * pi);
+    //t = pow(t, 5.0);
     
-    float angFactor = fract(3.0 * angle / pi);
+    //angle: from 0 to 1.
     
     
     
     
-    
+    float f = length(to) / (100.0 + (1.0 - t) * 10.0);// ((0.6 + 0.3 * (.5 + .5 * cos(6.0 * atan(to.y, to.x)))) * hexRad);
     /*
-    float maxFactor =  (.5 + .5 * cos(6.0 * angle));
+    float restAngle = 2.0 / 3.0 * pi - angle;
     
-    float h = .5 * hexHeight;
-    float maxDist = (1.0 - maxFactor) * h + maxFactor * hexRad;
-    
-    float d = length(to) / maxDist;
-    
-    if(d > 0.8)
-        gl_FragColor = vec4(0,.2,0,1);
-    else
-        gl_FragColor = vec4(fract(5.0 * d),0,0,1);
-        */
-    
-    
-    //gl_FragColor = randomColor(hexLoc);
-    
-    /*
-    if(fract(fragX * 6.0) < .04 || fract(fragY * 2.0) < .02)
-        gl_FragColor = vec4(0,0,0,1); 
-        */
-    
-    
-    /*
-    float stepX = 1.5 * hexRad;
-    float stepY = hexHeight;
-    
-    
-    float hexX = xy.x / stepX;
-    hexX = (hexX - fract(hexX)) * stepX;
-    
-    float hexY = (xy.y) / stepY;
-    hexY = (hexY - fract(hexY)) * stepY;
-    
-    
-    gl_FragColor = randomColor(vec2(hexX, hexY));
+    //sin rule:
+    float maxLength = .5 * hexWidth * sin(pi / 3.0) / sin(restAngle);
+    float f = length(to) / maxLength;
     */
     
+    f = clamp(f, 0.0, 1.0);
+    return .5 + .5 * cos(f * pi);
+}
+
+void main() {
+    
+    vec2 uv = vTextureCoord;
+    vec2 xy = (uv - .5) * vec2(1024, 768);
+    
+    float maxHeight = 50.0;
+    float h1 = maxHeight * sampleHexHeight(xy);
+    float h2 = maxHeight * sampleHexHeight(xy + vec2(1,0));
+    float h3 = maxHeight * sampleHexHeight(xy + vec2(0,1));
+    
+    vec3 v1 = vec3(1, 0, h2 - h1);
+    vec3 v2 = vec3(0, 1, h3 - h1);
+    vec3 normal = normalize(cross(v1, v2));
+    
+    gl_FragColor = vec4(.5 + .5 * normal.x, .5 + .5 * normal.y, normal.z, 1);
+    
     /*
-    if(xyIsCheck(xy))
-        gl_FragColor = vec4(0,0.5,0.5,1);
-    else 
-        gl_FragColor = vec4(1,0,0,1);
-        */
-    
-    
-    
-    /*
-    
-    float stepY = 0.86602540378;
-    
-    vec2 xy = vTextureCoord;
-    
-    //based on XY
-    float baseDistance = 4.0;
-    float xBase = xy.x * baseDistance;
-    float xFract = fract(xBase);
-    float xFloor = xBase - xFract;
-    float xCenter = (xFloor + .5) / baseDistance;
-    
-    
-    float swapOffset = (mod(xFloor, 2.0) < 1.0) ? 0.0 : 0.5 * stepY;
-    
-    float yBase = xy.y * baseDistance;
-    float yFract = fract(yBase);
-    float offY = 0.0;
-    if(xFract < .3)
-        offY = yFract < xFract ? 1.0 : -1.0;
-    else if(xFract > .7)
-        offY = yFract < xFract ? -1.0 : 1.0;
-    float yCenter = (yBase - yFract + .5 + offY + swapOffset) / baseDistance;
-    
-    vec2 base = vec2(xCenter, yCenter);
-    gl_FragColor = randomColor(base);
+    float h = h1 / maxHeight;
+    gl_FragColor = vec4(h,0,0,1);
+    if(h > .49 && h < .51)
+        gl_FragColor = vec4(1);
     */
     
-    /*
-    //3 pixel center:
-    if(abs(xy.x) < 1.5 || abs(xy.y) < 1.5)
-        gl_FragColor = vec4(0,0,0,1);
-        */
-        
-    
-    /*
-    vec2 toBase = xy - vec2(xBase, yBase);
-    float angle = atan(toBase.y, toBase.x);
-    float maxDist = (0.5 - 0.20710678118) + 0.20710678118 * abs(cos(2.0 * angle));
-   // maxDist *= 0.5;
-    
-    //1.41421356237
-    
-    
-    float d = length(toBase) / (1.0 / baseDistance);
-    gl_FragColor = vec4(d / maxDist,0,0,1);
-    */
 }
