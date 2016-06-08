@@ -172,6 +172,7 @@ var BlokjesGame;
             //create shaders
             this.bgShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('bgShader'));
             this.tvShader = new Phaser.Filter(this.game, null, this.game.cache.getShader('tvShader'));
+            this.generateHexTex();
             this.bgGroup = this.game.add.group();
             this.bgGroup.addChild(bgGraphics);
             bgGraphics.filters = [this.bgShader];
@@ -200,10 +201,47 @@ var BlokjesGame;
         MainState.prototype.swapTerminalEffect = function () {
             this.tvGraphics.visible = !this.tvGraphics.visible;
         };
+        MainState.prototype.generateHexTex = function () {
+            var textureTargetBitmap = this.game.make.bitmapData(256, 256);
+            //assume rad = 1;
+            var deg30 = Math.PI / 6.0;
+            var deg60 = 2 * deg30;
+            var h = Math.cos(deg30);
+            for (var i = 0; i < 256; ++i) {
+                for (var j = 0; j < 256; ++j) {
+                    var update = i == 255 && j == 255;
+                    var factor = (i < 5 || i > 250 || j < 5 || j > 250) ? 0 : 1;
+                    var x = 2 * (j + .5) / 256.0 - 1;
+                    var y = (2 * (i + .5) / 256.0 - 1) * h;
+                    /*
+                    var checks:number = 3.0;
+                   // var checkXVal = Math.abs((x - .5) * checks);
+                    var checkX = (Math.abs(x + 100) * checks) % 1.0 < .5;
+                    //var checkYVal = Math.abs((y - .5) * checks);
+                    var checkY = (Math.abs(y + 100) * checks) % 1.0 < .5;//checkYVal - Math.floor(checkYVal) < .5;
+                    
+                    var check = checkX ? checkY : !checkY;
+                    if(check)
+                       textureTargetBitmap.setPixel(j, i, 255, 255, 0, update);
+                    else
+                       textureTargetBitmap.setPixel(j, i, 255, 0, 0, update);
+                    */
+                    var angle = Math.abs(Math.atan2(y, x) % deg60);
+                    var maxDist = Math.sin(deg60) / Math.sin(2 * deg60 - angle);
+                    var dist = Math.sqrt(x * x + y * y);
+                    var f = (dist / maxDist * 3.0) % 1.0;
+                    textureTargetBitmap.setPixel(j, i, f * 255, f * 255, 0, update);
+                }
+            }
+            this.hexTexImage = this.game.add.image(0, 0, textureTargetBitmap);
+            this.hexTexImage.texture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
+            this.bgShader.uniforms.uHexTex = { type: 'sampler2D', value: this.hexTexImage.texture, textureData: { repeat: false } };
+        };
         MainState.prototype.bindTextures = function () {
             this.tvShader.uniforms.uMenuTexture = { type: 'sampler2D', value: this.menuGraphics.generateTexture(), textureData: { repeat: false } };
             this.tvShader.uniforms.uTextTexture = { type: 'sampler2D', value: this.textGroup.generateTexture(), textureData: { repeat: false } };
             this.tvShader.uniforms.uBackground = { type: 'sampler2D', value: this.bgGroup.generateTexture() /*img.texture*/, textureData: { repeat: false } };
+            //this.bgShader.uniforms.uHexTex = { type: 'sampler2D', value: this.hexTexImage.texture, textureData: { repeat: false } };
         };
         MainState.prototype.renderLevelSelect = function () {
             this.renderer.renderLevelSelect(this.menuGraphics, this.textGroup);

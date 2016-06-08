@@ -9,6 +9,8 @@ uniform vec2 mouse;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
 
+uniform sampler2D uHexTex;
+
 const float pi = 3.14159265359;
 const vec4 BASE_COLOR_PINK = vec4(1.0, 0.6235, 0.6235, 1.0);
 const vec4 BASE_COLOR = BASE_COLOR_PINK;
@@ -33,9 +35,9 @@ vec4 randomColor(vec2 root) {
     
 }
 
-float sampleHexHeight(vec2 xy) {
+vec4 sampleHexValue(vec2 xy) {
         
-    float numHexHeight = 10.0 * mouse.y / 768.0;
+    float numHexHeight = 8.0;// 10.0 * mouse.y / 768.0;
     
     //vec2 xy = (uv - .5) * vec2(1024, 768); //(0,0) is center screen. Each step corresponds to 1 pixel
     
@@ -54,6 +56,8 @@ float sampleHexHeight(vec2 xy) {
     float fragY = xy.y / fragHeight;
     hexLoc.y = fragY - fract(fragY);
     fragY = fract(fragY);
+    
+    hexLoc = vec2(0,0);
     
     //offset hexLoc:
     float div6 = 1.0 / 6.0;
@@ -109,6 +113,11 @@ float sampleHexHeight(vec2 xy) {
             hexLoc.y += 1.0;
     }
     
+    vec2 uv = .5 + .5 * (hexLoc - vec2(fragX, fragY)) * vec2(3.0, 2.0);
+    return texture2D(uHexTex, uv);
+    
+    /*
+    
     //get hex location in screen space:
     hexLoc *= vec2(3.0 * hexRad, hexHeight);
     
@@ -131,10 +140,12 @@ float sampleHexHeight(vec2 xy) {
     //sin rule:
     float maxLength = .5 * hexWidth * sin(pi / 3.0) / sin(restAngle);
     float f = length(to) / maxLength;
-    */
+    * /
     
     f = clamp(f, 0.0, 1.0);
     return .5 + .5 * cos(f * pi);
+    */
+    
 }
 
 void main() {
@@ -142,6 +153,10 @@ void main() {
     vec2 uv = vTextureCoord;
     vec2 xy = (uv - .5) * vec2(1024, 768);
     
+    gl_FragColor = sampleHexValue(xy);
+    
+    
+    /*
     float maxHeight = 50.0;
     float h1 = maxHeight * sampleHexHeight(xy);
     float h2 = maxHeight * sampleHexHeight(xy + vec2(1,0));
@@ -152,6 +167,7 @@ void main() {
     vec3 normal = normalize(cross(v1, v2));
     
     gl_FragColor = vec4(.5 + .5 * normal.x, .5 + .5 * normal.y, normal.z, 1);
+    */
     
     /*
     float h = h1 / maxHeight;
