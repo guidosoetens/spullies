@@ -14,9 +14,9 @@ var BirdFlip;
             this.mainBody.position.x = 200;
             this.mainBody.position.y = this.game.height - 75;
             this.game.physics.p2.enable(this.mainBody);
-            var baseWidth = 50;
-            var baseHeight = 70;
-            var baseOffsetY = 10;
+            var baseWidth = 80;
+            var baseHeight = 120;
+            var baseOffsetY = 30;
             this.addChild(this.mainBody);
             this.mainBody.beginFill(0x00ff00, .5);
             this.mainBody.drawRect(-baseWidth / 2, -baseOffsetY, baseWidth, baseHeight);
@@ -55,6 +55,7 @@ var BirdFlip;
             this.beakOpen = isOpen;
         };
         Player.prototype.updatePlayer = function (dt) {
+            //move:
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
             if (this.faceLeft) {
@@ -62,29 +63,31 @@ var BirdFlip;
                     this.beakGraphics.body.moveLeft(200);
                     this.mainBody.body.moveLeft(200);
                 }
+                else
+                    this.faceLeft = false;
             }
             else {
                 if (this.mainBody.x < this.game.width - 30) {
                     this.beakGraphics.body.moveRight(200);
                     this.mainBody.body.moveRight(200);
                 }
+                else
+                    this.faceLeft = true;
             }
-            var currAngle = this.beakGraphics.body.angle;
+            //note: convert angle so that 'ang = 0' faces downwards
+            var currAngle = this.beakGraphics.body.angle - 90;
             if (currAngle > 180)
                 currAngle -= 360;
-            var deltaAngle = (this.beakOpen ? -20 : 30) - currAngle;
-            this.beakGraphics.body.rotateRight(deltaAngle * 3);
-            /*
-           
-                       var to = new Phaser.Point(Math.cos(currAngle), Math.sin(currAngle));
-           
-                       if(this.beakOpen) {
-                           if(this.faceLeft)
-                               this.beakGraphics.body.rotateLeft(20);
-                           else
-                               this.beakGraphics.body.rotateRight(20);
-                       }
-                       */
+            if (currAngle < -180)
+                currAngle += 360;
+            var goalAngle = (this.beakOpen ? 120 : 60);
+            if (!this.faceLeft)
+                goalAngle = -goalAngle;
+            var deltaAngle = goalAngle - currAngle;
+            var angVel = deltaAngle * 5;
+            if (Math.abs(angVel) > 300)
+                angVel = angVel < 0 ? -300 : 300;
+            this.beakGraphics.body.rotateRight(angVel);
             this.debugGraphics.clear();
             this.debugGraphics.lineStyle(3, 0xffffff, .5);
             this.debugGraphics.beginFill(0x0, 0);
@@ -95,7 +98,6 @@ var BirdFlip;
     BirdFlip.Player = Player;
 })(BirdFlip || (BirdFlip = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
-///<reference path="Player.ts"/>
 var BirdFlip;
 (function (BirdFlip) {
     var Ball = (function (_super) {
@@ -104,14 +106,22 @@ var BirdFlip;
             _super.call(this, game);
             this.position.x = this.game.rnd.frac() * this.game.width;
             this.position.y = this.game.rnd.frac() * .5 * this.game.height;
+            var radius = 20 + 15 * this.game.rnd.frac();
             this.beginFill(0xff0000, 1);
-            this.drawCircle(0, 0, 40);
+            this.drawCircle(0, 0, 2 * radius);
             this.game.physics.p2.enable(this);
-            this.body.setCircle(20);
+            this.body.setCircle(radius);
+            this.body.mass = (Math.PI * radius * radius) / 50;
         }
         return Ball;
     }(Phaser.Graphics));
     BirdFlip.Ball = Ball;
+})(BirdFlip || (BirdFlip = {}));
+///<reference path="../../phaser/phaser.d.ts"/>
+///<reference path="Player.ts"/>
+///<reference path="Ball.ts"/>
+var BirdFlip;
+(function (BirdFlip) {
     var GameState = (function (_super) {
         __extends(GameState, _super);
         function GameState() {
@@ -131,8 +141,8 @@ var BirdFlip;
             this.elements = this.game.add.group();
             this.game.physics.startSystem(Phaser.Physics.P2JS);
             this.game.physics.p2.gravity.y = 500;
-            for (var i = 0; i < 30; ++i) {
-                var ball = new Ball(this.game);
+            for (var i = 0; i < 6; ++i) {
+                var ball = new BirdFlip.Ball(this.game);
                 this.elements.add(ball);
             }
             //create player:

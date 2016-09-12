@@ -23,9 +23,9 @@ module BirdFlip
             this.mainBody.position.y = this.game.height - 75;
             this.game.physics.p2.enable(this.mainBody);
 
-            var baseWidth = 50;
-            var baseHeight = 70;
-            var baseOffsetY = 10;
+            var baseWidth = 80;
+            var baseHeight = 120;
+            var baseOffsetY = 30;
 
             this.addChild(this.mainBody);
             this.mainBody.beginFill(0x00ff00, .5);
@@ -37,11 +37,8 @@ module BirdFlip
             this.mainBody.body.setRectangle(baseWidth, baseHeight, 0, .5 * baseHeight - baseOffsetY, 0);
             this.mainBody.body.kinematic = true;
 
-
-
             var beakWidth = 30;
             var beakLength = 200;
-
 
             this.beakGraphics = this.game.make.graphics();
             this.beakGraphics.position.x = this.mainBody.position.x;
@@ -62,9 +59,6 @@ module BirdFlip
             this.faceLeft = false;
             this.beakOpen = false;
 
-
-
-
             this.debugGraphics = this.game.make.graphics();
             this.addChild(this.debugGraphics);
         }
@@ -82,6 +76,8 @@ module BirdFlip
         } 
 
         updatePlayer(dt:Number) {
+
+            //move:
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
             if(this.faceLeft) {
@@ -89,33 +85,34 @@ module BirdFlip
                     this.beakGraphics.body.moveLeft(200);
                     this.mainBody.body.moveLeft(200);
                 }
+                else
+                    this.faceLeft = false;
             }
             else {
                 if(this.mainBody.x < this.game.width - 30) {
                     this.beakGraphics.body.moveRight(200);
                     this.mainBody.body.moveRight(200);
                 }
+                else
+                    this.faceLeft = true;
             }
 
-            var currAngle = this.beakGraphics.body.angle;
-
+            //note: convert angle so that 'ang = 0' faces downwards
+            var currAngle = this.beakGraphics.body.angle - 90;
             if(currAngle > 180)
                 currAngle -= 360;
+            if(currAngle < -180)
+                currAngle += 360;
 
-            var deltaAngle = (this.beakOpen ? -20 : 30) - currAngle;
-            this.beakGraphics.body.rotateRight(deltaAngle * 3);
+            var goalAngle = (this.beakOpen ? 120 : 60);
+            if(!this.faceLeft)
+                goalAngle = -goalAngle;
 
- /*
-
-            var to = new Phaser.Point(Math.cos(currAngle), Math.sin(currAngle));
-
-            if(this.beakOpen) {
-                if(this.faceLeft)
-                    this.beakGraphics.body.rotateLeft(20);
-                else
-                    this.beakGraphics.body.rotateRight(20);
-            }
-            */
+            var deltaAngle = goalAngle - currAngle;
+            var angVel = deltaAngle * 5;
+            if(Math.abs(angVel) > 300)
+                angVel = angVel < 0 ? -300 : 300;
+            this.beakGraphics.body.rotateRight(angVel);
 
             this.debugGraphics.clear();
             this.debugGraphics.lineStyle(3, 0xffffff, .5);
