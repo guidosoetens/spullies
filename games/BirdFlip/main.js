@@ -54,6 +54,28 @@ var BirdFlip;
         Player.prototype.setOpen = function (isOpen) {
             this.beakOpen = isOpen;
         };
+        Player.prototype.getBottomBasedAngle = function () {
+            var currAngle = this.beakGraphics.body.angle - 90;
+            if (currAngle > 180)
+                currAngle -= 360;
+            if (currAngle < -180)
+                currAngle += 360;
+            return currAngle;
+        };
+        Player.prototype.getEatRange = function () {
+            var currAngle = this.getBottomBasedAngle();
+            if (currAngle < 0) {
+                return new Phaser.Rectangle(this.mainBody.position.x, this.mainBody.position.y + 50, 100, 100);
+            }
+            else
+                return new Phaser.Rectangle(this.mainBody.position.x - 100, this.mainBody.position.y + 50, 100, 100);
+        };
+        Player.prototype.eatsAtLoc = function (loc) {
+            var currAngle = this.getBottomBasedAngle();
+            if (Math.abs(currAngle) > 90)
+                return false;
+            return this.getEatRange().contains(loc.x, loc.y);
+        };
         Player.prototype.updatePlayer = function (dt) {
             //move:
             this.mainBody.body.setZeroVelocity();
@@ -75,11 +97,7 @@ var BirdFlip;
                     this.faceLeft = true;
             }
             //note: convert angle so that 'ang = 0' faces downwards
-            var currAngle = this.beakGraphics.body.angle - 90;
-            if (currAngle > 180)
-                currAngle -= 360;
-            if (currAngle < -180)
-                currAngle += 360;
+            var currAngle = this.getBottomBasedAngle();
             var goalAngle = (this.beakOpen ? 120 : 60);
             if (!this.faceLeft)
                 goalAngle = -goalAngle;
@@ -92,6 +110,10 @@ var BirdFlip;
             this.debugGraphics.lineStyle(3, 0xffffff, .5);
             this.debugGraphics.beginFill(0x0, 0);
             this.debugGraphics.drawCircle(this.mainBody.position.x, this.mainBody.position.y, 50);
+            this.debugGraphics.lineStyle(0);
+            this.debugGraphics.beginFill(0xff0000, .1);
+            var eatRect = this.getEatRange();
+            this.debugGraphics.drawRect(eatRect.x, eatRect.y, eatRect.width, eatRect.height);
         };
         return Player;
     }(Phaser.Group));
@@ -102,17 +124,56 @@ var BirdFlip;
 (function (BirdFlip) {
     var Ball = (function (_super) {
         __extends(Ball, _super);
-        function Ball(game) {
+        function Ball(game, hasGrav) {
             _super.call(this, game);
             this.position.x = this.game.rnd.frac() * this.game.width;
             this.position.y = this.game.rnd.frac() * .5 * this.game.height;
-            var radius = 20 + 15 * this.game.rnd.frac();
-            this.beginFill(0xff0000, 1);
-            this.drawCircle(0, 0, 2 * radius);
+            this.radius = 20 + 15 * this.game.rnd.frac();
+            var fillClr, lineClr;
+            var typeIdx = this.game.rnd.integerInRange(0, 2);
+            if (typeIdx == 0) {
+                fillClr = 0xff0000;
+                lineClr = 0xaa0000;
+            }
+            else if (typeIdx == 1) {
+                fillClr = 0x00ff00;
+                lineClr = 0x00aa00;
+            }
+            else {
+                fillClr = 0x0000ff;
+                lineClr = 0x0000aa;
+            }
+            if (hasGrav) {
+                fillClr = 0xaaaaaa;
+                lineClr = 0xcccccc;
+                this.radius = 10;
+            }
+            this.beginFill(fillClr, .5);
+            this.lineStyle(5, lineClr, 1);
+            this.drawCircle(0, 0, 2 * this.radius);
             this.game.physics.p2.enable(this);
-            this.body.setCircle(radius);
-            this.body.mass = (Math.PI * radius * radius) / 50;
+            this.p2Body = this.body;
+            this.p2Body.setCircle(this.radius);
+            this.p2Body.mass = (Math.PI * this.radius * this.radius) / 50;
+            this.p2Body.onBeginContact.add(this.onCollide, this);
+            this.isStuck = true;
+            if (hasGrav) {
+                Ball.rockRef = this;
+                this.isStuck = false;
+            }
+            else {
+                this.p2Body.data.gravityScale = 0.0;
+            }
         }
+        Ball.prototype.onCollide = function (elem1, elem2) {
+            if (this.isStuck && (elem1 == Ball.rockRef.p2Body || elem2 == Ball.rockRef.p2Body)) {
+                this.p2Body.data.gravityScale = 1.0;
+                this.isStuck = false;
+            }
+        };
+        Ball.prototype.destroy = function () {
+            this.game.physics.p2.removeBody(this.body);
+        };
         return Ball;
     }(Phaser.Graphics));
     BirdFlip.Ball = Ball;
@@ -141,15 +202,20 @@ var BirdFlip;
             this.elements = this.game.add.group();
             this.game.physics.startSystem(Phaser.Physics.P2JS);
             this.game.physics.p2.gravity.y = 500;
-            for (var i = 0; i < 6; ++i) {
-                var ball = new BirdFlip.Ball(this.game);
-                this.elements.add(ball);
-            }
+            this.balls = [];
+            this.createBalls();
             //create player:
             this.player = new BirdFlip.Player(this.game);
             this.elements.add(this.player);
             this.cursors = this.game.input.keyboard.createCursorKeys();
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        };
+        GameState.prototype.createBalls = function () {
+            for (var i = 0; i < 10; ++i) {
+                var ball = new BirdFlip.Ball(this.game, i == 0);
+                this.elements.add(ball);
+                this.balls.push(ball);
+            }
         };
         GameState.prototype.update = function () {
             var dt = this.game.time.physicsElapsed;
@@ -159,6 +225,20 @@ var BirdFlip;
                 this.player.goRight();
             this.player.setOpen(this.spaceKey.isDown);
             this.player.updatePlayer(dt);
+            //test which balls are still valid:
+            for (var i = 0; i < this.balls.length; ++i) {
+                var ball = this.balls[i];
+                if (this.player.eatsAtLoc(ball.position)) {
+                    //destroy!
+                    ball.destroy();
+                    this.elements.remove(ball);
+                    this.balls.splice(i, 1);
+                    --i;
+                }
+            }
+            if (this.balls.length == 0) {
+                this.createBalls();
+            }
         };
         GameState.prototype.render = function () {
         };

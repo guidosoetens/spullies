@@ -13,6 +13,8 @@ module BirdFlip
 
         elements:Phaser.Group;
 
+        balls:Ball[];
+
         constructor() {
             super();
         }
@@ -35,10 +37,8 @@ module BirdFlip
             this.game.physics.startSystem(Phaser.Physics.P2JS);
             this.game.physics.p2.gravity.y = 500;
 
-            for (var i=0; i<6; ++i) {
-                var ball = new Ball(this.game);
-                this.elements.add(ball);
-            }
+            this.balls = [];
+            this.createBalls();
 
             //create player:
             this.player = new Player(this.game);
@@ -47,6 +47,14 @@ module BirdFlip
             this.cursors = this.game.input.keyboard.createCursorKeys();
 
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        }
+
+        createBalls() {
+            for (var i=0; i<10; ++i) {
+                var ball = new Ball(this.game, i == 0);
+                this.elements.add(ball);
+                this.balls.push(ball);
+            }
         }
 
         update() {
@@ -59,6 +67,22 @@ module BirdFlip
             this.player.setOpen(this.spaceKey.isDown);
 
             this.player.updatePlayer(dt)
+
+            //test which balls are still valid:
+            for(var i:number=0; i<this.balls.length; ++i) {
+                var ball = this.balls[i];
+                if(this.player.eatsAtLoc(ball.position)) {
+                    //destroy!
+                    ball.destroy();
+                    this.elements.remove(ball);
+                    this.balls.splice(i, 1);
+                    --i;
+                }
+            }
+
+            if(this.balls.length == 0) {
+                this.createBalls();
+            }
         }
 
         render() {

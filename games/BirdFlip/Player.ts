@@ -75,6 +75,33 @@ module BirdFlip
             this.beakOpen = isOpen;
         } 
 
+        getBottomBasedAngle() : number {
+            var currAngle = this.beakGraphics.body.angle - 90;
+            if(currAngle > 180)
+                currAngle -= 360;
+            if(currAngle < -180)
+                currAngle += 360;
+            return currAngle;
+        }
+
+        getEatRange() : Phaser.Rectangle {
+            var currAngle = this.getBottomBasedAngle();
+
+            if(currAngle < 0) {
+                return new Phaser.Rectangle(this.mainBody.position.x, this.mainBody.position.y + 50, 100, 100);
+            }
+            else
+                return new Phaser.Rectangle(this.mainBody.position.x - 100, this.mainBody.position.y + 50, 100, 100);
+
+        }
+
+        eatsAtLoc(loc:Phaser.Point) : boolean {
+            var currAngle = this.getBottomBasedAngle();
+            if(Math.abs(currAngle) > 90)
+                return false;
+            return this.getEatRange().contains(loc.x, loc.y);
+        }
+
         updatePlayer(dt:Number) {
 
             //move:
@@ -98,11 +125,7 @@ module BirdFlip
             }
 
             //note: convert angle so that 'ang = 0' faces downwards
-            var currAngle = this.beakGraphics.body.angle - 90;
-            if(currAngle > 180)
-                currAngle -= 360;
-            if(currAngle < -180)
-                currAngle += 360;
+            var currAngle = this.getBottomBasedAngle();
 
             var goalAngle = (this.beakOpen ? 120 : 60);
             if(!this.faceLeft)
@@ -118,6 +141,11 @@ module BirdFlip
             this.debugGraphics.lineStyle(3, 0xffffff, .5);
             this.debugGraphics.beginFill(0x0, 0);
             this.debugGraphics.drawCircle(this.mainBody.position.x, this.mainBody.position.y, 50);
+
+            this.debugGraphics.lineStyle(0);
+            this.debugGraphics.beginFill(0xff0000, .1);
+            var eatRect = this.getEatRange();
+            this.debugGraphics.drawRect(eatRect.x, eatRect.y, eatRect.width, eatRect.height);
         }
     }
 }
