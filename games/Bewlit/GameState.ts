@@ -1,12 +1,14 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
+///<reference path="Bullet.ts"/>
+///<reference path="CornerPiece.ts"/>
 
 module Bewlit
 {
     export class GameState extends Phaser.State {
 
         spaceKey:Phaser.Key;
-        bullet:Phaser.Graphics;
-        bulletBody:Phaser.Physics.P2.Body;
+        bullet:Bullet;
+        elements:Phaser.Group;
 
         constructor() {
             super();
@@ -14,48 +16,36 @@ module Bewlit
         
         create() {
 
+
+            this.elements = this.game.add.group();
+
             this.game.physics.startSystem(Phaser.Physics.P2JS);
             this.game.physics.p2.gravity.y = 500;
 
-            var polygonPoints = 
-            [
-                [-20, -20],
-                [20, -20],
-                [30, 0],
-                [20, 20],
-                [-20, 20],
-            ];
+            this.bullet = new Bullet(this.game);
+            this.elements.addChild(this.bullet);
 
-            this.bullet = this.game.add.graphics(0, 0);
-            this.bullet.x = 100;
-            this.bullet.y = 100;
-            this.bullet.beginFill(0xff0000, .5);
-            this.bullet.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
-            for(var i =0; i<polygonPoints.length; ++i) {
-                this.bullet.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
+            var cornerPt = new Phaser.Point(1, 1);
+            for(var i:number=0; i<4; ++i) {
+                var w = this.game.width / 2;
+                var h = this.game.height / 2;
+                var corner = new CornerPiece(
+                    this.game,
+                    new Phaser.Point(w + w * cornerPt.x, h + h * cornerPt.y),
+                    new Phaser.Point(w, h + h * cornerPt.y),
+                    new Phaser.Point(w + w * cornerPt.x, h)
+                );
+                this.elements.addChild(corner);
+                cornerPt = new Phaser.Point(-cornerPt.y, cornerPt.x);
             }
-            this.bullet.endFill();
-  
-            this.game.physics.p2.enable(this.bullet);
-            this.bulletBody = this.bullet.body;
-
-            this.bulletBody.addPolygon({}, polygonPoints);
-
+            
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         }
 
 
         update() {
             var dt:number = this.game.time.physicsElapsed;
-
-            if(this.spaceKey.isDown) {
-                var ang = Math.PI * this.bulletBody.angle / 180.0;
-                var toPt = new Phaser.Point(Math.cos(ang), Math.sin(ang));
-
-                this.bulletBody.moveRight(toPt.x * 500);
-                this.bulletBody.moveDown(toPt.y * 500);
-
-            }
+            this.bullet.proceed(dt, this.spaceKey.isDown);
         }
 
         render() {
