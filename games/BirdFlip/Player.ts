@@ -108,17 +108,17 @@ module BirdFlip
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
             if(this.faceLeft) {
-                if(this.mainBody.x > 30) {
-                    this.beakGraphics.body.moveLeft(200);
-                    this.mainBody.body.moveLeft(200);
+                if(this.mainBody.x > 50) {
+                    this.beakGraphics.body.moveLeft(300);
+                    this.mainBody.body.moveLeft(300);
                 }
                 else
                     this.faceLeft = false;
             }
             else {
-                if(this.mainBody.x < this.game.width - 30) {
-                    this.beakGraphics.body.moveRight(200);
-                    this.mainBody.body.moveRight(200);
+                if(this.mainBody.x < this.game.width - 50) {
+                    this.beakGraphics.body.moveRight(300);
+                    this.mainBody.body.moveRight(300);
                 }
                 else
                     this.faceLeft = true;

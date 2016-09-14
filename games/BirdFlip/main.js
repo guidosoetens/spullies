@@ -81,17 +81,17 @@ var BirdFlip;
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
             if (this.faceLeft) {
-                if (this.mainBody.x > 30) {
-                    this.beakGraphics.body.moveLeft(200);
-                    this.mainBody.body.moveLeft(200);
+                if (this.mainBody.x > 50) {
+                    this.beakGraphics.body.moveLeft(300);
+                    this.mainBody.body.moveLeft(300);
                 }
                 else
                     this.faceLeft = false;
             }
             else {
-                if (this.mainBody.x < this.game.width - 30) {
-                    this.beakGraphics.body.moveRight(200);
-                    this.mainBody.body.moveRight(200);
+                if (this.mainBody.x < this.game.width - 50) {
+                    this.beakGraphics.body.moveRight(300);
+                    this.mainBody.body.moveRight(300);
                 }
                 else
                     this.faceLeft = true;
@@ -124,11 +124,11 @@ var BirdFlip;
 (function (BirdFlip) {
     var Ball = (function (_super) {
         __extends(Ball, _super);
-        function Ball(game, hasGrav) {
+        function Ball(game, pos, hasGrav) {
             _super.call(this, game);
-            this.position.x = this.game.rnd.frac() * this.game.width;
-            this.position.y = this.game.rnd.frac() * .5 * this.game.height;
-            this.radius = 20 + 15 * this.game.rnd.frac();
+            this.radius = 14 + 6 * this.game.rnd.frac();
+            this.position.x = pos.x;
+            this.position.y = pos.y + this.radius;
             var fillClr, lineClr;
             var typeIdx = this.game.rnd.integerInRange(0, 2);
             if (typeIdx == 0) {
@@ -147,28 +147,25 @@ var BirdFlip;
                 fillClr = 0xaaaaaa;
                 lineClr = 0xcccccc;
                 this.radius = 10;
+                Ball.rockReference = this;
             }
             this.beginFill(fillClr, .5);
             this.lineStyle(5, lineClr, 1);
-            this.drawCircle(0, 0, 2 * this.radius);
+            this.drawCircle(0, 0, 2 * this.radius - 5);
             this.game.physics.p2.enable(this);
             this.p2Body = this.body;
             this.p2Body.setCircle(this.radius);
             this.p2Body.mass = (Math.PI * this.radius * this.radius) / 50;
             this.p2Body.onBeginContact.add(this.onCollide, this);
-            this.isStuck = true;
-            if (hasGrav) {
-                Ball.rockRef = this;
-                this.isStuck = false;
-            }
-            else {
+            if (!hasGrav) {
                 this.p2Body.data.gravityScale = 0.0;
+                this.p2Body.static = true;
             }
         }
         Ball.prototype.onCollide = function (elem1, elem2) {
-            if (this.isStuck && (elem1 == Ball.rockRef.p2Body || elem2 == Ball.rockRef.p2Body)) {
+            if (this.p2Body.static && (elem1 == Ball.rockReference.body || elem2 == Ball.rockReference.body)) {
                 this.p2Body.data.gravityScale = 1.0;
-                this.isStuck = false;
+                this.p2Body.static = false;
             }
         };
         Ball.prototype.destroy = function () {
@@ -210,11 +207,24 @@ var BirdFlip;
             this.cursors = this.game.input.keyboard.createCursorKeys();
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         };
+        GameState.prototype.createBall = function (pos, isRock) {
+            var ball = new BirdFlip.Ball(this.game, pos, isRock);
+            this.elements.add(ball);
+            this.balls.push(ball);
+            return ball;
+        };
         GameState.prototype.createBalls = function () {
-            for (var i = 0; i < 10; ++i) {
-                var ball = new BirdFlip.Ball(this.game, i == 0);
-                this.elements.add(ball);
-                this.balls.push(ball);
+            this.createBall(new Phaser.Point(this.game.width * .5, this.game.height * .8), true);
+            var columns = 8;
+            for (var i = 0; i < columns; ++i) {
+                var x = (i + 1) / (columns + 1) * this.game.width;
+                var rows = this.game.rnd.integerInRange(4, 10);
+                var y = 0;
+                for (var j = 0; j < rows; ++j) {
+                    var pt = new Phaser.Point(x, y);
+                    var ball = this.createBall(pt, false);
+                    y += 2 * ball.radius;
+                }
             }
         };
         GameState.prototype.update = function () {
@@ -226,14 +236,26 @@ var BirdFlip;
             this.player.setOpen(this.spaceKey.isDown);
             this.player.updatePlayer(dt);
             //test which balls are still valid:
+            var lose = false;
             for (var i = 0; i < this.balls.length; ++i) {
                 var ball = this.balls[i];
                 if (this.player.eatsAtLoc(ball.position)) {
+                    if (i == 0)
+                        lose = true;
                     //destroy!
                     ball.destroy();
                     this.elements.remove(ball);
                     this.balls.splice(i, 1);
                     --i;
+                }
+            }
+            if (lose) {
+                //flush balls:
+                while (this.balls.length > 0) {
+                    var ball = this.balls[0];
+                    ball.destroy();
+                    this.elements.remove(ball);
+                    this.balls.splice(0, 1);
                 }
             }
             if (this.balls.length == 0) {
