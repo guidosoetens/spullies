@@ -2,10 +2,15 @@
 
 module Bewlit
 {
-    export class CornerPiece extends Phaser.Group {
+    export class CornerPiece extends Phaser.Graphics {
+
+        static counter:number = 0;
+        idx:number;
 
         constructor(game:Phaser.Game, cornerPt:Phaser.Point, anchor1:Phaser.Point, anchor2:Phaser.Point) {
             super(game);
+
+            this.idx = CornerPiece.counter++;
 
             var polygonPoints:number[][] = [];
             polygonPoints.push([cornerPt.x, cornerPt.y]);
@@ -26,23 +31,22 @@ module Bewlit
                 polygonPoints.push([x, y]);
             }
             
-            var gr = this.game.make.graphics(0, 0);
-            gr.beginFill(0xaaaa00, .5);
-            gr.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
+            this.beginFill(0xaaaa00, .5);
+            this.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
             for(var i =0; i<polygonPoints.length; ++i) {
-                gr.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
+                this.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
             }
-            gr.endFill();
-            this.addChild(gr);
+            this.endFill();
 
             //add to physics:
-            var fooBody = this.game.make.graphics(0, 0);
-            this.game.physics.p2.enable(fooBody);
-            var cornerBody:Phaser.Physics.P2.Body = fooBody.body;
+            this.game.physics.p2.enable(this);
+            var cornerBody:Phaser.Physics.P2.Body = this.body;
             cornerBody.static = true;
             cornerBody.addPolygon({}, polygonPoints);
-            cornerBody.adjustCenterOfMass();
-            this.addChild(fooBody);
+        }
+
+        update() {
+            this.game.debug.text('pos: X[' + this.x + '] [' + this.y + ']',  30, 30 + 20 * this.idx);
         }
     }
 }

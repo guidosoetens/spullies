@@ -11,14 +11,14 @@ var Bewlit;
         function Bullet(game) {
             _super.call(this, game);
             var polygonPoints = [];
-            polygonPoints.push([-20, 20]);
             polygonPoints.push([-20, -20]);
+            polygonPoints.push([20, -20]);
             var samples = 30;
             var offset = 20;
             for (var i = 0; i < samples; ++i) {
                 var t = i / (samples - 1);
-                var angle = (t - .5) * Math.PI;
-                polygonPoints.push([40 * Math.cos(angle), 20 * Math.sin(angle)]);
+                var angle = (t) * Math.PI;
+                polygonPoints.push([20 * Math.cos(angle), 40 * Math.sin(angle)]);
             }
             this.x = this.game.width / 2;
             this.y = this.game.height / 2;
@@ -33,13 +33,14 @@ var Bewlit;
             this.game.physics.p2.enable(this);
             this.bulletBody = this.body;
             this.bulletBody.addPolygon({}, polygonPoints);
+            this.bulletBody.data.position = [0, 0];
+            this.bulletBody.angularDamping = 0.8;
         }
         Bullet.prototype.proceed = function (dt, thrust) {
             if (thrust) {
                 var ang = Math.PI * this.bulletBody.angle / 180.0;
                 var toPt = new Phaser.Point(Math.cos(ang), Math.sin(ang));
-                this.bulletBody.moveRight(toPt.x * 200);
-                this.bulletBody.moveDown(toPt.y * 200);
+                this.bulletBody.thrust(-1000);
             }
         };
         return Bullet;
@@ -53,6 +54,7 @@ var Bewlit;
         __extends(CornerPiece, _super);
         function CornerPiece(game, cornerPt, anchor1, anchor2) {
             _super.call(this, game);
+            this.idx = CornerPiece.counter++;
             var polygonPoints = [];
             polygonPoints.push([cornerPt.x, cornerPt.y]);
             var frac1 = .5 * this.game.rnd.frac();
@@ -69,25 +71,24 @@ var Bewlit;
                 var y = min_t * min_tt * anchor1.y + 3 * t * min_tt * control1.y + 3 * tt * min_t * control2.y + t * tt * anchor2.y;
                 polygonPoints.push([x, y]);
             }
-            var gr = this.game.make.graphics(0, 0);
-            gr.beginFill(0xaaaa00, .5);
-            gr.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
+            this.beginFill(0xaaaa00, .5);
+            this.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
             for (var i = 0; i < polygonPoints.length; ++i) {
-                gr.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
+                this.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
             }
-            gr.endFill();
-            this.addChild(gr);
+            this.endFill();
             //add to physics:
-            var fooBody = this.game.make.graphics(0, 0);
-            this.game.physics.p2.enable(fooBody);
-            var cornerBody = fooBody.body;
+            this.game.physics.p2.enable(this);
+            var cornerBody = this.body;
             cornerBody.static = true;
             cornerBody.addPolygon({}, polygonPoints);
-            cornerBody.adjustCenterOfMass();
-            this.addChild(fooBody);
         }
+        CornerPiece.prototype.update = function () {
+            this.game.debug.text('pos: X[' + this.x + '] [' + this.y + ']', 30, 30 + 20 * this.idx);
+        };
+        CornerPiece.counter = 0;
         return CornerPiece;
-    }(Phaser.Group));
+    }(Phaser.Graphics));
     Bewlit.CornerPiece = CornerPiece;
 })(Bewlit || (Bewlit = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>

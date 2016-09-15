@@ -15,8 +15,7 @@ module Bewlit
         }
         
         create() {
-
-
+            
             this.elements = this.game.add.group();
 
             this.game.physics.startSystem(Phaser.Physics.P2JS);
