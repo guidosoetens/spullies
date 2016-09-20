@@ -4,7 +4,7 @@
     "version": "0.1.0",
     "command": "tsc",
     "isShellCommand": true,
-    "args": [ "--out", "Bewlit/main.js", "Bewlit/main.ts", "--target", "ES5" ],
+    "args": [ "--out", "BirdFlip/main.js", "BirdFlip/main.ts", "--target", "ES5" ],
     "showOutput": "always",
     "problemMatcher": "$tsc"
 }

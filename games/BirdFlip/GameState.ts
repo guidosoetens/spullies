@@ -1,6 +1,7 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Player.ts"/>
 ///<reference path="Ball.ts"/>
+///<reference path="Obstacle.ts"/>
 
 module BirdFlip
 {
@@ -44,9 +45,24 @@ module BirdFlip
             this.player = new Player(this.game);
             this.elements.add(this.player);
 
+            //bind obstacles:
+            this.elements.add(new Obstacle(this.game, new Phaser.Point(0, 0)));
+            this.elements.add(new Obstacle(this.game, new Phaser.Point(this.game.width, 0)));
+
             this.cursors = this.game.input.keyboard.createCursorKeys();
 
+            //bind keys:
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT).onDown.add(this.onLeft, this);
+            this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT).onDown.add(this.onRight, this);
+        }
+
+        onLeft() {
+            this.player.goLeft();
+        }
+
+        onRight() {
+            this.player.goRight();
         }
 
         createBall(pos:Phaser.Point, isRock:boolean) : Ball {

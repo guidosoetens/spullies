@@ -107,18 +107,19 @@ module BirdFlip
             //move:
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
+            var speed:number = 200;
             if(this.faceLeft) {
                 if(this.mainBody.x > 50) {
-                    this.beakGraphics.body.moveLeft(300);
-                    this.mainBody.body.moveLeft(300);
+                    this.beakGraphics.body.moveLeft(speed);
+                    this.mainBody.body.moveLeft(speed);
                 }
                 else
                     this.faceLeft = false;
             }
             else {
                 if(this.mainBody.x < this.game.width - 50) {
-                    this.beakGraphics.body.moveRight(300);
-                    this.mainBody.body.moveRight(300);
+                    this.beakGraphics.body.moveRight(speed);
+                    this.mainBody.body.moveRight(speed);
                 }
                 else
                     this.faceLeft = true;
@@ -132,7 +133,7 @@ module BirdFlip
                 goalAngle = -goalAngle;
 
             var deltaAngle = goalAngle - currAngle;
-            var angVel = deltaAngle * 5;
+            var angVel = deltaAngle * 10;
             if(Math.abs(angVel) > 300)
                 angVel = angVel < 0 ? -300 : 300;
             this.beakGraphics.body.rotateRight(angVel);

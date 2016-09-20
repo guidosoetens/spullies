@@ -149,12 +149,9 @@ vec4 sampleHexValue(vec2 xy) {
 }
 
 void main() {
-    
     vec2 uv = vTextureCoord;
     vec2 xy = (uv - .5) * vec2(1024, 768);
-    
     gl_FragColor = sampleHexValue(xy);
-    
     
     /*
     float maxHeight = 50.0;

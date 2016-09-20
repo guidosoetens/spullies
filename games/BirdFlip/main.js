@@ -80,18 +80,19 @@ var BirdFlip;
             //move:
             this.mainBody.body.setZeroVelocity();
             this.beakGraphics.body.setZeroVelocity();
+            var speed = 200;
             if (this.faceLeft) {
                 if (this.mainBody.x > 50) {
-                    this.beakGraphics.body.moveLeft(300);
-                    this.mainBody.body.moveLeft(300);
+                    this.beakGraphics.body.moveLeft(speed);
+                    this.mainBody.body.moveLeft(speed);
                 }
                 else
                     this.faceLeft = false;
             }
             else {
                 if (this.mainBody.x < this.game.width - 50) {
-                    this.beakGraphics.body.moveRight(300);
-                    this.mainBody.body.moveRight(300);
+                    this.beakGraphics.body.moveRight(speed);
+                    this.mainBody.body.moveRight(speed);
                 }
                 else
                     this.faceLeft = true;
@@ -102,7 +103,7 @@ var BirdFlip;
             if (!this.faceLeft)
                 goalAngle = -goalAngle;
             var deltaAngle = goalAngle - currAngle;
-            var angVel = deltaAngle * 5;
+            var angVel = deltaAngle * 10;
             if (Math.abs(angVel) > 300)
                 angVel = angVel < 0 ? -300 : 300;
             this.beakGraphics.body.rotateRight(angVel);
@@ -176,8 +177,47 @@ var BirdFlip;
     BirdFlip.Ball = Ball;
 })(BirdFlip || (BirdFlip = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
+var BirdFlip;
+(function (BirdFlip) {
+    var Obstacle = (function (_super) {
+        __extends(Obstacle, _super);
+        function Obstacle(game, pos) {
+            _super.call(this, game);
+            var polygonPts = [[pos.x, pos.y]];
+            var samples = 20;
+            var a1 = new Phaser.Point(.5 * this.game.width, 0);
+            var c1 = new Phaser.Point((a1.x + pos.x) / 2, 0);
+            var a2 = new Phaser.Point(pos.x, .5 * this.game.height);
+            var c2 = new Phaser.Point(pos.x, (a1.y + pos.y) / 2);
+            for (var i = 0; i < samples; ++i) {
+                var t = i / (samples - 1.0);
+                var tt = t * t;
+                var min_t = 1.0 - t;
+                var min_tt = min_t * min_t;
+                var x = min_t * min_tt * a1.x + 3 * t * min_tt * c1.x + 3 * tt * min_t * c2.x + t * tt * a2.x;
+                var y = min_t * min_tt * a1.y + 3 * t * min_tt * c1.y + 3 * tt * min_t * c2.y + t * tt * a2.y;
+                polygonPts.push([x, y]);
+            }
+            this.game.physics.p2.enable(this);
+            var p2Body = this.body;
+            p2Body.static = true;
+            p2Body.addPolygon({}, polygonPts);
+            alert(p2Body.data.position[0] + " " + p2Body.data.position[1]);
+            this.beginFill(0xff0000, .5);
+            this.lineStyle(3, 0xffffff, 1);
+            this.moveTo(pos.x, pos.y);
+            for (var i = 0; i < polygonPts.length; ++i)
+                this.lineTo(polygonPts[i][0], polygonPts[i][1]);
+            this.lineTo(pos.x, pos.y);
+        }
+        return Obstacle;
+    }(Phaser.Graphics));
+    BirdFlip.Obstacle = Obstacle;
+})(BirdFlip || (BirdFlip = {}));
+///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Player.ts"/>
 ///<reference path="Ball.ts"/>
+///<reference path="Obstacle.ts"/>
 var BirdFlip;
 (function (BirdFlip) {
     var GameState = (function (_super) {
@@ -204,8 +244,20 @@ var BirdFlip;
             //create player:
             this.player = new BirdFlip.Player(this.game);
             this.elements.add(this.player);
+            //bind obstacles:
+            this.elements.add(new BirdFlip.Obstacle(this.game, new Phaser.Point(0, 0)));
+            this.elements.add(new BirdFlip.Obstacle(this.game, new Phaser.Point(this.game.width, 0)));
             this.cursors = this.game.input.keyboard.createCursorKeys();
+            //bind keys:
             this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT).onDown.add(this.onLeft, this);
+            this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT).onDown.add(this.onRight, this);
+        };
+        GameState.prototype.onLeft = function () {
+            this.player.goLeft();
+        };
+        GameState.prototype.onRight = function () {
+            this.player.goRight();
         };
         GameState.prototype.createBall = function (pos, isRock) {
             var ball = new BirdFlip.Ball(this.game, pos, isRock);
