@@ -198,17 +198,16 @@ var BirdFlip;
                 var y = min_t * min_tt * a1.y + 3 * t * min_tt * c1.y + 3 * tt * min_t * c2.y + t * tt * a2.y;
                 polygonPts.push([x, y]);
             }
-            this.game.physics.p2.enable(this);
-            var p2Body = this.body;
-            p2Body.static = true;
-            p2Body.addPolygon({}, polygonPts);
-            alert(p2Body.data.position[0] + " " + p2Body.data.position[1]);
             this.beginFill(0xff0000, .5);
             this.lineStyle(3, 0xffffff, 1);
             this.moveTo(pos.x, pos.y);
             for (var i = 0; i < polygonPts.length; ++i)
                 this.lineTo(polygonPts[i][0], polygonPts[i][1]);
             this.lineTo(pos.x, pos.y);
+            this.game.physics.p2.enable(this);
+            var p2Body = this.body;
+            p2Body.static = true;
+            p2Body.addPolygon({}, polygonPts);
         }
         return Obstacle;
     }(Phaser.Graphics));
