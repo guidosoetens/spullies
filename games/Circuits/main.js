@@ -98,7 +98,7 @@ var CircuitGame;
             var center = new Phaser.Point(x + GRIDWIDTH / 2, y + GRIDWIDTH / 2);
             this.graphics.x = center.x;
             this.graphics.y = center.y;
-            this.graphics.rotation = this.flips * 90;
+            this.graphics.rotation = this.flips * .5 * Math.PI;
         };
         return Block;
     }());
