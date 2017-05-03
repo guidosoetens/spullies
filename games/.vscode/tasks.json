@@ -1,10 +1,11 @@
 {
-    // See http://go.microsoft.com/fwlink/?LinkId=733558
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "0.1.0",
     "command": "tsc",
     "isShellCommand": true,
-    "args": [ "--out", "Blokjes/main.js", "Blokjes/main.ts", "--target", "ES5" ],
-    "showOutput": "always",
-    "problemMatcher": "$tsc"
+    "args": [ "--out", "Circuits/main.js", "Circuits/main.ts", "--target", "ES5" ],//"args": ["-p", "."],
+    "showOutput": "silent",
+    "problemMatcher": "$tsc",
+    "isBuildCommand" : true
 }

@@ -1,6 +1,6 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 
-module BlokjesGame
+module CircuitGame
 {
     export class TitleState extends Phaser.State {
         

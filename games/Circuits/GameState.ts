@@ -1,10 +1,8 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Defs.ts"/>
-///<reference path="BlobTuple.ts"/>
-///<reference path="Blob.ts"/>
-///<reference path="BlobRenderer.ts"/>
+///<reference path="Block.ts"/>
 
-module BlokjesGame
+module CircuitGame
 {
     const GAMESTATE_PLAYING:number = 0;
     const GAMESTATE_REMOVING:number = 1;
@@ -18,14 +16,15 @@ module BlokjesGame
         cursors: Phaser.CursorKeys;
         graphics: Phaser.Graphics;
         gridGraphics:Phaser.Graphics;
-        slots:Blob[][];
+        blocksGraphics:Phaser.Graphics;
+        slots:Block[][];
         tickParameter:number;
-        //blobsContainer:Phaser.Group;
+
+        playerBlockColumn:number;
+        playerBlockRow:number;
         
-        blobRenderer:BlobRenderer;
-        
-        nextBlob:BlobTuple;
-        playerBlob:BlobTuple;
+        nextBlock:Block;
+        playerBlock:Block;
         playerCurrentTick:number;
         totalRowsDrop:number;
         playerFracColumnBuffer:number;
@@ -33,9 +32,7 @@ module BlokjesGame
         
         gameState:number;
         gameStateParameter:number;
-        
-        //blobShader:Phaser.Filter;
-        
+    
         preload() {
              this.game.load.audio("backgroundMusic", ["assets/music.mp3"]);
              this.game.load.image("button", "../../assets/sprites/mushroom2.png", false);
@@ -50,7 +47,6 @@ module BlokjesGame
             this.tickParameter = 0;
             this.totalRowsDrop = 0;
            
-            
             //set component containers:
             var bg = this.game.add.sprite(0,0,'galaxy');
             bg.width = this.game.width;
@@ -74,6 +70,8 @@ module BlokjesGame
                     }
                 }
             }
+
+            this.blocksGraphics = this.game.add.graphics(0,0);
             
             /*
             var bmd = this.game.add.bitmapData(this.game.width, this.game.height);
@@ -82,8 +80,6 @@ module BlokjesGame
             bmd.draw(this.gridGraphics, 0, 0, this.game.width, this.game.height);
             */
             this.graphics = this.game.add.graphics(0, 0);
-            
-            this.blobRenderer = new BlobRenderer(this.game);
             
             //register keyboard events:
             this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -99,33 +95,27 @@ module BlokjesGame
             this.input.onDown.add(this.onMouseDown, this);
             
             var sound = this.game.add.audio('backgroundMusic');
-            sound.play('', 0, .2, true);
+            //sound.play('', 0, .2, true);
             
             this.resetGame();
         }
         
-        
-        
-        createRandomBlob() : Blob {
-            var b:Blob = new Blob(this.game);
+        createRandomBlock() : Block {
+            var b:Block = new Block(this.game);
             //this.blobsContainer.add(b);
-            b.typeIndex = this.game.rnd.integerInRange(0,COLORCODES.length - 1);
+            b.typeIndex = this.game.rnd.integerInRange(0, COLORCODES.length - 1);
             return b;
             //return new Blob(this.game.rnd.integerInRange(0,colorCodes.length - 1));
         }
         
-        createBlockingBlob() : Blob {
-            var b:Blob = new Blob(this.game);
+        createBlockingBlock() : Block {
+            var b:Block = new Block(this.game);
             //this.blobsContainer.add(b);
             b.isBlocking = true;
             return b;
         }
         
-        createRandomBlobTuple() : BlobTuple {
-            return new BlobTuple(this.createRandomBlob(), this.createRandomBlob());
-        }
-        
-        canPlayerBlobMoveToSlot(row:number, col:number):boolean {
+        canPlayerBlockMoveToSlot(row:number, col:number):boolean {
             if(col < 0 || col >= COLUMNCOUNT || row >= ROWCOUNT)
                 return false;
             if(row < 0)
@@ -147,11 +137,11 @@ module BlokjesGame
             for(var i:number=0; i<ROWCOUNT; ++i) {
                 this.slots[i] = [];
                 for(var j:number=0; j<COLUMNCOUNT; ++j) {
-                    this.slots[i][j] = i > ROWCOUNT - 3 ? this.createRandomBlob() : null;
+                    this.slots[i][j] = i > ROWCOUNT - 3 ? this.createRandomBlock() : null;
                 }
             }
             
-            this.nextBlob = this.createRandomBlobTuple();
+            this.nextBlock = this.createRandomBlock();
             
             this.punishmentPending = false;
             
@@ -159,11 +149,9 @@ module BlokjesGame
         }
         
         onMouseMove() {
-            
         }
         
         onMouseDown() {
-            
         }
         
         moveDown() {
@@ -174,9 +162,8 @@ module BlokjesGame
         moveLeft() {
             
              if(this.gameState == GAMESTATE_PLAYING) {
-                if(this.canPlayerBlobMoveToSlot(this.playerBlob.row, this.playerBlob.column - 1) 
-                && this.canPlayerBlobMoveToSlot(this.playerBlob.row2, this.playerBlob.column2 - 1))
-                    this.playerBlob.column--;
+                if(this.canPlayerBlockMoveToSlot(this.playerBlockRow, this.playerBlockColumn - 1))
+                    this.playerBlockColumn--;
                  
              }
         }
@@ -184,58 +171,35 @@ module BlokjesGame
         moveRight() {
             
             if(this.gameState == GAMESTATE_PLAYING) {
-                if(this.canPlayerBlobMoveToSlot(this.playerBlob.row, this.playerBlob.column + 1) 
-                && this.canPlayerBlobMoveToSlot(this.playerBlob.row2, this.playerBlob.column2 + 1))
-                    this.playerBlob.column++;
+                if(this.canPlayerBlockMoveToSlot(this.playerBlockRow, this.playerBlockColumn + 1))
+                    this.playerBlockColumn++;
             }
         }
         
         rotate() {
             
             if(this.gameState == GAMESTATE_PLAYING) {
-            
-                var col:number = this.playerBlob.column;
-                var row:number = this.playerBlob.row;
-                var orientation = this.playerBlob.orientation;
-                
-                this.playerBlob.orientation++;
-                
-                if(!this.canPlayerBlobMoveToSlot(this.playerBlob.row2, this.playerBlob.column2)) {
-                    
-                    //translate main blob to make rotation legal:
-                    var deltaIndices:number[] = NEIGHBORDELTAINDICES[this.playerBlob.orientation];
-                    this.playerBlob.row -= deltaIndices[0];
-                    this.playerBlob.column -= deltaIndices[1];
-                    
-                    if(!this.canPlayerBlobMoveToSlot(this.playerBlob.row, this.playerBlob.column)) {
-                        
-                        //rotation seems to be illegal -> revert to original state:
-                        this.playerBlob.row = row;
-                        this.playerBlob.column = col;
-                        this.playerBlob.orientation = orientation;
-                    }
-                    else if(deltaIndices[0] == 1) {
-                        //note: in this case, the blob was pushed upwards, so adjust the current 'tick' accordingly...
-                        this.playerCurrentTick = TICKCOUNT;
-                    }
-                }
+                var col:number = this.playerBlockColumn;
+                var row:number = this.playerBlockRow;
+                this.playerBlock.flips++;
             }
         }
         
         tickDown() {
             this.tickParameter--;
             this.playerCurrentTick++;
+            
             if(this.playerCurrentTick > TICKCOUNT) {
                 
-                if(this.canPlayerBlobMoveToSlot(this.playerBlob.row + 1, this.playerBlob.column) && this.canPlayerBlobMoveToSlot(this.playerBlob.row2 + 1, this.playerBlob.column2)) {
+                if(this.canPlayerBlockMoveToSlot(this.playerBlockRow + 1, this.playerBlockColumn)) {
                     //player blob tuple can move down:
                     this.playerCurrentTick = 0;
-                    this.playerBlob.row++;
+                    this.playerBlockRow++;
                 }
                 else {
                     //stop player blob tuple:
-                    this.slots[Math.max(0,this.playerBlob.row)][this.playerBlob.column] = this.playerBlob.blob1;
-                    this.slots[Math.max(0,this.playerBlob.row2)][this.playerBlob.column2] = this.playerBlob.blob2;
+                    this.slots[Math.max(0,this.playerBlockRow)][this.playerBlockColumn] = this.playerBlock;
+                    //this.slots[Math.max(0,this.playerBlob.row2)][this.playerBlob.column2] = this.playerBlob.blob2;
                     
                     this.dropStructure();
                     
@@ -259,14 +223,14 @@ module BlokjesGame
                 //15% chance that a single block drops 
                 var columnIdx:number = this.game.rnd.integerInRange(0, COLUMNCOUNT - 1);
                 if(this.slots[0][columnIdx] == null)
-                    this.slots[0][columnIdx] = this.createBlockingBlob();
+                    this.slots[0][columnIdx] = this.createBlockingBlock();
             }
             else if(randomFrac < .975) {
                 //7.5% chance that a single row of blocks drops
                 for(var j:number=0; j<COLUMNCOUNT; ++j)
                 {
                     if(this.slots[0][j] == null)
-                        this.slots[0][j] = this.createBlockingBlob();
+                        this.slots[0][j] = this.createBlockingBlock();
                 }
             }
             else {
@@ -276,7 +240,7 @@ module BlokjesGame
                     for(var j:number=0; j<COLUMNCOUNT; ++j)
                     {
                         if(this.slots[i][j] == null)
-                            this.slots[i][j] = this.createBlockingBlob();
+                            this.slots[i][j] = this.createBlockingBlock();
                     }
                 }
             }
@@ -297,9 +261,9 @@ module BlokjesGame
                 //bottom up:
                 for(var i:number=ROWCOUNT-1; i>=0; i--) {
                     
-                    var blob:Blob = this.slots[i][j];
+                    var block:Block = this.slots[i][j];
                     
-                    if(blob == null) {
+                    if(block == null) {
                         if(!foundFirstEmptySlot) {
                             foundFirstEmptySlot = true;
                             nextEmptyIndex = i;
@@ -308,17 +272,17 @@ module BlokjesGame
                     else {
                         if(foundFirstEmptySlot) {
                             //drop down:
-                            blob.dropping = true;
-                            blob.dropFromRow = i;
+                            block.dropping = true;
+                            block.dropFromRow = i;
                             
-                            this.slots[nextEmptyIndex][j] = blob;
+                            this.slots[nextEmptyIndex][j] = block;
                             this.slots[i][j] = null;
                             this.totalRowsDrop = Math.max(this.totalRowsDrop, nextEmptyIndex - i);
                             nextEmptyIndex--;
                             dropping = true;
                         }
                         else
-                            blob.dropping = false;
+                            block.dropping = false;
                     }
                 }
             }
@@ -331,14 +295,14 @@ module BlokjesGame
             }
         }
         
-        getConnectedElements(startRow:number, startColumn:number):Blob[] {
+        getConnectedElements(startRow:number, startColumn:number):Block[] {
             
-            var queue:Blob[] = [];
+            var queue:Block[] = [];
             var queueIndices:number[][] = [];
             
-            var srcBlob:Blob = this.slots[startRow][startColumn];
-            srcBlob.testSource = srcBlob;
-            queue[0] = srcBlob;
+            var srcBlock:Block = this.slots[startRow][startColumn];
+            srcBlock.testSource = srcBlock;
+            queue[0] = srcBlock;
             queueIndices[0] = [startRow, startColumn];
             
             var queueIdx:number = 0;
@@ -347,10 +311,10 @@ module BlokjesGame
                 
                 var i:number = queueIndices[queueIdx][0];
                 var j:number = queueIndices[queueIdx][1];
-                var blob:Blob = queue[queueIdx];
+                var block:Block = queue[queueIdx];
                 queueIdx++;
                 
-                if(blob.isBlocking)
+                if(block.isBlocking)
                     continue;
                 
                 //traverse neighbors:
@@ -360,14 +324,14 @@ module BlokjesGame
                     
                     if(this.isValidSlotIndex(ni, nj)) {
                         
-                        var nBlob:Blob = this.slots[ni][nj];
+                        var nBlock:Block = this.slots[ni][nj];
                        
-                        if(nBlob != null && nBlob.testSource != srcBlob && (nBlob.isBlocking || nBlob.typeIndex == srcBlob.typeIndex)) {
+                        if(nBlock != null && nBlock.testSource != srcBlock && (nBlock.isBlocking || nBlock.typeIndex == srcBlock.typeIndex)) {
                             //chained element found!
                             var nIdx = queue.length;
-                            queue[nIdx] = nBlob;
+                            queue[nIdx] = nBlock;
                             queueIndices[nIdx] = [ni, nj];
-                            nBlob.testSource = srcBlob;
+                            nBlock.testSource = srcBlock;
                         }
                     }
                 }
@@ -384,10 +348,10 @@ module BlokjesGame
             //unlink everything:
             for(var i:number=0; i<ROWCOUNT; ++i) {
                 for(var j:number=0; j<COLUMNCOUNT; ++j) {
-                    var blob:Blob = this.slots[i][j];
-                    if(blob != null) {
-                        blob.removing = false;
-                        blob.testSource = null;
+                    var block:Block = this.slots[i][j];
+                    if(block != null) {
+                        block.removing = false;
+                        block.testSource = null;
                     }
                 }
             }
@@ -395,8 +359,8 @@ module BlokjesGame
             for(var i:number=0; i<ROWCOUNT; ++i) {
                 for(var j:number=0; j<COLUMNCOUNT; ++j) {
                     
-                    var blob:Blob = this.slots[i][j];
-                    if(blob != null && !blob.isBlocking) {
+                    var block:Block = this.slots[i][j];
+                    if(block != null && !block.isBlocking) {
                         
                         //find connections to neighbors:
                         for(var n:number=0; n<4; ++n) {
@@ -405,22 +369,22 @@ module BlokjesGame
                             
                             if(this.isValidSlotIndex(ni, nj)) {
                                 var nBlob = this.slots[ni][nj];
-                                blob.chainedToNeighbor[n] = (nBlob != null && blob.typeIndex == nBlob.typeIndex);
+                                block.chainedToNeighbor[n] = (nBlob != null && block.typeIndex == nBlob.typeIndex);
                             }
                             else {
-                                blob.chainedToNeighbor[n] = false;
+                                block.chainedToNeighbor[n] = false;
                             }
                         }
                         
                         //test if blob should be removed:
-                        if(!blob.removing && blob.testSource == null) {
-                            var chain:Blob[] = this.getConnectedElements(i, j);
+                        if(!block.removing && block.testSource == null) {
+                            var chain:Block[] = this.getConnectedElements(i, j);
                             
                             var coloredCount = 0;
-                            chain.forEach((b:Blob) => { if(!b.isBlocking) ++ coloredCount;});
+                            chain.forEach((b:Block) => { if(!b.isBlocking) ++ coloredCount;});
                             
                             if(coloredCount >= 4) {
-                                chain.forEach((b:Blob) => {b.removing = true;});
+                                chain.forEach((b:Block) => {b.removing = true;});
                                 foundChains = true;
                             }
                         }
@@ -441,7 +405,7 @@ module BlokjesGame
                     this.pushPunishment();
                 }
                 else {
-                    this.dropNewBlobTuple();
+                    this.dropNewBlock();
                     this.punishmentPending = true;
                 }
                 
@@ -450,16 +414,20 @@ module BlokjesGame
             }
         }
         
-        dropNewBlobTuple() {
+        dropNewBlock() {
             this.playerCurrentTick = 0;
-            this.playerBlob = this.nextBlob;
-            this.nextBlob = this.createRandomBlobTuple();
+            this.playerBlock = this.nextBlock;
+            this.nextBlock = this.createRandomBlock();
             this.gameState = GAMESTATE_PLAYING;
             this.gameStateParameter = 0;
-            this.playerFracColumnBuffer = this.playerBlob.column;
+
+            this.playerBlockColumn = COLUMNCOUNT / 2 - 1;
+            this.playerBlockRow = TOPROWCOUNT;
+
+            this.playerFracColumnBuffer = this.playerBlockColumn;
             
             //test losing condition:
-            if(this.slots[TOPROWCOUNT][this.playerBlob.column])
+            if(this.slots[TOPROWCOUNT][this.playerBlockColumn])
             {
                 //LOSE:
                 this.resetGame();
@@ -502,9 +470,10 @@ module BlokjesGame
                         //remove 'removing' blobs from slots:
                         for(var i:number=0; i<ROWCOUNT; ++i) {
                             for(var j:number=0; j<COLUMNCOUNT; ++j) {
-                                var b:Blob = this.slots[i][j];
+                                var b:Block = this.slots[i][j];
                                 if(b != null && b.removing) {
                                     this.slots[i][j] = null;
+                                    b.destroy();
                                     //this.blobsContainer.remove(b);
                                 }
                             }
@@ -520,32 +489,34 @@ module BlokjesGame
             
             //update graphics:
             
-            this.blobRenderer.update();
-            this.drawBlobs();
+            this.drawBlocks();
         }
         
-        drawBlobs() {
+        drawBlocks() {
             
             var resolveAlphaFactor:number = this.gameState == GAMESTATE_REMOVING ? this.gameStateParameter : 1;
-            this.blobRenderer.begin(resolveAlphaFactor);
+
+            this.blocksGraphics.clear();
+            
             
             for(var i:number=0; i<ROWCOUNT; ++i) {
                 
                 for(var j:number=0; j<COLUMNCOUNT; ++j) {
                     
-                    var blob:Blob = this.slots[i][j];
-                    if(blob != null) {
+                    var block:Block = this.slots[i][j];
+                    if(block != null) {
                         
                         var iIdx = i;
                         
-                        if(this.gameState == GAMESTATE_DROPPING && blob.dropping) {
+                        if(this.gameState == GAMESTATE_DROPPING && block.dropping) {
                             
-                            var totalDrop:number = i - blob.dropFromRow;
-                            var dropIdx:number = blob.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
+                            var totalDrop:number = i - block.dropFromRow;
+                            var dropIdx:number = block.dropFromRow + totalDrop * (1 - Math.cos(this.gameStateParameter * .5 * Math.PI));
                             iIdx = (dropIdx);
                         }
                         
-                        this.blobRenderer.drawBlobAtIndices(iIdx, j, blob);
+                        block.draw(iIdx, j);
+                        //this.blobRenderer.drawBlobAtIndices(iIdx, j, block);
                     }
                 }
             }
@@ -553,16 +524,19 @@ module BlokjesGame
             if(this.gameState == GAMESTATE_PLAYING) {
                 
                 var tickBufferOffset:number = Math.sin(Math.min(1,this.tickParameter * 1.5) * .5 * Math.PI);
-                this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
-                var fracPlayerRow:number = this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1);
-                this.playerBlob.drawTupleAtIndices(this.blobRenderer, fracPlayerRow, this.playerFracColumnBuffer);
+                this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlockColumn;
+                var fracPlayerRow:number = this.playerBlockRow - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1);
+                //this.playerBlob.drawTupleAtIndices(this.blobRenderer, fracPlayerRow, this.playerFracColumnBuffer);
+                this.playerBlock.draw(fracPlayerRow, this.playerFracColumnBuffer);
+                debugText = fracPlayerRow + " " + this.playerFracColumnBuffer;
             }
             
             //render next blob:
-            this.nextBlob.drawTupleAtIndices(this.blobRenderer, TOPROWCOUNT + 1, COLUMNCOUNT + 1.5);
+            //this.nextBlob.drawTupleAtIndices(this.blobRenderer, TOPROWCOUNT + 1, COLUMNCOUNT + 1.5);
+            this.nextBlock.draw(TOPROWCOUNT + 1, COLUMNCOUNT + 1.5);
             
             
-            this.blobRenderer.end();
+            //this.blobRenderer.end();
         }
 
         render() {
@@ -591,9 +565,9 @@ module BlokjesGame
                // var t:number = Math.min(1,this.tickParameter * 1.5);
                 var tickBufferOffset:number = Math.sin(Math.min(1,this.tickParameter * 1.5) * .5 * Math.PI);// (1 - Math.cos(this.tickParameter * Math.PI)) / 2;
                 
-                this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlob.column;
+                this.playerFracColumnBuffer = .5 * this.playerFracColumnBuffer + .5 * this.playerBlockColumn;
                 
-                gridTop = srcY + (this.playerBlob.row - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1) - TOPROWCOUNT) * GRIDWIDTH;
+                gridTop = srcY + (this.playerBlockRow - 1 + (this.playerCurrentTick + tickBufferOffset) / (TICKCOUNT + 1) - TOPROWCOUNT) * GRIDWIDTH;
                 gridLeft = srcX + this.playerFracColumnBuffer * GRIDWIDTH;
                 
                 //this.playerBlob.render(this.graphics, gridLeft, gridTop);

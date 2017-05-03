@@ -2,7 +2,7 @@
 ///<reference path="TitleState.ts"/>
 ///<reference path="GameState.ts"/>
 
-module BlokjesGame
+module CircuitGame
 {
     export class SimpleGame {
         
@@ -20,6 +20,5 @@ module BlokjesGame
 }
 
 window.onload = () => {
-   
-    var game = new BlokjesGame.SimpleGame();
+    var game = new CircuitGame.SimpleGame();
 };

@@ -1,9 +1,9 @@
-///<reference path="../../phaser/phaser.d.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+///<reference path="../../phaser/phaser.d.ts"/>
 var BlokjesGame;
 (function (BlokjesGame) {
     var TitleState = (function (_super) {
@@ -26,19 +26,22 @@ var BlokjesGame;
             //this.game.scale.startFullScreen(true);
         };
         return TitleState;
-    })(Phaser.State);
+    }(Phaser.State));
     BlokjesGame.TitleState = TitleState;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
-var TOPROWCOUNT = 3;
-var VISIBLEROWCOUNT = 11;
-var ROWCOUNT = VISIBLEROWCOUNT + TOPROWCOUNT; //12 at the bottom
-var COLUMNCOUNT = 6; // 6;
-var COLORCODES = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff]; //, 0x00ffff];
-var TICKCOUNT = 1;
-var GRIDWIDTH = 50; // 45;
-var NEIGHBORDELTAINDICES = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
-var debugText;
+var BlokjesGame;
+(function (BlokjesGame) {
+    var TOPROWCOUNT = 3;
+    var VISIBLEROWCOUNT = 11;
+    var ROWCOUNT = VISIBLEROWCOUNT + TOPROWCOUNT; //12 at the bottom
+    var COLUMNCOUNT = 6; // 6;
+    var COLORCODES = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff]; //, 0x00ffff];
+    var TICKCOUNT = 1;
+    var GRIDWIDTH = 50; // 45;
+    var NEIGHBORDELTAINDICES = [[0, 1], [1, 0], [0, -1], [-1, 0]]; //(right, bottom, left, top) [row][column] - format
+    var debugText;
+})(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="Defs.ts"/>
 var BlokjesGame;
@@ -54,7 +57,7 @@ var BlokjesGame;
             this.dropFromRow = 0;
         }
         return Blob;
-    })();
+    }());
     BlokjesGame.Blob = Blob;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -141,7 +144,7 @@ var BlokjesGame;
             return [red, green, blue];
         };
         return BlobRenderer;
-    })();
+    }());
     BlokjesGame.BlobRenderer = BlobRenderer;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -202,7 +205,7 @@ var BlokjesGame;
             //this.blob2.render(graphics, x + this.renderOrientation.x * gridWidth, y + this.renderOrientation.y * gridWidth, 1);
         };
         return BlobTuple;
-    })();
+    }());
     BlokjesGame.BlobTuple = BlobTuple;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -271,7 +274,7 @@ var BlokjesGame;
             this.input.addMoveCallback(this.onMouseMove, this);
             this.input.onDown.add(this.onMouseDown, this);
             var sound = this.game.add.audio('backgroundMusic');
-            //sound.play('', 0, .2, true);
+            sound.play('', 0, .2, true);
             this.resetGame();
         };
         GameState.prototype.createRandomBlob = function () {
@@ -656,7 +659,7 @@ var BlokjesGame;
             this.game.debug.text("DEBUG: " + debugText, 0, this.game.height - 30);
         };
         return GameState;
-    })(Phaser.State);
+    }(Phaser.State));
     BlokjesGame.GameState = GameState;
 })(BlokjesGame || (BlokjesGame = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
@@ -672,7 +675,7 @@ var BlokjesGame;
             this.game.state.start("GameRunningState", true, true);
         }
         return SimpleGame;
-    })();
+    }());
     BlokjesGame.SimpleGame = SimpleGame;
 })(BlokjesGame || (BlokjesGame = {}));
 window.onload = function () {
