@@ -14,99 +14,32 @@ var __extends = (this && this.__extends) || (function () {
 ///<reference path="../../phaser/phaser.d.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
-    var Bullet = /** @class */ (function (_super) {
-        __extends(Bullet, _super);
-        function Bullet(game) {
+    var Ocean = /** @class */ (function (_super) {
+        __extends(Ocean, _super);
+        function Ocean(game) {
             var _this = _super.call(this, game) || this;
-            var polygonPoints = [];
-            polygonPoints.push([-20, -20]);
-            polygonPoints.push([20, -20]);
-            var samples = 30;
-            var offset = 20;
-            for (var i = 0; i < samples; ++i) {
-                var t = i / (samples - 1);
-                var angle = (t) * Math.PI;
-                polygonPoints.push([20 * Math.cos(angle), 40 * Math.sin(angle)]);
-            }
-            _this.x = _this.game.width / 2;
-            _this.y = _this.game.height / 2;
-            _this.lineStyle(3, 0xaa0000);
-            _this.beginFill(0xff0000, 1);
-            _this.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
-            for (var i = 0; i < polygonPoints.length; ++i) {
-                _this.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
-            }
-            _this.lineTo(polygonPoints[0][0], polygonPoints[0][1]);
+            var peachSprite = game.add.sprite(-256, 0, 'peachy');
+            //init shader:
+            _this.shader = new Phaser.Filter(game, null, game.cache.getShader('oceanShader'));
+            // this.shader.uniforms.uTimeParam = { type: 'float', value: 0. };
+            // this.shader.uniforms.uTexture = { type: 'sampler2D', value: peachSprite.texture, textureData: { repeat: true } };
+            _this.filters = [_this.shader];
+            //peachSprite
+            // uvBmpContainerSprite.filters = [ this.shader ];
+            _this.beginFill(0xffffff, 1);
+            _this.drawRect(0, 0, 100, 100);
             _this.endFill();
-            _this.game.physics.p2.enable(_this);
-            _this.bulletBody = _this.body;
-            _this.bulletBody.addPolygon({}, polygonPoints);
-            _this.bulletBody.data.position = [0, 0];
-            _this.bulletBody.angularDamping = 0.8;
             return _this;
         }
-        Bullet.prototype.proceed = function (dt, thrust) {
-            if (thrust) {
-                var ang = Math.PI * this.bulletBody.angle / 180.0;
-                var toPt = new Phaser.Point(Math.cos(ang), Math.sin(ang));
-                this.bulletBody.thrust(-1000);
-                //this.bulletBody.moveRight(toPt.x * 200);
-                //this.bulletBody.moveDown(toPt.y * 200);
-                //this.bulletBody.applyForce([200 * toPt.x, 200 * toPt.y], this.bulletBody.data.position[0], this.bulletBody.data.position[1]);
-            }
+        Ocean.prototype.updateFrame = function (dt) {
+            // this.shader.update();
         };
-        return Bullet;
+        return Ocean;
     }(Phaser.Graphics));
-    OceanEaters.Bullet = Bullet;
+    OceanEaters.Ocean = Ocean;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../phaser/phaser.d.ts"/>
-var OceanEaters;
-(function (OceanEaters) {
-    var CornerPiece = /** @class */ (function (_super) {
-        __extends(CornerPiece, _super);
-        function CornerPiece(game, cornerPt, anchor1, anchor2) {
-            var _this = _super.call(this, game) || this;
-            _this.idx = CornerPiece.counter++;
-            var polygonPoints = [];
-            polygonPoints.push([cornerPt.x, cornerPt.y]);
-            var frac1 = .5 * _this.game.rnd.frac();
-            var frac2 = .5 * _this.game.rnd.frac();
-            var control1 = new Phaser.Point(frac1 * anchor1.x + (1 - frac1) * cornerPt.x, frac1 * anchor1.y + (1 - frac1) * cornerPt.y);
-            var control2 = new Phaser.Point(frac2 * anchor2.x + (1 - frac2) * cornerPt.x, frac2 * anchor2.y + (1 - frac2) * cornerPt.y);
-            var samples = 20;
-            for (var i = 0; i < samples; ++i) {
-                var t = i / (samples - 1);
-                var tt = t * t;
-                var min_t = 1 - t;
-                var min_tt = min_t * min_t;
-                var x = min_t * min_tt * anchor1.x + 3 * t * min_tt * control1.x + 3 * tt * min_t * control2.x + t * tt * anchor2.x;
-                var y = min_t * min_tt * anchor1.y + 3 * t * min_tt * control1.y + 3 * tt * min_t * control2.y + t * tt * anchor2.y;
-                polygonPoints.push([x, y]);
-            }
-            _this.beginFill(0xaaaa00, .5);
-            _this.moveTo(polygonPoints[0][0], polygonPoints[0][1]);
-            for (var i = 0; i < polygonPoints.length; ++i) {
-                _this.lineTo(polygonPoints[i][0], polygonPoints[i][1]);
-            }
-            _this.endFill();
-            //add to physics:
-            _this.game.physics.p2.enable(_this);
-            var cornerBody = _this.body;
-            cornerBody.static = true;
-            cornerBody.addPolygon({}, polygonPoints);
-            return _this;
-        }
-        CornerPiece.prototype.update = function () {
-            this.game.debug.text('pos: X[' + this.x + '] [' + this.y + ']', 30, 30 + 20 * this.idx);
-        };
-        CornerPiece.counter = 0;
-        return CornerPiece;
-    }(Phaser.Graphics));
-    OceanEaters.CornerPiece = CornerPiece;
-})(OceanEaters || (OceanEaters = {}));
-///<reference path="../../phaser/phaser.d.ts"/>
-///<reference path="Bullet.ts"/>
-///<reference path="CornerPiece.ts"/>
+///<reference path="Ocean.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
     var GameState = /** @class */ (function (_super) {
@@ -114,8 +47,13 @@ var OceanEaters;
         function GameState() {
             return _super.call(this) || this;
         }
+        GameState.prototype.preload = function () {
+            this.game.load.shader("oceanShader", 'assets/oceanShader.frag');
+            this.game.load.image('peachy', "assets/peachy.png");
+        };
         GameState.prototype.create = function () {
             this.graphics = this.game.add.graphics(0, 0);
+            this.elements = this.game.add.group();
             this.trackMouseDown = false;
             this.trackMouseTime = 0;
             this.trackMousePos = new Phaser.Point(0, 0);
@@ -123,6 +61,8 @@ var OceanEaters;
             this.currentStateTimer = -1;
             this.moveVelocity = 0;
             this.fooString = "";
+            this.ocean = new OceanEaters.Ocean(this.game);
+            this.elements.addChild(this.ocean);
         };
         GameState.prototype.update = function () {
             var dt = this.game.time.physicsElapsed;
@@ -142,6 +82,7 @@ var OceanEaters;
             this.game.debug.text("STATE: " + this.currentState, 5, 30, "#ffffff");
             this.game.debug.text("MOVE VELOCITY: " + this.moveVelocity, 5, 45, "#ffffff");
             this.game.debug.text("ACTION: " + this.fooString, 5, 60, "#ffffff");
+            this.ocean.updateFrame(dt);
         };
         GameState.prototype.updateInput = function (dt) {
             // this.input.activePointer.isDown

@@ -33,6 +33,10 @@ module BlokjesGame
         
         gameState:number;
         gameStateParameter:number;
+
+
+        //ocean:
+        shader:Phaser.Filter;
         
         //blobShader:Phaser.Filter;
         

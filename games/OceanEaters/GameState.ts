@@ -1,16 +1,12 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
-///<reference path="Bullet.ts"/>
-///<reference path="CornerPiece.ts"/>
+///<reference path="Ocean.ts"/>
 
 module OceanEaters
 {
     export class GameState extends Phaser.State {
 
-        // spaceKey:Phaser.Key;
-        // bullet:Bullet;
-        // elements:Phaser.Group;
-
         graphics:Phaser.Graphics;
+        elements:Phaser.Group;
 
         //input tracking:
         trackMouseDown:boolean;
@@ -24,13 +20,23 @@ module OceanEaters
 
         fooString:string;
 
+        //ocean:
+        ocean:Ocean;
+
 
         constructor() {
             super();
         }
+
+        preload() {
+            this.game.load.shader("oceanShader", 'assets/oceanShader.frag');
+            this.game.load.image('peachy', "assets/peachy.png");
+       }
         
         create() {
+
             this.graphics = this.game.add.graphics(0,0); 
+            this.elements = this.game.add.group();
 
             this.trackMouseDown = false;
             this.trackMouseTime = 0;
@@ -41,6 +47,9 @@ module OceanEaters
             this.moveVelocity = 0;
 
             this.fooString = "";
+
+            this.ocean = new Ocean(this.game);
+            this.elements.addChild(this.ocean);
         }
 
 
@@ -65,6 +74,8 @@ module OceanEaters
             this.game.debug.text("STATE: " + this.currentState, 5, 30, "#ffffff");
             this.game.debug.text("MOVE VELOCITY: " + this.moveVelocity, 5, 45, "#ffffff");
             this.game.debug.text("ACTION: " + this.fooString, 5, 60, "#ffffff");
+
+            this.ocean.updateFrame(dt);
 
         }
 
