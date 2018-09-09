@@ -157,7 +157,7 @@ var OceanEaters;
         BadBuoy.prototype.updateRender = function (x, y, s, alpha) {
             this.graphics.position.x = x;
             this.graphics.position.y = y;
-            this.graphics.alpha = 0; // alpha;
+            this.graphics.alpha = alpha;
             this.graphics.scale.x = s;
             this.graphics.scale.y = s;
         };
@@ -205,9 +205,13 @@ var OceanEaters;
             this.ocean = new OceanEaters.Ocean(this.game);
             this.player = new OceanEaters.Player(this.game);
             this.buoys = [];
-            for (var i = 0; i < 10; ++i) {
-                var buoy = new OceanEaters.BadBuoy(this.game, Math.random(), Math.random());
-                this.buoys.push(buoy);
+            var reps = 5;
+            for (var x = 0; x < reps; ++x) {
+                for (var y = 0; y < reps; ++y) {
+                    var buoy = new OceanEaters.BadBuoy(this.game, (x + 0.5) / reps, (y + 0.5) / reps);
+                    buoy.index = this.buoys.length;
+                    this.buoys.push(buoy);
+                }
             }
             this.playerPos = new Phaser.Point(0, 0);
             this.playerDirection = 0;
@@ -243,7 +247,7 @@ var OceanEaters;
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var speed = dt * .05; // * (this.game.input.keyboard.isDown(Phaser.Keyboard.UP) ? 1 : 0);
+            var speed = dt * .05 * (this.game.input.keyboard.isDown(Phaser.Keyboard.UP) ? 1 : 0);
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
             if (this.playerPos.x < 0.0)
                 this.playerPos.x += 1.0;
@@ -265,6 +269,7 @@ var OceanEaters;
             for (var i = 0; i < this.buoys.length; ++i) {
                 var pos = this.buoys[i].position;
                 this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 10);
+                this.game.debug.text("" + this.buoys[i].index, dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y));
             }
             this.debugGraphics.endFill();
             //update state:
@@ -287,16 +292,17 @@ var OceanEaters;
             this.ocean.updateFrame(dt, this.playerPos, this.playerDirection);
             this.sky.updateFrame(dt, this.playerPos, this.playerDirection);
             this.player.updateFrame(dt, this.playerPos, this.playerDirection);
-            for (var i = 0; i < 10; ++i) {
+            for (var i = 0; i < this.buoys.length; ++i) {
                 var oceanUv = this.getRelativeOceanPosition(this.buoys[i].position);
                 var playerPosX = this.player.group.position.x;
                 var playerPosY = this.player.group.position.y;
-                var x = playerPosX + 10. * oceanUv.x * this.game.scale.width;
-                var y = playerPosY - oceanUv.y * this.game.scale.height * .5;
-                var scale = 1 - oceanUv.y;
-                var alpha = Math.min(1, 1 - oceanUv.y);
+                var x = playerPosX + 5. * oceanUv.x * this.game.scale.width;
+                var y = playerPosY - oceanUv.y * this.game.scale.height;
+                var scale = 1; //Math.max(0, 1 - 10 * oceanUv.y);
+                var alpha = 1; //Math.min(1, 1 - 10. * oceanUv.y);
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
+                this.game.debug.text("" + this.buoys[i].index + " " + oceanUv.y, x, y);
             }
         };
         GameState.prototype.getRelativeOceanPosition = function (p) {
@@ -305,7 +311,7 @@ var OceanEaters;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
             var foundResult = false;
-            var v = 10000;
+            var v = 100;
             var u = 0;
             for (var i = 0; i < 3; ++i) {
                 for (var j = 0; j < 3; ++j) {
@@ -313,7 +319,7 @@ var OceanEaters;
                     var y = toPosY + j - 1;
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
-                    if (curr_v > 0) {
+                    if (curr_v > -.1) {
                         if (curr_v < v) {
                             foundResult = true;
                             v = curr_v;
@@ -324,6 +330,7 @@ var OceanEaters;
             }
             if (!foundResult)
                 return new Phaser.Point(0, 0);
+            u = u % 1.0;
             if (u > .5)
                 u -= 1.0;
             else if (u < -.5)

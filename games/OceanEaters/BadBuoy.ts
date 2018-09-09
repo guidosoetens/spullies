@@ -7,6 +7,7 @@ module OceanEaters
         game:Phaser.Game;
         graphics:Phaser.Graphics;
         position:Phaser.Point;
+        index:number;
 
         constructor(game:Phaser.Game, x:number, y:number) {
 
@@ -23,7 +24,7 @@ module OceanEaters
         updateRender(x:number, y:number, s:number, alpha:number) {
             this.graphics.position.x = x;
             this.graphics.position.y = y;
-            this.graphics.alpha = 0;// alpha;
+            this.graphics.alpha = alpha;
             this.graphics.scale.x = s;
             this.graphics.scale.y = s;
         }
