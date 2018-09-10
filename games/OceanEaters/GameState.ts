@@ -46,7 +46,7 @@ module OceanEaters
             this.game.load.shader("skyShader", 'assets/skyShader.frag');
 
             //images:
-            this.game.load.image('ripples', "assets/checkers.png");
+            this.game.load.image('ripples', "assets/ripples.png");
             this.game.load.image('sky', "assets/sky.jpg");
             this.game.load.image('mountains', "assets/mountains.png");
             this.game.load.image('surfer', "assets/turtle.png");
@@ -194,19 +194,18 @@ module OceanEaters
 
                 var oceanUv = this.getRelativeOceanPosition(this.buoys[i].position);
 
-                var transUv = new Phaser.Point(oceanUv.x, oceanUv.y);// / (oceanUv.y + 1));
-                transUv.y *= 1.0 / 1.5; //in shader: xy.y *= 1.5
+                var transUv = new Phaser.Point(oceanUv.x, oceanUv.y);
 
-                transUv = transUv.multiply(1.0 / 0.5, (1.0 / 0.5) / 1.5); //in shader: transUV *= 0.5
+                const plane_scale = 0.05;
 
+                //transUv.y /= 1.5; //in shader: xy.y *= 1.5
+                transUv = transUv.multiply(1.0 / plane_scale, 1.0 / plane_scale);
                 transUv.y = transUv.y / (transUv.y + 1); //deform Y
-
-                transUv = transUv.multiply(1.0 / 0.5, (1.0 / 0.5) / 1.5); //in shader: transUV *= 0.5
-
-                
+                transUv.x = (1 - transUv.y) * transUv.x; //deform X
+                transUv.y /= 1.5; //in shader: xy.y *= 1.5
 
                 transUv.x *= this.ocean.sprite.width;
-                transUv.y *= this.ocean.sprite.height / 1.5; //in shader: xy.y *= 1.5
+                transUv.y *= this.ocean.sprite.height; //in shader: xy.y *= 1.5
                 
                 // transUv.x *= (1. - oceanUv.y);
 
