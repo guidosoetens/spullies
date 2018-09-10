@@ -38,22 +38,14 @@ void main( void )
 	xy.y *= 1.5; //stretch y to make top coordinate xy.y = 1 (compensate for centerpoint = .333)
 
 
-	vec2 transUV;
+	vec2 transUV = xy;
 	transUV.y = -(1. + 1. / (xy.y - 1.0)); //vertical asymptote at uv.y = 1
-	transUV.x = xy.x / (1. - xy.y); //scale from 1 (at uv.y = 0, i.e. div one) to infinity (at uv.y = 1, i.e. div zero)
-	transUV *= width;
-	// transUV.y += 10. * uTimeParam;
-	// transUV.x -= .5 * width;
+	// transUV.x = xy.x / (1. - xy.y); //scale from 1 (at uv.y = 0, i.e. div one) to infinity (at uv.y = 1, i.e. div zero)
+	transUV *= 0.5;
 	transUV = rotate2D(transUV, uPlayerAngle);
-	// transUV.x += .5 * width;
-	transUV += 10. * uPlayerPosition;
-	// transUV *= uResolution.x / 1500.0;
+	transUV += uPlayerPosition;
+	transUV = vec2(transUV.y, transUV.x);
 	gl_FragColor = mix(texture2D(uTexture, fract(transUV)), vec4(.3, 1, .8, 1), pow(uv.y, 1.5));
-
-	// vec2 coord = fract(transUV);
-	// if(coord.x < .01 || coord.x > .99 || coord.y < .01 || coord.y > .99)
-	// 	gl_FragColor = vec4(0,0,0,1);
-
 	if(length(xy) < .01)
 		gl_FragColor = vec4(0,0,0,1);
 }

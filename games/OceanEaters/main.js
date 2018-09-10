@@ -148,9 +148,10 @@ var OceanEaters;
     var BadBuoy = /** @class */ (function () {
         function BadBuoy(game, x, y) {
             this.game = game;
+            var clr = (x < .2 && y < .2) ? 0xff0000 : 0x0;
             this.graphics = this.game.add.graphics(0, 0);
-            this.graphics.beginFill(0xf00, 1);
-            this.graphics.drawEllipse(0, 0, 10, 5);
+            this.graphics.beginFill(clr, 1);
+            this.graphics.drawEllipse(0, 0, 5, 5);
             this.graphics.endFill();
             this.position = new Phaser.Point(x, y);
         }
@@ -184,7 +185,7 @@ var OceanEaters;
             this.game.load.shader("oceanShader", 'assets/oceanShader.frag');
             this.game.load.shader("skyShader", 'assets/skyShader.frag');
             //images:
-            this.game.load.image('ripples', "assets/ripples.png");
+            this.game.load.image('ripples', "assets/checkers.png");
             this.game.load.image('sky', "assets/sky.jpg");
             this.game.load.image('mountains', "assets/mountains.png");
             this.game.load.image('surfer', "assets/turtle.png");
@@ -214,7 +215,7 @@ var OceanEaters;
                 }
             }
             this.playerPos = new Phaser.Point(0, 0);
-            this.playerDirection = 0;
+            this.playerDirection = .5 * Math.PI;
             this.debugGraphics = this.game.add.graphics(0, 0);
             this.game.scale.onSizeChange.add(this.updateLayout, this);
             this.updateLayout();
@@ -247,7 +248,14 @@ var OceanEaters;
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var speed = dt * .05 * (this.game.input.keyboard.isDown(Phaser.Keyboard.UP) ? 1 : 0);
+            var speedFactor = 0;
+            if (this.game.input.keyboard.isDown(Phaser.Keyboard.UP))
+                speedFactor = 1;
+            else if (this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
+                speedFactor = -1;
+            if (this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
+                speedFactor *= 5.0;
+            var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
             if (this.playerPos.x < 0.0)
                 this.playerPos.x += 1.0;
@@ -294,15 +302,40 @@ var OceanEaters;
             this.player.updateFrame(dt, this.playerPos, this.playerDirection);
             for (var i = 0; i < this.buoys.length; ++i) {
                 var oceanUv = this.getRelativeOceanPosition(this.buoys[i].position);
+                var transUv = new Phaser.Point(oceanUv.x, oceanUv.y); // / (oceanUv.y + 1));
+                transUv.y *= 1.0 / 1.5; //in shader: xy.y *= 1.5
+                transUv.y = transUv.y / (transUv.y + 1); //deform Y
+                transUv = transUv.multiply(1.0 / 0.5, (1.0 / 0.5) / 1.5); //in shader: transUV *= 0.5
+                transUv.x *= this.ocean.sprite.width;
+                transUv.y *= this.ocean.sprite.height / 1.5; //in shader: xy.y *= 1.5
+                // transUv.x *= (1. - oceanUv.y);
+                /*
+                    float width = uResolution.x / 1500.0;
+                    vec2 uv = vTextureCoord * uScreenSize / uResolution;
+                    vec2 xy = uv - vec2(.5, .33333);
+                    xy.y *= 1.5; //stretch y to make top coordinate xy.y = 1 (compensate for centerpoint = .333)
+
+
+                    vec2 transUV;
+                    transUV.y = -(1. + 1. / (xy.y - 1.0)); //vertical asymptote at uv.y = 1
+                    transUV.x = xy.x / (1. - xy.y); //scale from 1 (at uv.y = 0, i.e. div one) to infinity (at uv.y = 1, i.e. div zero)
+                    transUV *= 0.5;
+                    transUV = rotate2D(transUV, uPlayerAngle);
+                    transUV += uPlayerPosition;
+                    transUV = vec2(transUV.y, transUV.x);
+                    gl_FragColor = mix(texture2D(uTexture, fract(transUV)), vec4(.3, 1, .8, 1), pow(uv.y, 1.5));
+                    if(length(xy) < .01)
+                        gl_FragColor = vec4(0,0,0,1);
+                */
                 var playerPosX = this.player.group.position.x;
                 var playerPosY = this.player.group.position.y;
-                var x = playerPosX + 5. * oceanUv.x * this.game.scale.width;
-                var y = playerPosY - oceanUv.y * this.game.scale.height;
+                var x = playerPosX + transUv.x; //5. * oceanUv.x * this.game.scale.width;
+                var y = playerPosY - transUv.y; // * this.game.scale.height;
                 var scale = 1; //Math.max(0, 1 - 10 * oceanUv.y);
                 var alpha = 1; //Math.min(1, 1 - 10. * oceanUv.y);
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
-                this.game.debug.text("" + this.buoys[i].index + " " + oceanUv.y, x, y);
+                this.game.debug.text("" + this.buoys[i].index, x, y);
             }
         };
         GameState.prototype.getRelativeOceanPosition = function (p) {
@@ -310,8 +343,8 @@ var OceanEaters;
             var toPosY = p.y - this.playerPos.y;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var foundResult = false;
-            var v = 100;
+            var closestDistance = 100;
+            var v = 0;
             var u = 0;
             for (var i = 0; i < 3; ++i) {
                 for (var j = 0; j < 3; ++j) {
@@ -319,22 +352,16 @@ var OceanEaters;
                     var y = toPosY + j - 1;
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
-                    if (curr_v > -.1) {
-                        if (curr_v < v) {
-                            foundResult = true;
+                    if (curr_v > 0) {
+                        var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
                             v = curr_v;
                             u = curr_u;
                         }
                     }
                 }
             }
-            if (!foundResult)
-                return new Phaser.Point(0, 0);
-            u = u % 1.0;
-            if (u > .5)
-                u -= 1.0;
-            else if (u < -.5)
-                u += 1.0;
             return new Phaser.Point(u, v);
         };
         GameState.prototype.updateInput = function (dt) {

@@ -13,9 +13,11 @@ module OceanEaters
 
             this.game = game;
 
+            var clr = (x < .2 && y < .2) ? 0xff0000 : 0x0;
+
             this.graphics = this.game.add.graphics(0,0);
-            this.graphics.beginFill(0xf00, 1);
-            this.graphics.drawEllipse(0,0,10,5);
+            this.graphics.beginFill(clr, 1);
+            this.graphics.drawEllipse(0,0,5,5);
             this.graphics.endFill();
 
             this.position = new Phaser.Point(x, y);
