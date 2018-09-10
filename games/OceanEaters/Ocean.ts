@@ -41,6 +41,7 @@ module OceanEaters
             this.sprite.width = w;
             this.sprite.height = h;
             this.shader.setResolution(w, h);
+
         }
 
         updateFrame(dt:number, pPos:Phaser.Point, pDir:number) {

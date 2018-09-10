@@ -29,6 +29,7 @@ module OceanEaters
         sky:Sky;
         player:Player;
         debugGraphics:Phaser.Graphics;
+        buoysParent:Phaser.Group;
         buoys:BadBuoy[];
 
 
@@ -72,18 +73,19 @@ module OceanEaters
 
             this.sky = new Sky(this.game);
             this.ocean = new Ocean(this.game);
-            this.player = new Player(this.game);
-            this.buoys = [];
 
             const reps:number = 5;
+            this.buoysParent = this.game.add.group();
+            this.buoys = [];
             for(var x:number=0; x<reps; ++x) {
                 for(var y:number=0; y<reps; ++y) {
-                    var buoy:BadBuoy = new BadBuoy(this.game, (x + 0.5) / reps, (y + 0.5) / reps);
-                    buoy.index = this.buoys.length;
+                    var buoy:BadBuoy = new BadBuoy(this.game, (x + 0.5) / reps, (y + 0.5) / reps, this.buoys.length);
                     this.buoys.push(buoy);
+                    this.buoysParent.addChild(buoy.graphics);
                 }
             }
 
+            this.player = new Player(this.game);
             this.playerPos = new Phaser.Point(0,0);
             this.playerDirection = .5 * Math.PI;
 
@@ -128,14 +130,15 @@ module OceanEaters
             var playerDirX:number = Math.cos(this.playerDirection);
             var playerDirY:number = Math.sin(this.playerDirection);
 
-            var speedFactor = 0;
+            var speedFactor = 1;
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP))
-                speedFactor = 1;
+                speedFactor = 2;
             else if(this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
                 speedFactor = -1;
 
+            speedFactor *= 4.0;
             if(this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-                speedFactor *= 5.0;
+                speedFactor *= 2.0;
 
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
@@ -201,56 +204,37 @@ module OceanEaters
                 //transUv.y /= 1.5; //in shader: xy.y *= 1.5
                 transUv = transUv.multiply(1.0 / plane_scale, 1.0 / plane_scale);
                 transUv.y = transUv.y / (transUv.y + 1); //deform Y
-                transUv.x = (1 - transUv.y) * transUv.x; //deform X
+                transUv.x =  (1 - transUv.y) * transUv.x; //deform X
+                var deformScaleX = (1 - transUv.y);
                 transUv.y /= 1.5; //in shader: xy.y *= 1.5
 
                 transUv.x *= this.ocean.sprite.width;
                 transUv.y *= this.ocean.sprite.height; //in shader: xy.y *= 1.5
                 
-                // transUv.x *= (1. - oceanUv.y);
-
-
-                /*
-                	float width = uResolution.x / 1500.0;
-                    vec2 uv = vTextureCoord * uScreenSize / uResolution;
-                    vec2 xy = uv - vec2(.5, .33333);
-                    xy.y *= 1.5; //stretch y to make top coordinate xy.y = 1 (compensate for centerpoint = .333)
-
-
-                    vec2 transUV;
-                    transUV.y = -(1. + 1. / (xy.y - 1.0)); //vertical asymptote at uv.y = 1
-                    transUV.x = xy.x / (1. - xy.y); //scale from 1 (at uv.y = 0, i.e. div one) to infinity (at uv.y = 1, i.e. div zero)
-                    transUV *= 0.5;
-                    transUV = rotate2D(transUV, uPlayerAngle);
-                    transUV += uPlayerPosition;
-                    transUV = vec2(transUV.y, transUV.x);
-                    gl_FragColor = mix(texture2D(uTexture, fract(transUV)), vec4(.3, 1, .8, 1), pow(uv.y, 1.5));
-                    if(length(xy) < .01)
-                        gl_FragColor = vec4(0,0,0,1);
-                */
-
-
-
-
-
-
-
-
-
-
-
                 var playerPosX:number = this.player.group.position.x;
                 var playerPosY:number = this.player.group.position.y;
                 var x = playerPosX + transUv.x;//5. * oceanUv.x * this.game.scale.width;
                 var y = playerPosY - transUv.y;// * this.game.scale.height;
-                var scale = 1;//Math.max(0, 1 - 10 * oceanUv.y);
+                var scale = deformScaleX;//Math.max(0, 1 - 10 * oceanUv.y);
                 var alpha = 1;//Math.min(1, 1 - 10. * oceanUv.y);
+                if(oceanUv.y < 0)
+                    alpha = 1 + oceanUv.y / .05;
 
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
 
 
-                this.game.debug.text("" + this.buoys[i].index, x, y);
+                // this.game.debug.text("" + this.buoys[i].index, x, y);
+            }
+
+            function sortBuoys(a:BadBuoy, b:BadBuoy):number {
+                return a.graphics.position.y - b.graphics.position.y;
+            }
+
+            var sorted = this.buoys.sort(sortBuoys);
+            for(var i:number=0; i<sorted.length; ++i) {
+                this.buoysParent.setChildIndex(sorted[i].graphics, i);
+                // sorted[i].graphics.z = i;
             }
 
         }
@@ -274,7 +258,7 @@ module OceanEaters
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
 
-                    if(curr_v > 0) {
+                    if(curr_v > -.05) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
                         if(distance < closestDistance) {
                             closestDistance = distance;

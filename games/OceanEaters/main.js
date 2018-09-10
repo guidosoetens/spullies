@@ -146,14 +146,26 @@ var OceanEaters;
 var OceanEaters;
 (function (OceanEaters) {
     var BadBuoy = /** @class */ (function () {
-        function BadBuoy(game, x, y) {
+        function BadBuoy(game, x, y, index) {
             this.game = game;
-            var clr = (x < .2 && y < .2) ? 0xff0000 : 0x0;
-            this.graphics = this.game.add.graphics(0, 0);
+            this.index = index;
+            var clr = (x < .2 && y < .2) ? 0xff0000 : 0x00ff00;
+            var width = 400;
+            var height = 600;
+            var rad = Math.min(width, height) * .25;
+            this.graphics = this.game.make.graphics(0, 0);
+            this.graphics.beginFill(0x0, .2);
+            this.graphics.drawEllipse(0, 0, .6 * width, .1 * width);
             this.graphics.beginFill(clr, 1);
+            this.graphics.lineStyle(20, 0x0, 1);
+            this.graphics.drawRoundedRect(-width / 2, -height, width, height, rad);
             this.graphics.drawEllipse(0, 0, 5, 5);
             this.graphics.endFill();
             this.position = new Phaser.Point(x, y);
+            var style = { font: (height * .4) + "px Arial", fill: "#ffffff", align: "center" };
+            var text = game.make.text(0, -height / 2, "" + this.index, style);
+            text.anchor.set(0.5);
+            this.graphics.addChild(text);
         }
         BadBuoy.prototype.updateRender = function (x, y, s, alpha) {
             this.graphics.position.x = x;
@@ -204,16 +216,17 @@ var OceanEaters;
             this.fooString = "";
             this.sky = new OceanEaters.Sky(this.game);
             this.ocean = new OceanEaters.Ocean(this.game);
-            this.player = new OceanEaters.Player(this.game);
-            this.buoys = [];
             var reps = 5;
+            this.buoysParent = this.game.add.group();
+            this.buoys = [];
             for (var x = 0; x < reps; ++x) {
                 for (var y = 0; y < reps; ++y) {
-                    var buoy = new OceanEaters.BadBuoy(this.game, (x + 0.5) / reps, (y + 0.5) / reps);
-                    buoy.index = this.buoys.length;
+                    var buoy = new OceanEaters.BadBuoy(this.game, (x + 0.5) / reps, (y + 0.5) / reps, this.buoys.length);
                     this.buoys.push(buoy);
+                    this.buoysParent.addChild(buoy.graphics);
                 }
             }
+            this.player = new OceanEaters.Player(this.game);
             this.playerPos = new Phaser.Point(0, 0);
             this.playerDirection = .5 * Math.PI;
             this.debugGraphics = this.game.add.graphics(0, 0);
@@ -248,13 +261,14 @@ var OceanEaters;
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var speedFactor = 0;
+            var speedFactor = 1;
             if (this.game.input.keyboard.isDown(Phaser.Keyboard.UP))
-                speedFactor = 1;
+                speedFactor = 2;
             else if (this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
                 speedFactor = -1;
+            speedFactor *= 4.0;
             if (this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-                speedFactor *= 5.0;
+                speedFactor *= 2.0;
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
             if (this.playerPos.x < 0.0)
@@ -308,37 +322,29 @@ var OceanEaters;
                 transUv = transUv.multiply(1.0 / plane_scale, 1.0 / plane_scale);
                 transUv.y = transUv.y / (transUv.y + 1); //deform Y
                 transUv.x = (1 - transUv.y) * transUv.x; //deform X
+                var deformScaleX = (1 - transUv.y);
                 transUv.y /= 1.5; //in shader: xy.y *= 1.5
                 transUv.x *= this.ocean.sprite.width;
                 transUv.y *= this.ocean.sprite.height; //in shader: xy.y *= 1.5
-                // transUv.x *= (1. - oceanUv.y);
-                /*
-                    float width = uResolution.x / 1500.0;
-                    vec2 uv = vTextureCoord * uScreenSize / uResolution;
-                    vec2 xy = uv - vec2(.5, .33333);
-                    xy.y *= 1.5; //stretch y to make top coordinate xy.y = 1 (compensate for centerpoint = .333)
-
-
-                    vec2 transUV;
-                    transUV.y = -(1. + 1. / (xy.y - 1.0)); //vertical asymptote at uv.y = 1
-                    transUV.x = xy.x / (1. - xy.y); //scale from 1 (at uv.y = 0, i.e. div one) to infinity (at uv.y = 1, i.e. div zero)
-                    transUV *= 0.5;
-                    transUV = rotate2D(transUV, uPlayerAngle);
-                    transUV += uPlayerPosition;
-                    transUV = vec2(transUV.y, transUV.x);
-                    gl_FragColor = mix(texture2D(uTexture, fract(transUV)), vec4(.3, 1, .8, 1), pow(uv.y, 1.5));
-                    if(length(xy) < .01)
-                        gl_FragColor = vec4(0,0,0,1);
-                */
                 var playerPosX = this.player.group.position.x;
                 var playerPosY = this.player.group.position.y;
                 var x = playerPosX + transUv.x; //5. * oceanUv.x * this.game.scale.width;
                 var y = playerPosY - transUv.y; // * this.game.scale.height;
-                var scale = 1; //Math.max(0, 1 - 10 * oceanUv.y);
+                var scale = deformScaleX; //Math.max(0, 1 - 10 * oceanUv.y);
                 var alpha = 1; //Math.min(1, 1 - 10. * oceanUv.y);
+                if (oceanUv.y < 0)
+                    alpha = 1 + oceanUv.y / .05;
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
-                this.game.debug.text("" + this.buoys[i].index, x, y);
+                // this.game.debug.text("" + this.buoys[i].index, x, y);
+            }
+            function sortBuoys(a, b) {
+                return a.graphics.position.y - b.graphics.position.y;
+            }
+            var sorted = this.buoys.sort(sortBuoys);
+            for (var i = 0; i < sorted.length; ++i) {
+                this.buoysParent.setChildIndex(sorted[i].graphics, i);
+                // sorted[i].graphics.z = i;
             }
         };
         GameState.prototype.getRelativeOceanPosition = function (p) {
@@ -355,7 +361,7 @@ var OceanEaters;
                     var y = toPosY + j - 1;
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
-                    if (curr_v > 0) {
+                    if (curr_v > -.05) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
                         if (distance < closestDistance) {
                             closestDistance = distance;
