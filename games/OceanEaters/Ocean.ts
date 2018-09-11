@@ -2,72 +2,100 @@
 
 module OceanEaters
 {
+    interface vec2Prop {
+        x:number;
+        y:number;
+    }
+
+    interface vec2Uniform {
+        type:string;
+        value:vec2Prop;
+    }
+
+    interface floatUniform {
+        type:string;
+        value:number;
+    }
+
+    interface samplerUniform {
+        type:string;
+        value:PIXI.Texture;
+    }
+
+    interface OceanUniforms {
+        uTimeParam: floatUniform;
+        uPlayerAngle: floatUniform;
+        uResolution: vec2Uniform;
+        uScreenSize: vec2Uniform;
+        uPlayerPosition: vec2Uniform;
+        uPlayerDirection: vec2Uniform;
+        uTexture: samplerUniform;
+    }
+
     export class Ocean extends PIXI.Graphics  {
+        
 
-        game:Phaser.Game;
-        sprite:Phaser.Sprite;
-        shader:Phaser.Filter;
+        shader:PIXI.Filter<OceanUniforms>;
         shaderTime:number;
-
-
-
 
         constructor(w:number, h:number) {
             super();
 
-            var shaderFrag = `
-            precision mediump float;
-            
-            uniform vec2 mouse;
-            uniform vec2 resolution;
-            uniform float time;
+            var texture = PIXI.Texture.fromImage('assets/ripples.png');
 
-            void main() {
-            //pixel coords are inverted in framebuffer
-            vec2 pixelPos = vec2(gl_FragCoord.x, resolution.y - gl_FragCoord.y);
-            if (length(mouse - pixelPos) < 25.0) {
-                gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0) * 0.7; //yellow circle, alpha=0.7
-            } else {
-                gl_FragColor = vec4( sin(time), mouse.x/resolution.x, mouse.y/resolution.y, 1) * 0.5; // blend with underlying image, alpha=0.5
-            }
-            }
-            `;
+            var uniforms:OceanUniforms;
+            uniforms.uPlayerPosition.type = 'v2';
+            uniforms.uPlayerPosition.value.x = 0;
+            uniforms.uPlayerPosition.value.y = 0;
 
-            var filter = new PIXI.Filter(null, shaderFrag);
-            this.filters = [filter];
+            // var uniforms = { 
+            //     uTimeParam : { type : 'f', value : 0 },
+            //     uPlayerAngle : { type : 'f', value : 0 },
+            //     uResolution : { type : 'v2', value : { x:0, y:0 } },
+            //     uScreenSize : { type : 'v2', value : { x:0, y:0 } },
+            //     uPlayerPosition : { type : 'v2', value : { x:0, y:0 } },
+            //     uPlayerDirection : { type : 'v2', value : { x:0, y:0 } },
 
-            // //init shader:
-            // this.shader = new Phaser.Filter(game, null, game.cache.getShader('oceanShader'));
-            // this.shader.uniforms.uTimeParam = { type: '1f', value: 0. };
-            // this.shader.uniforms.uResolution = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uScreenSize = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerPosition = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerDirection = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerAngle = { type: '1f', value: 0. };
-            // this.shader.uniforms.uTexture = { type: 'sampler2D', value: ripplesSprite.texture, textureData: { repeat: true } };
-            // // this.sprite.filters = [ this.shader ];
+            //     uTexture : { type : 'sampler2D', value : texture }
+            // };
 
-            // this.shaderTime = 0;
+            var shader = new PIXI.Filter<OceanUniforms>(null, PIXI.loader.resources.oceanShader.data, uniforms);
+            this.shader = shader;
+            // this.filters = [shader];
+
+            this.shaderTime = 0;
+
+            this.beginFill(0xff0000, 1);
+            this.drawRect(0,0,w,h);
+            this.endFill();
         }
 
-        // resetLayout(x:number, y:number, w:number, h:number) {
-        //     this.sprite.position.x = x;
-        //     this.sprite.position.y = y;
-        //     this.sprite.width = w;
-        //     this.sprite.height = h;
-        //     this.shader.setResolution(w, h);
+        resetLayout(x:number, y:number, w:number, h:number) {
 
-        // }
+            w = 800;
+            h = 600;
+            y = h / 2;
 
-        // updateFrame(dt:number, pPos:Phaser.Point, pDir:number) {
-        //     this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
-        //     this.shader.uniforms.uTimeParam.value = this.shaderTime;
-        //     this.shader.uniforms.uResolution.value = { x:this.sprite.width, y:this.sprite.height };
-        //     this.shader.uniforms.uScreenSize.value = { x:this.game.scale.width, y:this.game.scale.height };
-        //     this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
-        //     this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
-        //     this.shader.uniforms.uPlayerAngle.value = pDir;
-        //     this.shader.update(); 
-        // }
+            this.position.x = x;
+            this.position.y = y;
+            this.width = w;
+            this.height = h;
+
+            this.clear();
+            this.beginFill(0xff0000, 1);
+            this.drawRect(0,0,w,h);
+            this.endFill();
+        }
+
+        updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
+            this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
+            this.shader.uniforms.uTimeParam.value = this.shaderTime;
+            this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
+            this.shader.uniforms.uScreenSize.value = { x:this.width, y:this.height };
+            this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
+            this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
+            this.shader.uniforms.uPlayerAngle.value = pDir;
+            // this.shader.update(); 
+        }
     }
 }

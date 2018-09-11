@@ -53,5 +53,8 @@ void main( void )
 	gl_FragColor = mix(texture2D(uTexture, fract(transUV)), vec4(.3, 1, .8, 1), pow(uv.y, 1.5));
 	if(length(xy) < .01)
 		gl_FragColor = vec4(0,0,0,1);
+
+
+	gl_FragColor = vec4(fract(transUV), 1, 1);
 }
 
