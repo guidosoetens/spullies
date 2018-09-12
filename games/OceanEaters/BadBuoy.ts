@@ -1,19 +1,14 @@
-///<reference path="../../phaser/phaser.d.ts"/>
+///<reference path="../../pixi/pixi.js.d.ts"/>
 
 module OceanEaters
 {
-    export class BadBuoy  {
+    export class BadBuoy extends PIXI.Graphics {
 
-        game:Phaser.Game;
-        graphics:Phaser.Graphics;
-        position:Phaser.Point;
+        relativePosition:PIXI.Point;
         index:number;
 
-        anchorGraphics:Phaser.Graphics;
-
-        constructor(game:Phaser.Game, x:number, y:number, index:number) {
-
-            this.game = game;
+        constructor(x:number, y:number, index:number) {
+            super();
 
             this.index = index;
 
@@ -23,30 +18,32 @@ module OceanEaters
             var height = 120;
             var rad = Math.min(width, height) * .25;
 
-            this.graphics = this.game.make.graphics(0,0);
-            this.graphics.beginFill(0x0, .2);
-            this.graphics.drawEllipse(0,0,.6 * width, .1 * width);
+            this.beginFill(0x0, .2);
+            this.drawEllipse(0,0,.6 * width, .1 * width);
 
-            this.graphics.beginFill(clr, 1);
-            this.graphics.lineStyle(.1 * width, 0x0, 1);
-            this.graphics.drawRoundedRect(-width/2,-height,width,height,rad);
-            this.graphics.drawEllipse(0,0,5,5);
-            this.graphics.endFill();
+            this.beginFill(clr, 1);
+            this.lineStyle(.1 * width, 0x0, 1);
+            this.drawRoundedRect(-width/2,-height,width,height,rad);
+            this.drawEllipse(0,0,5,5);
+            this.endFill();
 
-            this.position = new Phaser.Point(x, y);
+            this.relativePosition = new PIXI.Point(x, y);
 
             var style = { font: (height * .4) + "px Arial", fill: "#ffffff", align: "center" };
-            var text = game.make.text(0, -height / 2, "" + this.index, style);
-            text.anchor.set(0.5);
-            this.graphics.addChild(text);
+
+            // var text = game.make.text(0, -height / 2, "" + this.index, style);
+            // text.anchor.set(0.5);
+            // this.graphics.addChild(text);
+
+            this.updateRender(x * 200, y * 200, 1, 1);
         }
 
         updateRender(x:number, y:number, s:number, alpha:number) {
-            this.graphics.position.x = x;
-            this.graphics.position.y = y;
-            this.graphics.alpha = alpha;
-            this.graphics.scale.x = s;
-            this.graphics.scale.y = s;
+            this.position.x = x;
+            this.position.y = y;
+            this.alpha = alpha;
+            this.scale.x = s;
+            this.scale.y = s;
         }
 
         updateFrame(dt:number) {

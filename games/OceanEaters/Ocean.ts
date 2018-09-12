@@ -41,27 +41,27 @@ module OceanEaters
         constructor(w:number, h:number) {
             super();
 
-            var texture = PIXI.Texture.fromImage('assets/ripples.png');
+            // var texture = PIXI.Texture.fromImage('assets/ripples.png');
 
-            var uniforms:OceanUniforms;
-            uniforms.uPlayerPosition.type = 'v2';
-            uniforms.uPlayerPosition.value.x = 0;
-            uniforms.uPlayerPosition.value.y = 0;
+            // var uniforms:OceanUniforms;
+            // uniforms.uPlayerPosition.type = 'v2';
+            // uniforms.uPlayerPosition.value.x = 0;
+            // uniforms.uPlayerPosition.value.y = 0;
 
-            // var uniforms = { 
-            //     uTimeParam : { type : 'f', value : 0 },
-            //     uPlayerAngle : { type : 'f', value : 0 },
-            //     uResolution : { type : 'v2', value : { x:0, y:0 } },
-            //     uScreenSize : { type : 'v2', value : { x:0, y:0 } },
-            //     uPlayerPosition : { type : 'v2', value : { x:0, y:0 } },
-            //     uPlayerDirection : { type : 'v2', value : { x:0, y:0 } },
+            // // var uniforms = { 
+            // //     uTimeParam : { type : 'f', value : 0 },
+            // //     uPlayerAngle : { type : 'f', value : 0 },
+            // //     uResolution : { type : 'v2', value : { x:0, y:0 } },
+            // //     uScreenSize : { type : 'v2', value : { x:0, y:0 } },
+            // //     uPlayerPosition : { type : 'v2', value : { x:0, y:0 } },
+            // //     uPlayerDirection : { type : 'v2', value : { x:0, y:0 } },
 
-            //     uTexture : { type : 'sampler2D', value : texture }
-            // };
+            // //     uTexture : { type : 'sampler2D', value : texture }
+            // // };
 
-            var shader = new PIXI.Filter<OceanUniforms>(null, PIXI.loader.resources.oceanShader.data, uniforms);
-            this.shader = shader;
-            // this.filters = [shader];
+            // var shader = new PIXI.Filter<OceanUniforms>(null, PIXI.loader.resources.oceanShader.data, uniforms);
+            // this.shader = shader;
+            // // this.filters = [shader];
 
             this.shaderTime = 0;
 
@@ -82,19 +82,19 @@ module OceanEaters
             this.height = h;
 
             this.clear();
-            this.beginFill(0xff0000, 1);
+            this.beginFill(0x44aaff, 1);
             this.drawRect(0,0,w,h);
             this.endFill();
         }
 
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
             this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
-            this.shader.uniforms.uTimeParam.value = this.shaderTime;
-            this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
-            this.shader.uniforms.uScreenSize.value = { x:this.width, y:this.height };
-            this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
-            this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
-            this.shader.uniforms.uPlayerAngle.value = pDir;
+            // this.shader.uniforms.uTimeParam.value = this.shaderTime;
+            // this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
+            // this.shader.uniforms.uScreenSize.value = { x:this.width, y:this.height };
+            // this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
+            // this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
+            // this.shader.uniforms.uPlayerAngle.value = pDir;
             // this.shader.update(); 
         }
     }
