@@ -75,23 +75,21 @@ var OceanEaters;
         __extends(Sky, _super);
         function Sky() {
             var _this = _super.call(this) || this;
-            // this.game = game;
-            // var group = game.add.group();
-            // this.sprite = game.make.sprite(0,0);
-            // group.add(this.sprite);
-            // var skySprite = game.make.sprite(0,0,'sky');
-            // var mountainsSprite = game.make.sprite(0,0,'mountains');
-            // //init shader:
-            // this.shader = new Phaser.Filter(game, null, game.cache.getShader('skyShader'));
-            // this.shader.uniforms.uTimeParam = { type: '1f', value: 0. };
-            // this.shader.uniforms.uResolution = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uScreenSize = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerPosition = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerDirection = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerAngle = { type: '1f', value: 0. };
-            // this.shader.uniforms.uTexture = { type: 'sampler2D', value: skySprite.texture, textureData: { repeat: true } };
-            // this.shader.uniforms.uMountainsTexture = { type: 'sampler2D', value: mountainsSprite.texture, textureData: { repeat: true } };
-            // // this.sprite.filters = [ this.shader ];
+            //init shader:
+            var skyTexture = PIXI.Texture.fromImage('assets/sky.jpg');
+            var mountainTexture = PIXI.Texture.fromImage('assets/mountains.png');
+            var uniforms = {
+                uTimeParam: { type: 'f', value: 0 },
+                uPlayerAngle: { type: 'f', value: 0 },
+                uResolution: { type: 'v2', value: { x: 0, y: 0 } },
+                uScreenSize: { type: 'v2', value: { x: 0, y: 0 } },
+                uPlayerPosition: { type: 'v2', value: { x: 0, y: 0 } },
+                uPlayerDirection: { type: 'v2', value: { x: 0, y: 0 } },
+                uTexture: { type: 'sampler2D', value: skyTexture, textureData: { repeat: true } },
+                uMountainsTexture: { type: 'sampler2D', value: mountainTexture, textureData: { repeat: true } }
+            };
+            var foo = new PIXI.Filter(null, PIXI.loader.resources.skyShader.data, uniforms);
+            _this.filters = [foo];
             _this.shaderTime = 0;
             return _this;
         }
@@ -111,12 +109,12 @@ var OceanEaters;
         Sky.prototype.updateFrame = function (dt, pPos, pDir) {
             this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
             // this.shader.uniforms.uTimeParam.value = this.shaderTime;
-            // this.shader.uniforms.uResolution.value = { x:this.sprite.width, y:this.sprite.height };
-            // this.shader.uniforms.uScreenSize.value = { x:this.game.scale.width, y:this.game.scale.height };
+            // this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
+            // this.shader.uniforms.uScreenSize.value = { x:800, y:600 };
             // this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
             // this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
             // this.shader.uniforms.uPlayerAngle.value = pDir;
-            // this.shader.update(); 
+            // this.shader.update();
         };
         return Sky;
     }(PIXI.Graphics));
@@ -225,11 +223,13 @@ var OceanEaters;
             this.ticker.add(this.update, this);
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
-            this.ocean = new OceanEaters.Ocean(this.stage.width, .5 * this.stage.height);
-            this.ocean.resetLayout(0, .5 * this.stage.height, this.stage.width, this.stage.height);
+            this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerup", this.pointerUp, this);
+            this.ocean = new OceanEaters.Ocean(this.screen.width, .5 * this.stage.height);
+            this.ocean.resetLayout(0, .5 * this.stage.height, this.screen.width, this.stage.height);
             this.stage.addChild(this.ocean);
             this.sky = new OceanEaters.Sky();
-            this.sky.resetLayout(0, 0, this.stage.width, this.stage.height);
+            this.sky.resetLayout(0, 0, this.screen.width, this.stage.height);
             this.stage.addChild(this.sky);
             var reps = 5;
             this.buoysParent = new PIXI.Container();
@@ -256,14 +256,27 @@ var OceanEaters;
             this.debugGraphics = new PIXI.Graphics();
             this.stage.addChild(this.debugGraphics);
         };
-        Game.prototype.pointerDown = function (e) {
-            //alert("pointer down ");
+        Game.prototype.pointerDown = function (event) {
+            this.touchData = event.data;
+            var pt = event.data.getLocalPosition(this.stage);
+            this.trackMouseDown = true;
+            this.trackMouseTime = 0;
+            this.trackMousePos = pt;
+        };
+        Game.prototype.pointerMove = function () {
+            //do nothin'
+        };
+        Game.prototype.pointerUp = function (event) {
+            var data = event.data;
+            if (data.identifier == this.touchData.identifier) {
+                this.trackMouseDown = false;
+            }
         };
         Game.prototype.resize = function (w, h) {
             // this.game.scale.setGameSize(w, h);
         };
         Game.prototype.updateLayout = function () {
-            // var width = this.stage.width;
+            // var width = this.screen.width;
             // var height = this.stage.height;
             // this.ocean.resetLayout(0, .5 * height, width, .5 * height);
             // this.sky.resetLayout(0, 0, width, .5 * height);
@@ -271,35 +284,23 @@ var OceanEaters;
         };
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
-            this.debugText.text = "FPS: " + Math.round(1.0 / dt); // + " " + dtMs + " " + dt;
-            this.updateInput(dt);
+            this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
             //update player location:
             if (this.trackMouseDown) {
-                if (this.trackMousePos.x < .25 * this.stage.width) {
+                this.trackMouseTime += dt;
+                if (this.trackMousePos.x < .25 * this.screen.width) {
                     //move left:
                     this.playerDirection += dt * 1.;
                 }
-                else if (this.trackMousePos.x > .75 * this.stage.width) {
+                else if (this.trackMousePos.x > .75 * this.screen.width) {
                     //move right:
                     this.playerDirection -= dt * 1.;
                 }
             }
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
-            //     this.playerDirection += dt * 2.;
-            // else if(this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
-            //     this.playerDirection -= dt * 2.;
-            this.playerDirection += dt * 0.25;
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var speedFactor = 1;
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP))
-            //     speedFactor = 2;
-            // else if(this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
-            //     speedFactor = -1;
-            speedFactor *= 2.0;
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-            //     speedFactor *= 2.0;
+            var speedFactor = 5.0;
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
             if (this.playerPos.x < 0.0)
@@ -311,7 +312,7 @@ var OceanEaters;
             var dbMargin = 20;
             var dbWidth = 200;
             this.debugGraphics.clear();
-            var dbX = 800 - dbWidth - dbMargin; // this.stage.width - dbWidth - dbMargin;
+            var dbX = 800 - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
@@ -321,27 +322,10 @@ var OceanEaters;
             this.debugGraphics.beginFill(0xff0000, 1);
             for (var i = 0; i < this.buoys.length; ++i) {
                 var pos = this.buoys[i].relativePosition;
-                this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 10);
+                this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 5);
                 //this.game.debug.text("" + this.buoys[i].index, dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y));
             }
             this.debugGraphics.endFill();
-            // //update state:
-            // if(this.currentStateTimer > 0) {
-            //     this.currentStateTimer -= dt;
-            // }
-            // else {
-            //     this.currentState = "";
-            // }
-            // this.graphics.clear();
-            // this.graphics.beginFill(0xff0000, 1);
-            // this.graphics.drawRect(0, 0, this.game.width, this.game.height);
-            // var debugText:string = "" + dt;
-            // this.game.debug.text(debugText, 5, 15, "#ffffff");
-            // this.game.debug.text("STATE: " + this.currentState, 5, 30, "#ffffff");
-            // this.game.debug.text("MOVE VELOCITY: " + this.moveVelocity, 5, 45, "#ffffff");
-            // this.game.debug.text("ACTION: " + this.fooString, 5, 60, "#ffffff");
-            // this.game.debug.text("LOC_X: " + this.playerPos.x, 500, 15);
-            // this.game.debug.text("LOC_Y: " + this.playerPos.y, 500, 30);
             this.ocean.updateFrame(dt, this.playerPos, this.playerDirection);
             this.sky.updateFrame(dt, this.playerPos, this.playerDirection);
             this.player.updateFrame(dt, this.playerPos, this.playerDirection);
@@ -369,7 +353,6 @@ var OceanEaters;
                     alpha = 1 + oceanUv.y / .05;
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
-                // this.game.debug.text("" + this.buoys[i].index, x, y);
             }
             function sortBuoys(a, b) {
                 return a.position.y - b.position.y;
@@ -406,65 +389,6 @@ var OceanEaters;
             }
             return new PIXI.Point(u, v);
         };
-        Game.prototype.updateInput = function (dt) {
-            // // this.input.activePointer.isDown
-            // var mouseDown:boolean = this.input.activePointer.isDown;
-            // var mousePos:Phaser.Point = this.input.activePointer.position;
-            // if(mouseDown) {
-            //     if(this.trackMouseDown) {
-            //         this.trackMouseTime += dt;
-            //     }
-            //     else {
-            //         //start tracking:
-            //         this.trackMouseDown = true;
-            //         this.trackMouseTime = 0;
-            //         this.trackMousePos.x = mousePos.x;
-            //         this.trackMousePos.y = mousePos.y;
-            //     }
-            // }
-            // else {
-            //     if(this.trackMouseDown) {
-            //         //mouse had been released...
-            //         var dy:number = mousePos.y - this.trackMousePos.y;
-            //         if(this.trackMouseTime < .5) {
-            //             if(dy > 3)
-            //                 this.duck();
-            //             else if(dy < -3)
-            //                 this.jump();
-            //         }
-            //         this.fooString = "Timez: " + this.trackMouseTime + ", Dy: " + dy;
-            //     }
-            //     //end tracking:
-            //     this.trackMouseDown = false;
-            //     this.trackMouseTime = 0;
-            //     this.trackMousePos.x = 0;
-            //     this.trackMousePos.y = 0;
-            // }
-            // var dx:number = 0;
-            // if(mouseDown) {
-            //     dx = 2 * (mousePos.x / this.game.width - .5) * Math.pow(Math.min(1.0, this.trackMouseTime / .5), 2.0);
-            // }
-            // this.move(dx);
-        };
-        Game.prototype.duck = function () {
-            // //update state:
-            // if(this.currentStateTimer <= 0) {
-            //     this.currentState = "DUCK";
-            //     this.currentStateTimer = 1.0;
-            // }
-        };
-        Game.prototype.jump = function () {
-            // //update state:
-            // if(this.currentStateTimer <= 0) {
-            //     this.currentState = "JUMP";
-            //     this.currentStateTimer = 1.0;
-            // }
-        };
-        Game.prototype.move = function (dir) {
-            // this.moveVelocity = dir;
-        };
-        Game.prototype.tap = function () {
-        };
         return Game;
     }(PIXI.Application));
     OceanEaters.Game = Game;
@@ -476,6 +400,7 @@ window.onload = function () {
     var contentDiv = document.getElementById("content");
     contentDiv.appendChild(app.view);
     PIXI.loader.add('oceanShader', 'assets/oceanShader.frag')
+        .add('skyShader', 'assets/skyShader.frag')
         .add('ripples', 'assets/ripples.png');
     PIXI.loader.load(function (loader, resources) {
         app.setup();

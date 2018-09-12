@@ -9,6 +9,7 @@ module OceanEaters
     export class Game extends PIXI.Application {
 
         //input tracking:
+        touchData:PIXI.interaction.InteractionData;
         trackMouseDown:boolean;
         trackMouseTime:number;
         trackMousePos:PIXI.Point;
@@ -27,6 +28,8 @@ module OceanEaters
         player:Player;
         buoysParent:PIXI.Container;
         buoys:BadBuoy[];
+
+
         
         constructor(w:number, h:number) {
             super(w, h, { antialias: true, backgroundColor : 0x1099bb });
@@ -36,13 +39,15 @@ module OceanEaters
             this.ticker.add(this.update, this);
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
+            this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerup", this.pointerUp, this);
 
-            this.ocean = new Ocean(this.stage.width, .5 * this.stage.height);
-            this.ocean.resetLayout(0, .5 * this.stage.height, this.stage.width, this.stage.height);
+            this.ocean = new Ocean(this.screen.width, .5 * this.stage.height);
+            this.ocean.resetLayout(0, .5 * this.stage.height, this.screen.width, this.stage.height);
             this.stage.addChild(this.ocean);
 
             this.sky = new Sky();
-            this.sky.resetLayout(0, 0, this.stage.width, this.stage.height);
+            this.sky.resetLayout(0, 0, this.screen.width, this.stage.height);
             this.stage.addChild(this.sky);
 
             const reps:number = 5;
@@ -75,8 +80,23 @@ module OceanEaters
             this.stage.addChild(this.debugGraphics);
         }
 
-        pointerDown(e) {
-            //alert("pointer down ");
+        pointerDown(event:PIXI.interaction.InteractionEvent) {
+            this.touchData = event.data;
+            var pt:PIXI.Point = event.data.getLocalPosition(this.stage);
+            this.trackMouseDown = true;
+            this.trackMouseTime = 0;
+            this.trackMousePos = pt;
+        }
+
+        pointerMove() {
+            //do nothin'
+        }
+
+        pointerUp(event:PIXI.interaction.InteractionEvent) {
+            var data = event.data;
+            if(data.identifier == this.touchData.identifier) {
+                this.trackMouseDown = false;
+            }
         }
 
         resize(w:number, h:number) {
@@ -84,7 +104,7 @@ module OceanEaters
         }
 
         updateLayout() {
-            // var width = this.stage.width;
+            // var width = this.screen.width;
             // var height = this.stage.height;
             // this.ocean.resetLayout(0, .5 * height, width, .5 * height);
             // this.sky.resetLayout(0, 0, width, .5 * height);
@@ -93,42 +113,27 @@ module OceanEaters
 
         update() {
             var dt = this.ticker.elapsedMS * .001;
-            this.debugText.text = "FPS: " + Math.round(1.0 / dt);// + " " + dtMs + " " + dt;
-            this.updateInput(dt);
+            this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
 
             //update player location:
             if(this.trackMouseDown) {
-                if(this.trackMousePos.x < .25 * this.stage.width) {
+                this.trackMouseTime += dt;
+                if(this.trackMousePos.x < .25 * this.screen.width) {
                     //move left:
                     this.playerDirection += dt * 1.;
                 }
-                else if(this.trackMousePos.x > .75 * this.stage.width) {
+                else if(this.trackMousePos.x > .75 * this.screen.width) {
                     //move right:
                     this.playerDirection -= dt * 1.;
                 }
             }
 
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
-            //     this.playerDirection += dt * 2.;
-            // else if(this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
-            //     this.playerDirection -= dt * 2.;
-
-            this.playerDirection += dt * 0.25;
             this.playerDirection %= 2 * Math.PI;
-
 
             var playerDirX:number = Math.cos(this.playerDirection);
             var playerDirY:number = Math.sin(this.playerDirection);
 
-            var speedFactor = 1;
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.UP))
-            //     speedFactor = 2;
-            // else if(this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
-            //     speedFactor = -1;
-
-            speedFactor *= 2.0;
-            // if(this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-            //     speedFactor *= 2.0;
+            var speedFactor = 5.0;
 
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
@@ -142,7 +147,7 @@ module OceanEaters
             const dbMargin:number = 20;
             const dbWidth:number = 200;
             this.debugGraphics.clear();
-            var dbX = 800 - dbWidth - dbMargin;// this.stage.width - dbWidth - dbMargin;
+            var dbX = 800 - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
@@ -152,32 +157,11 @@ module OceanEaters
             this.debugGraphics.beginFill(0xff0000, 1);
             for(var i:number=0; i<this.buoys.length; ++i) {
                 var pos = this.buoys[i].relativePosition;
-                this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 10);
+                this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 5);
                 //this.game.debug.text("" + this.buoys[i].index, dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y));
             }
 
             this.debugGraphics.endFill();
-
-            // //update state:
-            // if(this.currentStateTimer > 0) {
-            //     this.currentStateTimer -= dt;
-            // }
-            // else {
-            //     this.currentState = "";
-            // }
-
-            // this.graphics.clear();
-            // this.graphics.beginFill(0xff0000, 1);
-            // this.graphics.drawRect(0, 0, this.game.width, this.game.height);
-
-            // var debugText:string = "" + dt;
-            // this.game.debug.text(debugText, 5, 15, "#ffffff");
-            // this.game.debug.text("STATE: " + this.currentState, 5, 30, "#ffffff");
-            // this.game.debug.text("MOVE VELOCITY: " + this.moveVelocity, 5, 45, "#ffffff");
-            // this.game.debug.text("ACTION: " + this.fooString, 5, 60, "#ffffff");
-
-            // this.game.debug.text("LOC_X: " + this.playerPos.x, 500, 15);
-            // this.game.debug.text("LOC_Y: " + this.playerPos.y, 500, 30);
 
             this.ocean.updateFrame(dt, this.playerPos, this.playerDirection);
             this.sky.updateFrame(dt, this.playerPos, this.playerDirection);
@@ -214,9 +198,6 @@ module OceanEaters
 
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
-
-
-                // this.game.debug.text("" + this.buoys[i].index, x, y);
             }
 
             function sortBuoys(a:BadBuoy, b:BadBuoy):number {
@@ -262,80 +243,5 @@ module OceanEaters
 
             return new PIXI.Point(u, v);
         }
-
-        updateInput(dt:number) {
-
-            // // this.input.activePointer.isDown
-
-            // var mouseDown:boolean = this.input.activePointer.isDown;
-            // var mousePos:Phaser.Point = this.input.activePointer.position;
-
-            // if(mouseDown) {
-            //     if(this.trackMouseDown) {
-            //         this.trackMouseTime += dt;
-            //     }
-            //     else {
-            //         //start tracking:
-            //         this.trackMouseDown = true;
-            //         this.trackMouseTime = 0;
-            //         this.trackMousePos.x = mousePos.x;
-            //         this.trackMousePos.y = mousePos.y;
-            //     }
-            // }
-            // else {
-            //     if(this.trackMouseDown) {
-            //         //mouse had been released...
-            //         var dy:number = mousePos.y - this.trackMousePos.y;
-            //         if(this.trackMouseTime < .5) {
-            //             if(dy > 3)
-            //                 this.duck();
-            //             else if(dy < -3)
-            //                 this.jump();
-            //         }
-
-            //         this.fooString = "Timez: " + this.trackMouseTime + ", Dy: " + dy;
-            //     }
-
-            //     //end tracking:
-            //     this.trackMouseDown = false;
-            //     this.trackMouseTime = 0;
-            //     this.trackMousePos.x = 0;
-            //     this.trackMousePos.y = 0;
-            // }
-
-            // var dx:number = 0;
-            // if(mouseDown) {
-            //     dx = 2 * (mousePos.x / this.game.width - .5) * Math.pow(Math.min(1.0, this.trackMouseTime / .5), 2.0);
-            // }
-            // this.move(dx);
-        }
-
-        duck() {
-            // //update state:
-            // if(this.currentStateTimer <= 0) {
-            //     this.currentState = "DUCK";
-            //     this.currentStateTimer = 1.0;
-            // }
-        }
-
-        jump() {
-            // //update state:
-            // if(this.currentStateTimer <= 0) {
-            //     this.currentState = "JUMP";
-            //     this.currentStateTimer = 1.0;
-            // }
-        }
-
-        move(dir:number) {
-            // this.moveVelocity = dir;
-        }
-
-        tap() {
-
-        }
-
-        // render() {
-
-        // }
     }
 }

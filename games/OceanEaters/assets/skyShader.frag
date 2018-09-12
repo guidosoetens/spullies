@@ -41,5 +41,7 @@ void main( void )
         float fx = clr.a * clr.r;
         gl_FragColor.rgb *= 1. - fx * .7;
     }
+
+    gl_FragColor = vec4(fract(transUv),0,1);
 }
 

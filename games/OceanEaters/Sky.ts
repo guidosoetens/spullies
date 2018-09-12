@@ -5,34 +5,29 @@ module OceanEaters
     export class Sky extends PIXI.Graphics {
 
         // sprite:Phaser.Sprite;
-        // shader:Phaser.Filter;
+        // shader:PIXI.Filter<skyShaderUniforms>;
         shaderTime:number;
 
         constructor() {
 
             super();
 
-            // this.game = game;
+            //init shader:
+            var skyTexture = PIXI.Texture.fromImage('assets/sky.jpg');
+            var mountainTexture = PIXI.Texture.fromImage('assets/mountains.png');
 
-            // var group = game.add.group();
-
-            // this.sprite = game.make.sprite(0,0);
-            // group.add(this.sprite);
-
-            // var skySprite = game.make.sprite(0,0,'sky');
-            // var mountainsSprite = game.make.sprite(0,0,'mountains');
-
-            // //init shader:
-            // this.shader = new Phaser.Filter(game, null, game.cache.getShader('skyShader'));
-            // this.shader.uniforms.uTimeParam = { type: '1f', value: 0. };
-            // this.shader.uniforms.uResolution = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uScreenSize = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerPosition = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerDirection = { type: '2f', value: { x:0, y:0 } };
-            // this.shader.uniforms.uPlayerAngle = { type: '1f', value: 0. };
-            // this.shader.uniforms.uTexture = { type: 'sampler2D', value: skySprite.texture, textureData: { repeat: true } };
-            // this.shader.uniforms.uMountainsTexture = { type: 'sampler2D', value: mountainsSprite.texture, textureData: { repeat: true } };
-            // // this.sprite.filters = [ this.shader ];
+            var uniforms = { 
+                uTimeParam : { type : 'f', value : 0 },
+                uPlayerAngle : { type : 'f', value : 0 },
+                uResolution : { type : 'v2', value : { x:0, y:0 } },
+                uScreenSize : { type : 'v2', value : { x:0, y:0 } },
+                uPlayerPosition : { type : 'v2', value : { x:0, y:0 } },
+                uPlayerDirection : { type : 'v2', value : { x:0, y:0 } },
+                uTexture : { type : 'sampler2D', value : skyTexture, textureData: { repeat: true } },
+                uMountainsTexture : { type : 'sampler2D', value : mountainTexture, textureData: { repeat: true } }
+            };
+            var foo = new PIXI.Filter(null, PIXI.loader.resources.skyShader.data, uniforms);
+            this.filters = [ foo ];
 
             this.shaderTime = 0;
         }
@@ -56,12 +51,12 @@ module OceanEaters
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
             this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
             // this.shader.uniforms.uTimeParam.value = this.shaderTime;
-            // this.shader.uniforms.uResolution.value = { x:this.sprite.width, y:this.sprite.height };
-            // this.shader.uniforms.uScreenSize.value = { x:this.game.scale.width, y:this.game.scale.height };
+            // this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
+            // this.shader.uniforms.uScreenSize.value = { x:800, y:600 };
             // this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
             // this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
             // this.shader.uniforms.uPlayerAngle.value = pDir;
-            // this.shader.update(); 
+            // this.shader.update();
         }
     }
 }

@@ -10,6 +10,7 @@ window.onload = () => {
     contentDiv.appendChild(app.view);
 
     PIXI.loader.add('oceanShader', 'assets/oceanShader.frag')
+            .add('skyShader', 'assets/skyShader.frag')
             .add('ripples', 'assets/ripples.png');
     PIXI.loader.load((loader, resources) => {
         app.setup();
