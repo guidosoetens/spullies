@@ -216,6 +216,11 @@ var OceanEaters;
 ///<reference path="Player.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
+    var touchElement = /** @class */ (function () {
+        function touchElement() {
+        }
+        return touchElement;
+    }());
     var Game = /** @class */ (function (_super) {
         __extends(Game, _super);
         function Game(w, h) {
@@ -226,7 +231,10 @@ var OceanEaters;
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerupoutside", this.pointerUp, this);
+            this.stage.on("pointercancel", this.pointerUp, this);
             this.stage.on("pointerup", this.pointerUp, this);
+            this.stage.on("pointerout", this.pointerUp, this);
             this.ocean = new OceanEaters.Ocean(this.screen.width, .5 * this.screen.height);
             this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.ocean);
@@ -248,9 +256,8 @@ var OceanEaters;
             this.stage.addChild(this.player);
             this.playerPos = new PIXI.Point(0, 0);
             this.playerDirection = 0;
-            this.trackMouseDown = false;
-            this.trackMouseTime = 0;
-            this.trackMousePos = new PIXI.Point;
+            this.angularSpeed = 0;
+            this.touchPoints = [];
             this.debugText = new PIXI.Text('txt');
             this.debugText.x = 20;
             this.debugText.y = 10;
@@ -259,19 +266,37 @@ var OceanEaters;
             this.stage.addChild(this.debugGraphics);
         };
         Game.prototype.pointerDown = function (event) {
-            this.touchData = event.data;
-            var pt = event.data.getLocalPosition(this.stage);
-            this.trackMouseDown = true;
-            this.trackMouseTime = 0;
-            this.trackMousePos = pt;
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
+            var pos = event.data.getLocalPosition(this.stage);
+            var touch = new touchElement();
+            touch.id = event.data.identifier;
+            touch.currentX = pos.x;
+            touch.currentY = pos.y;
+            touch.originX = pos.x;
+            touch.originY = pos.y;
+            touch.timeAlive = 0;
+            this.touchPoints.push(touch);
         };
-        Game.prototype.pointerMove = function () {
-            //do nothin'
+        Game.prototype.pointerMove = function (event) {
+            var pos = event.data.getLocalPosition(this.stage);
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints[i].currentX = pos.x;
+                    this.touchPoints[i].currentY = pos.y;
+                }
+            }
         };
         Game.prototype.pointerUp = function (event) {
-            var data = event.data;
-            if (data.identifier == this.touchData.identifier) {
-                this.trackMouseDown = false;
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
             }
         };
         Game.prototype.resize = function (w, h) {
@@ -287,18 +312,35 @@ var OceanEaters;
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
             this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
-            //update player location:
-            if (this.trackMouseDown) {
-                this.trackMouseTime += dt;
-                if (this.trackMousePos.x < .25 * this.screen.width) {
-                    //move left:
-                    this.playerDirection += dt * 1.;
-                }
-                else if (this.trackMousePos.x > .75 * this.screen.width) {
-                    //move right:
-                    this.playerDirection -= dt * 1.;
-                }
+            //update input:
+            var sumDx = 0;
+            var centerX = this.screen.width / 2.0;
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                var factor = Math.min(this.touchPoints[i].timeAlive * 2., 1.0);
+                var dx = (this.touchPoints[i].currentX - centerX) / centerX;
+                if (Math.abs(dx) > 1.0)
+                    dx = Math.sign(dx);
+                sumDx += factor * dx;
+                this.touchPoints[i].timeAlive += dt;
+                this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
+            if (this.touchPoints.length > 0)
+                sumDx /= this.touchPoints.length;
+            var newSpeedFactor = Math.min(1, 5 * dt);
+            this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
+            this.playerDirection += dt * 1. * this.angularSpeed;
+            // //update player location:
+            // if(this.trackMouseDown) {
+            //     this.trackMouseTime += dt;
+            //     if(this.trackMousePos.x < .25 * this.screen.width) {
+            //         //move left:
+            //         this.playerDirection += dt * 1.;
+            //     }
+            //     else if(this.trackMousePos.x > .75 * this.screen.width) {
+            //         //move right:
+            //         this.playerDirection -= dt * 1.;
+            //     }
+            // }
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
@@ -397,7 +439,39 @@ var OceanEaters;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="Game.ts"/>
+// left: 37, up: 38, right: 39, down: 40,
+// spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
+var keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
+function preventDefault(e) {
+    e = e || window.event;
+    if (e.preventDefault)
+        e.preventDefault();
+    e.returnValue = false;
+}
+function preventDefaultForScrollKeys(e) {
+    if (keys[e.keyCode]) {
+        preventDefault(e);
+        return false;
+    }
+}
+function disableScroll() {
+    if (window.addEventListener) // older FF
+        window.addEventListener('DOMMouseScroll', preventDefault, false);
+    window.onwheel = preventDefault; // modern standard
+    window.onmousewheel = document.onmousewheel = preventDefault; // older browsers, IE
+    window.ontouchmove = preventDefault; // mobile
+    document.onkeydown = preventDefaultForScrollKeys;
+}
+function enableScroll() {
+    if (window.removeEventListener)
+        window.removeEventListener('DOMMouseScroll', preventDefault, false);
+    window.onmousewheel = document.onmousewheel = null;
+    window.onwheel = null;
+    window.ontouchmove = null;
+    document.onkeydown = null;
+}
 window.onload = function () {
+    disableScroll();
     var app = new OceanEaters.Game(800, 600);
     var contentDiv = document.getElementById("content");
     contentDiv.appendChild(app.view);

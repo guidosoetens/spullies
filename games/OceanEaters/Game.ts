@@ -6,17 +6,25 @@
 
 module OceanEaters
 {
+    class touchElement {
+        id:number;
+        currentX:number;
+        currentY:number;
+        originX:number;
+        originY:number;
+        timeAlive:number;
+    }
+
+
     export class Game extends PIXI.Application {
 
         //input tracking:
-        touchData:PIXI.interaction.InteractionData;
-        trackMouseDown:boolean;
-        trackMouseTime:number;
-        trackMousePos:PIXI.Point;
+        touchPoints:touchElement[];
 
         //movement:
         playerPos:PIXI.Point;
         playerDirection:number;
+        angularSpeed:number;
 
         //debug:
         debugText:PIXI.Text;
@@ -40,7 +48,10 @@ module OceanEaters
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerupoutside", this.pointerUp, this);
+            this.stage.on("pointercancel", this.pointerUp, this);
             this.stage.on("pointerup", this.pointerUp, this);
+            this.stage.on("pointerout", this.pointerUp, this);
 
             this.ocean = new Ocean(this.screen.width, .5 * this.screen.height);
             this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
@@ -66,10 +77,9 @@ module OceanEaters
             this.stage.addChild(this.player);
             this.playerPos = new PIXI.Point(0,0);
             this.playerDirection = 0;
+            this.angularSpeed = 0;
 
-            this.trackMouseDown = false;
-            this.trackMouseTime = 0;
-            this.trackMousePos = new PIXI.Point;
+            this.touchPoints = [];
 
             this.debugText = new PIXI.Text('txt');
             this.debugText.x = 20;
@@ -81,21 +91,42 @@ module OceanEaters
         }
 
         pointerDown(event:PIXI.interaction.InteractionEvent) {
-            this.touchData = event.data;
-            var pt:PIXI.Point = event.data.getLocalPosition(this.stage);
-            this.trackMouseDown = true;
-            this.trackMouseTime = 0;
-            this.trackMousePos = pt;
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
+
+            var pos = event.data.getLocalPosition(this.stage);
+
+            var touch:touchElement = new touchElement();
+            touch.id = event.data.identifier;
+            touch.currentX = pos.x;
+            touch.currentY = pos.y;
+            touch.originX = pos.x;
+            touch.originY = pos.y;
+            touch.timeAlive = 0;
+
+            this.touchPoints.push(touch);
         }
 
-        pointerMove() {
-            //do nothin'
+        pointerMove(event:PIXI.interaction.InteractionEvent) {
+            var pos = event.data.getLocalPosition(this.stage);
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints[i].currentX = pos.x;
+                    this.touchPoints[i].currentY = pos.y;
+                }
+            }
         }
 
         pointerUp(event:PIXI.interaction.InteractionEvent) {
-            var data = event.data;
-            if(data.identifier == this.touchData.identifier) {
-                this.trackMouseDown = false;
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == event.data.identifier) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
             }
         }
 
@@ -115,18 +146,39 @@ module OceanEaters
             var dt = this.ticker.elapsedMS * .001;
             this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
 
-            //update player location:
-            if(this.trackMouseDown) {
-                this.trackMouseTime += dt;
-                if(this.trackMousePos.x < .25 * this.screen.width) {
-                    //move left:
-                    this.playerDirection += dt * 1.;
-                }
-                else if(this.trackMousePos.x > .75 * this.screen.width) {
-                    //move right:
-                    this.playerDirection -= dt * 1.;
-                }
+            //update input:
+
+            var sumDx = 0;
+            var centerX = this.screen.width / 2.0;
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                var factor = Math.min(this.touchPoints[i].timeAlive * 2., 1.0);
+                var dx = (this.touchPoints[i].currentX - centerX) / centerX;
+                if(Math.abs(dx) > 1.0)
+                    dx = Math.sign(dx);
+                sumDx += factor * dx;
+                this.touchPoints[i].timeAlive += dt;
+                this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
+            if(this.touchPoints.length > 0)
+                sumDx /= this.touchPoints.length;
+
+            var newSpeedFactor = Math.min(1, 5 * dt);
+            this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
+
+            this.playerDirection += dt * 1. * this.angularSpeed;
+
+            // //update player location:
+            // if(this.trackMouseDown) {
+            //     this.trackMouseTime += dt;
+            //     if(this.trackMousePos.x < .25 * this.screen.width) {
+            //         //move left:
+            //         this.playerDirection += dt * 1.;
+            //     }
+            //     else if(this.trackMousePos.x > .75 * this.screen.width) {
+            //         //move right:
+            //         this.playerDirection -= dt * 1.;
+            //     }
+            // }
 
             this.playerDirection %= 2 * Math.PI;
 
