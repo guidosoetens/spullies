@@ -125,6 +125,38 @@ var OceanEaters;
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
+    function HSVtoRGB(h, s, v) {
+        var r, g, b, i, f, p, q, t;
+        if (arguments.length === 1) {
+            s = h.s, v = h.v, h = h.h;
+        }
+        i = Math.floor(h * 6);
+        f = h * 6 - i;
+        p = v * (1 - s);
+        q = v * (1 - f * s);
+        t = v * (1 - (1 - f) * s);
+        switch (i % 6) {
+            case 0:
+                r = v, g = t, b = p;
+                break;
+            case 1:
+                r = q, g = v, b = p;
+                break;
+            case 2:
+                r = p, g = v, b = t;
+                break;
+            case 3:
+                r = p, g = q, b = v;
+                break;
+            case 4:
+                r = t, g = p, b = v;
+                break;
+            case 5:
+                r = v, g = p, b = q;
+                break;
+        }
+        return Math.round(r * 255) * 256 * 256 + Math.round(g * 255) * 256 + Math.round(b * 255);
+    }
     var BadBuoy = /** @class */ (function (_super) {
         __extends(BadBuoy, _super);
         function BadBuoy(x, y, index) {
@@ -136,6 +168,7 @@ var OceanEaters;
             var rad = Math.min(width, height) * .25;
             _this.beginFill(0x0, .2);
             _this.drawEllipse(0, 0, .6 * width, .1 * width);
+            clr = HSVtoRGB(Math.random(), 1, 1);
             _this.beginFill(clr, 1);
             _this.lineStyle(.1 * width, 0x0, 1);
             _this.drawRoundedRect(-width / 2, -height, width, height, rad);
@@ -184,7 +217,7 @@ var OceanEaters;
             tex = PIXI.Texture.fromImage('assets/turtle.png');
             _this.surferSprite = new PIXI.Sprite(tex);
             _this.surferSprite.anchor.x = .5;
-            _this.surferSprite.anchor.y = 1.0;
+            _this.surferSprite.anchor.y = .5;
             _this.surferSprite.scale.x = .25;
             _this.surferSprite.scale.y = .25;
             _this.addChild(_this.surferSprite);
@@ -198,6 +231,7 @@ var OceanEaters;
             if (!this.jumping) {
                 this.jumping = true;
                 this.jumpParam = 0;
+                this.doRotation = Math.random() < .3;
             }
         };
         Player.prototype.resetLayout = function (x, y, w, h) {
@@ -206,9 +240,10 @@ var OceanEaters;
         };
         Player.prototype.updateFrame = function (dt, pPos, pDir) {
             var jump = 0;
-            var jumpTime = .7;
+            var jumpTime = .5;
+            var surferRotation = 0;
             if (this.jumping) {
-                this.jumpParam += dt / 1.5;
+                this.jumpParam += dt / 2.0;
                 if (this.jumpParam > 1.0) {
                     this.jumpParam = 0.;
                     this.jumping = false;
@@ -216,16 +251,20 @@ var OceanEaters;
                 else if (this.jumpParam < jumpTime) {
                     var t = this.jumpParam / jumpTime;
                     jump = -300 * Math.sin(t * Math.PI);
+                    if (this.doRotation) {
+                        surferRotation = Math.sin(t * .5 * Math.PI) * 2 * Math.PI;
+                    }
                 }
                 else {
                     var t = (this.jumpParam - jumpTime) / (1 - jumpTime);
-                    jump = -30 * Math.abs(Math.sin(t * 8)) * (1 - t);
+                    jump = 20 * Math.sin(t * 12) * (1 - t);
                 }
             }
             var jumpVar = -jump / 300.0;
             this.animIt = (this.animIt + dt) % 1.0;
             this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5 + jump;
-            this.surferSprite.position.y = Math.sin((this.animIt + .05) * 2 * Math.PI) * 5 + jump;
+            this.surferSprite.position.y = Math.sin((this.animIt + .05) * 2 * Math.PI) * 5 + (this.doRotation ? 1.3 : 1.1) * jump - .75 * this.surfboardSprite.height;
+            this.surferSprite.rotation = surferRotation;
             var shadowScale = (1. + .05 * Math.sin(this.animIt * 2 * Math.PI)) * (.3 + .7 * (1 - jumpVar));
             this.shadow.position.y = this.surfboardSprite.position.y + 10 - jump;
             this.shadow.scale.x = shadowScale;
@@ -274,7 +313,9 @@ var OceanEaters;
             this.buoys = [];
             for (var x = 0; x < reps; ++x) {
                 for (var y = 0; y < reps; ++y) {
-                    var buoy = new OceanEaters.BadBuoy((x + 0.5) / reps, (y + 0.5) / reps, this.buoys.length);
+                    var offsetX = (Math.random() - .5) * .7;
+                    var offsetY = (Math.random() - .5) * .7;
+                    var buoy = new OceanEaters.BadBuoy((x + 0.5 + offsetX) / reps, (y + 0.5 + offsetY) / reps, this.buoys.length);
                     this.buoys.push(buoy);
                     this.buoysParent.addChild(buoy);
                 }
@@ -364,7 +405,7 @@ var OceanEaters;
             }
             if (this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
-            var newSpeedFactor = Math.min(1, 20 * dt);
+            var newSpeedFactor = Math.min(1, 10 * dt);
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
             this.playerDirection += dt * 1. * this.angularSpeed;
             // //update player location:

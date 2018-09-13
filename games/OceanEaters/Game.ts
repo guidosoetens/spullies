@@ -67,7 +67,9 @@ module OceanEaters
             this.buoys = [];
             for(var x:number=0; x<reps; ++x) {
                 for(var y:number=0; y<reps; ++y) {
-                    var buoy:BadBuoy = new BadBuoy((x + 0.5) / reps, (y + 0.5) / reps, this.buoys.length);
+                    var offsetX = (Math.random() - .5) * .7;
+                    var offsetY = (Math.random() - .5) * .7;
+                    var buoy:BadBuoy = new BadBuoy((x + 0.5 + offsetX) / reps, (y + 0.5 + offsetY) / reps, this.buoys.length);
                     this.buoys.push(buoy);
                     this.buoysParent.addChild(buoy);
                 }

@@ -12,6 +12,7 @@ module OceanEaters
 
         jumping:boolean;
         jumpParam:number;
+        doRotation:boolean;
 
         constructor() {
 
@@ -34,7 +35,7 @@ module OceanEaters
             tex = PIXI.Texture.fromImage('assets/turtle.png');
             this.surferSprite = new PIXI.Sprite(tex);
             this.surferSprite.anchor.x = .5;
-            this.surferSprite.anchor.y = 1.0;
+            this.surferSprite.anchor.y = .5;
             this.surferSprite.scale.x = .25;
             this.surferSprite.scale.y = .25;
             this.addChild(this.surferSprite);
@@ -50,6 +51,7 @@ module OceanEaters
             if(!this.jumping) {
                 this.jumping = true;
                 this.jumpParam = 0;
+                this.doRotation = Math.random() < .3;
             }
         }
 
@@ -61,9 +63,10 @@ module OceanEaters
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
 
             var jump = 0;
-            var jumpTime = .7;
+            var jumpTime = .5;
+            var surferRotation = 0;
             if(this.jumping) {
-                this.jumpParam += dt / 1.5;
+                this.jumpParam += dt / 2.0;
                 if(this.jumpParam > 1.0) {
                     this.jumpParam = 0.;
                     this.jumping = false;
@@ -71,10 +74,13 @@ module OceanEaters
                 else if(this.jumpParam < jumpTime) {
                     var t = this.jumpParam / jumpTime;
                     jump = -300 * Math.sin(t * Math.PI);
+                    if(this.doRotation) {
+                        surferRotation = Math.sin(t * .5 * Math.PI) * 2 * Math.PI;
+                    }
                 }
                 else {
                     var t = (this.jumpParam - jumpTime) / (1 - jumpTime);
-                    jump = -30 * Math.abs(Math.sin(t * 8)) * (1 - t);
+                    jump = 20 * Math.sin(t * 12) * (1 - t);
                 }
             }
 
@@ -82,7 +88,8 @@ module OceanEaters
 
             this.animIt = (this.animIt + dt) % 1.0;
             this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5 + jump;
-            this.surferSprite.position.y = Math.sin((this.animIt + .05)  * 2 * Math.PI) * 5 + jump;
+            this.surferSprite.position.y = Math.sin((this.animIt + .05)  * 2 * Math.PI) * 5 + (this.doRotation ? 1.3 : 1.1) * jump - .75 * this.surfboardSprite.height;
+            this.surferSprite.rotation = surferRotation;
 
             var shadowScale = (1. + .05 * Math.sin(this.animIt * 2 * Math.PI)) * (.3 + .7 * (1 - jumpVar));
             this.shadow.position.y = this.surfboardSprite.position.y + 10 - jump;
