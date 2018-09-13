@@ -10,6 +10,9 @@ module OceanEaters
         surfboardSprite:PIXI.Sprite;
         surferSprite:PIXI.Sprite;
 
+        jumping:boolean;
+        jumpParam:number;
+
         constructor() {
 
             super();
@@ -37,8 +40,17 @@ module OceanEaters
             this.addChild(this.surferSprite);
 
             this.animIt = 0;
+            this.jumping = false;
+            this.jumpParam = 0;
 
             this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
+        }
+
+        jump() {
+            if(!this.jumping) {
+                this.jumping = true;
+                this.jumpParam = 0;
+            }
         }
 
         resetLayout(x:number, y:number, w:number, h:number) {
@@ -47,14 +59,36 @@ module OceanEaters
         }
 
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
-            this.animIt = (this.animIt + dt) % 1.0;
-            this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5;
-            this.surferSprite.position.y = Math.sin((this.animIt + .05)  * 2 * Math.PI) * 5;
 
-            var shadowScale = 1. + .05 * Math.sin(this.animIt * 2 * Math.PI);
-            this.shadow.position.y = this.surfboardSprite.position.y + 10;
+            var jump = 0;
+            var jumpTime = .7;
+            if(this.jumping) {
+                this.jumpParam += dt / 1.5;
+                if(this.jumpParam > 1.0) {
+                    this.jumpParam = 0.;
+                    this.jumping = false;
+                }
+                else if(this.jumpParam < jumpTime) {
+                    var t = this.jumpParam / jumpTime;
+                    jump = -300 * Math.sin(t * Math.PI);
+                }
+                else {
+                    var t = (this.jumpParam - jumpTime) / (1 - jumpTime);
+                    jump = -30 * Math.abs(Math.sin(t * 8)) * (1 - t);
+                }
+            }
+
+            var jumpVar = -jump / 300.0;
+
+            this.animIt = (this.animIt + dt) % 1.0;
+            this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5 + jump;
+            this.surferSprite.position.y = Math.sin((this.animIt + .05)  * 2 * Math.PI) * 5 + jump;
+
+            var shadowScale = (1. + .05 * Math.sin(this.animIt * 2 * Math.PI)) * (.3 + .7 * (1 - jumpVar));
+            this.shadow.position.y = this.surfboardSprite.position.y + 10 - jump;
             this.shadow.scale.x = shadowScale;
             this.shadow.scale.y = shadowScale;
+            this.shadow.alpha = (.3 + .7 * (1 - jumpVar));
         }
     }
 }

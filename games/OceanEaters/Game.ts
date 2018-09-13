@@ -124,6 +124,14 @@ module OceanEaters
         pointerUp(event:PIXI.interaction.InteractionEvent) {
             for(var i:number=0; i<this.touchPoints.length; ++i) {
                 if(this.touchPoints[i].id == event.data.identifier) {
+
+                    if(this.touchPoints[i].timeAlive < .3) {
+                        var dy = event.data.getLocalPosition(this.stage).y - this.touchPoints[i].originY;
+                        if(dy < -5) {
+                            this.player.jump();
+                        }
+                    }
+
                     this.touchPoints.splice(i, 1);
                     --i;
                 }

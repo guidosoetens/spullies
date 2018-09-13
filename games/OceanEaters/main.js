@@ -189,21 +189,48 @@ var OceanEaters;
             _this.surferSprite.scale.y = .25;
             _this.addChild(_this.surferSprite);
             _this.animIt = 0;
+            _this.jumping = false;
+            _this.jumpParam = 0;
             _this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
             return _this;
         }
+        Player.prototype.jump = function () {
+            if (!this.jumping) {
+                this.jumping = true;
+                this.jumpParam = 0;
+            }
+        };
         Player.prototype.resetLayout = function (x, y, w, h) {
             this.position.x = x;
             this.position.y = y;
         };
         Player.prototype.updateFrame = function (dt, pPos, pDir) {
+            var jump = 0;
+            var jumpTime = .7;
+            if (this.jumping) {
+                this.jumpParam += dt / 1.5;
+                if (this.jumpParam > 1.0) {
+                    this.jumpParam = 0.;
+                    this.jumping = false;
+                }
+                else if (this.jumpParam < jumpTime) {
+                    var t = this.jumpParam / jumpTime;
+                    jump = -300 * Math.sin(t * Math.PI);
+                }
+                else {
+                    var t = (this.jumpParam - jumpTime) / (1 - jumpTime);
+                    jump = -30 * Math.abs(Math.sin(t * 8)) * (1 - t);
+                }
+            }
+            var jumpVar = -jump / 300.0;
             this.animIt = (this.animIt + dt) % 1.0;
-            this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5;
-            this.surferSprite.position.y = Math.sin((this.animIt + .05) * 2 * Math.PI) * 5;
-            var shadowScale = 1. + .05 * Math.sin(this.animIt * 2 * Math.PI);
-            this.shadow.position.y = this.surfboardSprite.position.y + 10;
+            this.surfboardSprite.position.y = Math.sin(this.animIt * 2 * Math.PI) * 5 + jump;
+            this.surferSprite.position.y = Math.sin((this.animIt + .05) * 2 * Math.PI) * 5 + jump;
+            var shadowScale = (1. + .05 * Math.sin(this.animIt * 2 * Math.PI)) * (.3 + .7 * (1 - jumpVar));
+            this.shadow.position.y = this.surfboardSprite.position.y + 10 - jump;
             this.shadow.scale.x = shadowScale;
             this.shadow.scale.y = shadowScale;
+            this.shadow.alpha = (.3 + .7 * (1 - jumpVar));
         };
         return Player;
     }(PIXI.Container));
@@ -294,6 +321,12 @@ var OceanEaters;
         Game.prototype.pointerUp = function (event) {
             for (var i = 0; i < this.touchPoints.length; ++i) {
                 if (this.touchPoints[i].id == event.data.identifier) {
+                    if (this.touchPoints[i].timeAlive < .3) {
+                        var dy = event.data.getLocalPosition(this.stage).y - this.touchPoints[i].originY;
+                        if (dy < -5) {
+                            this.player.jump();
+                        }
+                    }
                     this.touchPoints.splice(i, 1);
                     --i;
                 }
