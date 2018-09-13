@@ -23,8 +23,8 @@ uniform float uPlayerAngle;
 //consants:
 const float pi = 3.1415926535;
 
-const float plane_scale = 0.05;
-const float tex_reps = 8.0;
+const float plane_scale = 0.025;
+const float tex_reps = 15.0;
 
 vec2 rotate2D(vec2 vec, float angle) {
     float cs = cos(angle);

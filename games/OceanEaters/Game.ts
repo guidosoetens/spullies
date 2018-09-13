@@ -61,7 +61,7 @@ module OceanEaters
             this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.sky);
 
-            const reps:number = 5;
+            const reps:number = 6;
             this.buoysParent = new PIXI.Container();
             this.stage.addChild(this.buoysParent);
             this.buoys = [];
@@ -159,8 +159,13 @@ module OceanEaters
             var sumDx = 0;
             var centerX = this.screen.width / 2.0;
             for(var i:number=0; i<this.touchPoints.length; ++i) {
-                var factor = Math.min(this.touchPoints[i].timeAlive * 2., 1.0);
+                var factor = 0;
+                var time = this.touchPoints[i].timeAlive;
+                if(time > .05) {
+                    factor = Math.min((time - .05) * 2., 1.0);
+                }
                 var dx = (this.touchPoints[i].currentX - centerX) / centerX;
+                dx *= 2.0;
                 if(Math.abs(dx) > 1.0)
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
@@ -170,7 +175,7 @@ module OceanEaters
             if(this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
 
-            var newSpeedFactor = Math.min(1, 5 * dt);
+            var newSpeedFactor = Math.min(1, 10 * dt);
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
 
             this.playerDirection += dt * 1. * this.angularSpeed;
@@ -193,7 +198,7 @@ module OceanEaters
             var playerDirX:number = Math.cos(this.playerDirection);
             var playerDirY:number = Math.sin(this.playerDirection);
 
-            var speedFactor = 5.0;
+            var speedFactor = 2.0;
 
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
@@ -207,7 +212,7 @@ module OceanEaters
             const dbMargin:number = 20;
             const dbWidth:number = 200;
             this.debugGraphics.clear();
-            var dbX = 800 - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
+            var dbX = this.screen.width - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
@@ -233,7 +238,7 @@ module OceanEaters
 
                 var transUv = new PIXI.Point(oceanUv.x, oceanUv.y);
                 
-                const plane_scale = 0.05;
+                const plane_scale = 0.025;//0.05;
 
                 //transUv.y /= 1.5; //in shader: xy.y *= 1.5
                 transUv.x = transUv.x / plane_scale;
@@ -254,7 +259,10 @@ module OceanEaters
                 var scale = deformScaleX;//Math.max(0, 1 - 10 * oceanUv.y);
                 var alpha = 1;//Math.min(1, 1 - 10. * oceanUv.y);
                 if(oceanUv.y < 0)
-                    alpha = 1 + oceanUv.y / .05;
+                    alpha = 1 + oceanUv.y / .01;
+                else if(oceanUv.y > .5) {
+                    alpha = 1 - (oceanUv.y - .5) / .1;
+                }
 
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
@@ -290,7 +298,7 @@ module OceanEaters
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
 
-                    if(curr_v > -.05) {
+                    if(curr_v > -.01) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
                         if(distance < closestDistance) {
                             closestDistance = distance;

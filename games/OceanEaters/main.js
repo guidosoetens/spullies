@@ -131,8 +131,8 @@ var OceanEaters;
             var _this = _super.call(this) || this;
             _this.index = index;
             var clr = (x < .2 && y < .2) ? 0xff0000 : 0x00ff00;
-            var width = 400; //80;
-            var height = 650; //120;
+            var width = 150;
+            var height = 350;
             var rad = Math.min(width, height) * .25;
             _this.beginFill(0x0, .2);
             _this.drawEllipse(0, 0, .6 * width, .1 * width);
@@ -268,7 +268,7 @@ var OceanEaters;
             this.sky = new OceanEaters.Sky();
             this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.sky);
-            var reps = 5;
+            var reps = 6;
             this.buoysParent = new PIXI.Container();
             this.stage.addChild(this.buoysParent);
             this.buoys = [];
@@ -349,8 +349,13 @@ var OceanEaters;
             var sumDx = 0;
             var centerX = this.screen.width / 2.0;
             for (var i = 0; i < this.touchPoints.length; ++i) {
-                var factor = Math.min(this.touchPoints[i].timeAlive * 2., 1.0);
+                var factor = 0;
+                var time = this.touchPoints[i].timeAlive;
+                if (time > .05) {
+                    factor = Math.min((time - .05) * 2., 1.0);
+                }
                 var dx = (this.touchPoints[i].currentX - centerX) / centerX;
+                dx *= 2.0;
                 if (Math.abs(dx) > 1.0)
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
@@ -359,7 +364,7 @@ var OceanEaters;
             }
             if (this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
-            var newSpeedFactor = Math.min(1, 5 * dt);
+            var newSpeedFactor = Math.min(1, 20 * dt);
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
             this.playerDirection += dt * 1. * this.angularSpeed;
             // //update player location:
@@ -377,7 +382,7 @@ var OceanEaters;
             this.playerDirection %= 2 * Math.PI;
             var playerDirX = Math.cos(this.playerDirection);
             var playerDirY = Math.sin(this.playerDirection);
-            var speedFactor = 5.0;
+            var speedFactor = 2.0;
             var speed = dt * .05 * speedFactor;
             this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
             if (this.playerPos.x < 0.0)
@@ -389,7 +394,7 @@ var OceanEaters;
             var dbMargin = 20;
             var dbWidth = 200;
             this.debugGraphics.clear();
-            var dbX = 800 - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
+            var dbX = this.screen.width - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
@@ -409,7 +414,7 @@ var OceanEaters;
             for (var i = 0; i < this.buoys.length; ++i) {
                 var oceanUv = this.getRelativeOceanPosition(this.buoys[i].relativePosition);
                 var transUv = new PIXI.Point(oceanUv.x, oceanUv.y);
-                var plane_scale = 0.05;
+                var plane_scale = 0.025; //0.05;
                 //transUv.y /= 1.5; //in shader: xy.y *= 1.5
                 transUv.x = transUv.x / plane_scale;
                 transUv.y = transUv.y / plane_scale;
@@ -427,7 +432,10 @@ var OceanEaters;
                 var scale = deformScaleX; //Math.max(0, 1 - 10 * oceanUv.y);
                 var alpha = 1; //Math.min(1, 1 - 10. * oceanUv.y);
                 if (oceanUv.y < 0)
-                    alpha = 1 + oceanUv.y / .05;
+                    alpha = 1 + oceanUv.y / .01;
+                else if (oceanUv.y > .5) {
+                    alpha = 1 - (oceanUv.y - .5) / .1;
+                }
                 this.buoys[i].updateRender(x, y, scale, alpha);
                 this.buoys[i].updateFrame(dt);
             }
@@ -454,7 +462,7 @@ var OceanEaters;
                     var y = toPosY + j - 1;
                     var curr_v = playerDirX * x + playerDirY * y;
                     var curr_u = playerDirY * x - playerDirX * y;
-                    if (curr_v > -.05) {
+                    if (curr_v > -.01) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
                         if (distance < closestDistance) {
                             closestDistance = distance;
