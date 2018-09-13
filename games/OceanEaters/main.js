@@ -18,33 +18,37 @@ var OceanEaters;
         __extends(Ocean, _super);
         function Ocean(w, h) {
             var _this = _super.call(this) || this;
-            // var texture = PIXI.Texture.fromImage('assets/ripples.png');
-            // var uniforms:OceanUniforms;
-            // uniforms.uPlayerPosition.type = 'v2';
-            // uniforms.uPlayerPosition.value.x = 0;
-            // uniforms.uPlayerPosition.value.y = 0;
-            // // var uniforms = { 
-            // //     uTimeParam : { type : 'f', value : 0 },
-            // //     uPlayerAngle : { type : 'f', value : 0 },
-            // //     uResolution : { type : 'v2', value : { x:0, y:0 } },
-            // //     uScreenSize : { type : 'v2', value : { x:0, y:0 } },
-            // //     uPlayerPosition : { type : 'v2', value : { x:0, y:0 } },
-            // //     uPlayerDirection : { type : 'v2', value : { x:0, y:0 } },
-            // //     uTexture : { type : 'sampler2D', value : texture }
-            // // };
-            // var shader = new PIXI.Filter<OceanUniforms>(null, PIXI.loader.resources.oceanShader.data, uniforms);
-            // this.shader = shader;
-            // // this.filters = [shader];
+            // //init shader:
+            var oceanTexture = PIXI.Texture.fromImage('assets/ripples.png');
+            _this.playerPos = new PIXI.Point(0, 0);
+            _this.playerDir = 0;
+            var uniforms = {
+                uTimeParam: { type: 'f', value: 1.0 },
+                uPlayerAngle: { type: 'f', value: 0 },
+                uResolution: { type: 'vec2', value: { x: 800, y: 300 } },
+                uScreenSize: { type: 'vec2', value: { x: 800, y: 600 } },
+                uPlayerPosition: { type: 'vec2', value: { x: 0, y: 0 } },
+                uPlayerDirection: { type: 'vec2', value: { x: 0, y: 0 } },
+                uTexture: { type: 'sampler2D', value: oceanTexture, textureData: { repeat: true } }
+            };
+            // alert(PIXI.Filter.defaultVertexSrc);
+            var shader = new PIXI.Filter(PIXI.Filter.defaultVertexSrc, PIXI.loader.resources.oceanShader.data, uniforms);
+            // shader.autoFit = true;
+            // shader.resolution = 100.0;
+            _this.filters = [shader];
             _this.shaderTime = 0;
-            _this.beginFill(0xff0000, 1);
-            _this.drawRect(0, 0, w, h);
-            _this.endFill();
+            PIXI.ticker.shared.add(function () {
+                var dt = PIXI.ticker.shared.elapsedMS * .001;
+                shader.uniforms.uTimeParam = (shader.uniforms.uTimeParam + dt) % 1.0;
+                shader.uniforms.uPlayerAngle = _this.playerDir;
+                shader.uniforms.uPlayerDirection = { x: Math.cos(_this.playerDir), y: Math.sin(_this.playerDir) };
+                shader.uniforms.uPlayerPosition = { x: -_this.playerPos.y, y: _this.playerPos.x };
+                shader.uniforms.uScreenSize = { x: 800, y: 600 };
+                shader.uniforms.uResolution = { x: 800, y: 300 };
+            });
             return _this;
         }
         Ocean.prototype.resetLayout = function (x, y, w, h) {
-            w = 800;
-            h = 600;
-            y = h / 2;
             this.position.x = x;
             this.position.y = y;
             this.width = w;
@@ -56,13 +60,9 @@ var OceanEaters;
         };
         Ocean.prototype.updateFrame = function (dt, pPos, pDir) {
             this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
-            // this.shader.uniforms.uTimeParam.value = this.shaderTime;
-            // this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
-            // this.shader.uniforms.uScreenSize.value = { x:this.width, y:this.height };
-            // this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
-            // this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
-            // this.shader.uniforms.uPlayerAngle.value = pDir;
-            // this.shader.update(); 
+            this.playerPos.x = pPos.x;
+            this.playerPos.y = pPos.y;
+            this.playerDir = pDir;
         };
         return Ocean;
     }(PIXI.Graphics));
@@ -78,43 +78,45 @@ var OceanEaters;
             //init shader:
             var skyTexture = PIXI.Texture.fromImage('assets/sky.jpg');
             var mountainTexture = PIXI.Texture.fromImage('assets/mountains.png');
+            _this.playerPos = new PIXI.Point(0, 0);
+            _this.playerDir = 0;
             var uniforms = {
-                uTimeParam: { type: 'f', value: 0 },
+                uTimeParam: { type: 'f', value: 1.0 },
                 uPlayerAngle: { type: 'f', value: 0 },
-                uResolution: { type: 'v2', value: { x: 0, y: 0 } },
-                uScreenSize: { type: 'v2', value: { x: 0, y: 0 } },
-                uPlayerPosition: { type: 'v2', value: { x: 0, y: 0 } },
-                uPlayerDirection: { type: 'v2', value: { x: 0, y: 0 } },
+                uResolution: { type: 'vec2', value: { x: 800, y: 300 } },
+                uScreenSize: { type: 'vec2', value: { x: 800, y: 600 } },
+                uPlayerPosition: { type: 'vec2', value: { x: 0, y: 0 } },
+                uPlayerDirection: { type: 'vec2', value: { x: 0, y: 0 } },
                 uTexture: { type: 'sampler2D', value: skyTexture, textureData: { repeat: true } },
                 uMountainsTexture: { type: 'sampler2D', value: mountainTexture, textureData: { repeat: true } }
             };
-            var foo = new PIXI.Filter(null, PIXI.loader.resources.skyShader.data, uniforms);
-            _this.filters = [foo];
+            var shader = new PIXI.Filter(PIXI.Filter.defaultVertexSrc, PIXI.loader.resources.skyShader.data, uniforms);
+            _this.filters = [shader];
             _this.shaderTime = 0;
+            PIXI.ticker.shared.add(function () {
+                var dt = PIXI.ticker.shared.elapsedMS * .001;
+                shader.uniforms.uTimeParam = (shader.uniforms.uTimeParam + dt) % 1.0;
+                shader.uniforms.uPlayerAngle = _this.playerDir;
+                shader.uniforms.uPlayerDirection = { x: Math.cos(_this.playerDir), y: Math.sin(_this.playerDir) };
+                shader.uniforms.uPlayerPosition = { x: -_this.playerPos.y, y: _this.playerPos.x };
+            });
             return _this;
         }
         Sky.prototype.resetLayout = function (x, y, w, h) {
-            w = 800;
-            h = 600;
-            y = 0;
             this.position.x = x;
             this.position.y = y;
             this.width = w;
-            this.height = .5 * h;
+            this.height = h;
             this.clear();
             this.beginFill(0x0066ff, 1);
-            this.drawRect(0, 0, w, .5 * h);
+            this.drawRect(0, 0, w, h);
             this.endFill();
         };
         Sky.prototype.updateFrame = function (dt, pPos, pDir) {
             this.shaderTime = (this.shaderTime + dt / 10.0) % 1.0;
-            // this.shader.uniforms.uTimeParam.value = this.shaderTime;
-            // this.shader.uniforms.uResolution.value = { x:this.width, y:this.height };
-            // this.shader.uniforms.uScreenSize.value = { x:800, y:600 };
-            // this.shader.uniforms.uPlayerPosition.value = { x:-pPos.y, y:pPos.x };
-            // this.shader.uniforms.uPlayerDirection.value = { x:Math.cos(pDir), y:Math.sin(pDir) };
-            // this.shader.uniforms.uPlayerAngle.value = pDir;
-            // this.shader.update();
+            this.playerPos.x = pPos.x;
+            this.playerPos.y = pPos.y;
+            this.playerDir = pDir;
         };
         return Sky;
     }(PIXI.Graphics));
@@ -129,8 +131,8 @@ var OceanEaters;
             var _this = _super.call(this) || this;
             _this.index = index;
             var clr = (x < .2 && y < .2) ? 0xff0000 : 0x00ff00;
-            var width = 80;
-            var height = 120;
+            var width = 400; //80;
+            var height = 650; //120;
             var rad = Math.min(width, height) * .25;
             _this.beginFill(0x0, .2);
             _this.drawEllipse(0, 0, .6 * width, .1 * width);
@@ -225,11 +227,11 @@ var OceanEaters;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
             this.stage.on("pointerup", this.pointerUp, this);
-            this.ocean = new OceanEaters.Ocean(this.screen.width, .5 * this.stage.height);
-            this.ocean.resetLayout(0, .5 * this.stage.height, this.screen.width, this.stage.height);
+            this.ocean = new OceanEaters.Ocean(this.screen.width, .5 * this.screen.height);
+            this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.ocean);
             this.sky = new OceanEaters.Sky();
-            this.sky.resetLayout(0, 0, this.screen.width, this.stage.height);
+            this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.sky);
             var reps = 5;
             this.buoysParent = new PIXI.Container();

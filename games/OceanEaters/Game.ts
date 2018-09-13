@@ -42,12 +42,12 @@ module OceanEaters
             this.stage.on("pointermove", this.pointerMove, this);
             this.stage.on("pointerup", this.pointerUp, this);
 
-            this.ocean = new Ocean(this.screen.width, .5 * this.stage.height);
-            this.ocean.resetLayout(0, .5 * this.stage.height, this.screen.width, this.stage.height);
+            this.ocean = new Ocean(this.screen.width, .5 * this.screen.height);
+            this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.ocean);
 
             this.sky = new Sky();
-            this.sky.resetLayout(0, 0, this.screen.width, this.stage.height);
+            this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
             this.stage.addChild(this.sky);
 
             const reps:number = 5;

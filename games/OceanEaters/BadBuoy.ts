@@ -14,8 +14,8 @@ module OceanEaters
 
             var clr = (x < .2 && y < .2) ? 0xff0000 : 0x00ff00;
 
-            var width = 80;
-            var height = 120;
+            var width = 400;//80;
+            var height = 650;//120;
             var rad = Math.min(width, height) * .25;
 
             this.beginFill(0x0, .2);

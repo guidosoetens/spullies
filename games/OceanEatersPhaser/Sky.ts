@@ -1,6 +1,6 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 
-module OceanEaters
+module OceanEatersPhaser
 {
     export class Sky  {
 

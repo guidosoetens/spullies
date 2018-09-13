@@ -1,7 +1,7 @@
 ///<reference path="../../phaser/phaser.d.ts"/>
 ///<reference path="GameState.ts"/>
 
-module OceanEaters
+module OceanEatersPhaser
 {
     export class SimpleGame {
         
@@ -19,7 +19,7 @@ module OceanEaters
     }
 }
 
-function resizeGame(game:OceanEaters.SimpleGame) {
+function resizeGame(game:OceanEatersPhaser.SimpleGame) {
     var contentDiv = document.getElementById("content");
     var w = 600;//contentDiv.clientWidth;
     var h = 450;//contentDiv.clientHeight;
@@ -32,7 +32,7 @@ window.onload = () => {
     var w = 600;//contentDiv.clientWidth;
     var h = 450;//contentDiv.clientHeight;
 
-    var game = new OceanEaters.SimpleGame(w, h);
+    var game = new OceanEatersPhaser.SimpleGame(w, h);
 
     function onResize(event) {
         resizeGame(game);

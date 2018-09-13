@@ -1,15 +1,9 @@
 precision lowp float;
 
-//phaser variables:
-uniform float time;
-uniform vec2 resolution;
-uniform vec2 mouse;
-
-//phaser base texture:
+varying vec2 vFilterCoord;
 varying vec2 vTextureCoord;
-varying vec4 vColor;
-varying float vTextureIndex;
-uniform sampler2D uSampler;
+
+// uniform sampler2D uSampler;
 
 //custom variables:
 uniform float uTimeParam;
@@ -23,17 +17,20 @@ uniform float uPlayerAngle;
 
 uniform sampler2D uMountainsTexture;
 
-//consants:
+//consants:s
 const float pi = 3.1415926535;
 
 void main( void )
 {
-	float width = uResolution.x / 1500.0;
-	vec2 uv = vTextureCoord * uScreenSize / uResolution;
-    vec2 transUv = vec2(.5 * uv.x * uResolution.x / uResolution.y, 1. - uv.y);
+	// float width = uResolution.x / 1500.0;
+	// vec2 uv = vTextureCoord * uScreenSize / uResolution;
+    vec2 uv = vTextureCoord;// / uResolution;// / vec2(800.0 / 1024.0, 300.0  / 512.0);// mapCoord(vTextureCoord);// / dimensions.xy;// * uScreenSize / uResolution;
+	uv.x *= 1.27;
+	uv.y *= 1.66;
+    vec2 transUv = vec2(uv.x, uv.y);// vec2(.5 * uv.x * uResolution.x / uResolution.y, uv.y);
     transUv.x -= 6. * uPlayerAngle / (2. * pi);
     gl_FragColor = texture2D(uTexture, fract(transUv));
-    gl_FragColor = mix(gl_FragColor, vec4(.2,.6,1.,1), .3 + .7 * (1. - uv.y));
+    gl_FragColor = mix(gl_FragColor, vec4(.2,.6,1.,1), .3 + .7 *  uv.y);
 
     if(transUv.y > .9) {
         vec2 mountainUv = vec2(3. * transUv.x, (transUv.y - .9) / .1);
@@ -42,6 +39,8 @@ void main( void )
         gl_FragColor.rgb *= 1. - fx * .7;
     }
 
-    gl_FragColor = vec4(fract(transUv),0,1);
+    if(transUv.y > 1.0) {
+        gl_FragColor.rgb = vec3(0,transUv.x,1);
+    }
 }
 

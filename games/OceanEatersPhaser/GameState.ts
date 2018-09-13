@@ -5,7 +5,7 @@
 ///<reference path="BadBuoy.ts"/>
 
 
-module OceanEaters
+module OceanEatersPhaser
 {
     export class GameState extends Phaser.State {
 
