@@ -45,6 +45,7 @@ module OceanEaters
 
         setup() {
             this.ticker.add(this.update, this);
+            
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
