@@ -43,8 +43,9 @@ function fitApp(appCanvas:HTMLCanvasElement) {
     var p_height = contentDiv.clientHeight;
     var c_width = appCanvas.clientWidth;
     var c_height = appCanvas.clientHeight;
-    appCanvas.style.transform = "scale(" + (.5 * p_width / c_width) + ", " + (.5 * p_height / c_height) + ")"
-    appCanvas.style.transformOrigin = "0 0"
+    // appCanvas.style.transform = "scale(" + (.5 * p_width / c_width) + ", " + (.5 * p_height / c_height) + ")"
+    appCanvas.style.transform = "matrix(" + (.8 * p_width / c_width) + ", 0, 0, " + (.8 * p_height / c_height) + ", 100, 100)";
+    appCanvas.style.transformOrigin = "0 0";
 }
 
 window.onload = () => {
