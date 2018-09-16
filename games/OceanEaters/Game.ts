@@ -37,6 +37,7 @@ module OceanEaters
         debugGraphics:PIXI.Graphics;
 
         //game components:
+        componentContainer:PIXI.Container;
         ocean:Ocean;
         sky:Sky;
         player:Player;
@@ -49,6 +50,14 @@ module OceanEaters
 
         setup() {
             this.ticker.add(this.update, this);
+
+            this.componentContainer = new PIXI.Container();
+            this.stage.addChild(this.componentContainer);
+            var px_mask_outter_bounds = new PIXI.Graphics();
+            px_mask_outter_bounds.beginFill(0xFFFFFF);
+            px_mask_outter_bounds.drawRect(0, 0, this.screen.width, this.screen.height); // In this case it is 8000x8000
+            px_mask_outter_bounds.endFill();
+            this.componentContainer.mask = px_mask_outter_bounds;
             
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
@@ -60,15 +69,15 @@ module OceanEaters
 
             this.ocean = new Ocean(this.screen.width, .5 * this.screen.height);
             this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
-            this.stage.addChild(this.ocean);
+            this.componentContainer.addChild(this.ocean);
 
             this.sky = new Sky();
             this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
-            this.stage.addChild(this.sky);
+            this.componentContainer.addChild(this.sky);
 
             const reps:number = 6;
             this.buoysParent = new PIXI.Container();
-            this.stage.addChild(this.buoysParent);
+            this.componentContainer.addChild(this.buoysParent);
             this.buoys = [];
             for(var x:number=0; x<reps; ++x) {
                 for(var y:number=0; y<reps; ++y) {
@@ -81,7 +90,7 @@ module OceanEaters
             }
 
             this.player = new Player();
-            this.stage.addChild(this.player);
+            this.componentContainer.addChild(this.player);
             this.playerPos = new PIXI.Point(0,0);
             this.playerDirection = 0;
             this.angularSpeed = 0;
@@ -91,10 +100,10 @@ module OceanEaters
             this.debugText = new PIXI.Text('txt');
             this.debugText.x = 20;
             this.debugText.y = 10;
-            this.stage.addChild(this.debugText);
+            this.componentContainer.addChild(this.debugText);
 
             this.debugGraphics = new PIXI.Graphics();
-            this.stage.addChild(this.debugGraphics);
+            this.componentContainer.addChild(this.debugGraphics);
         }
 
         inputDown(input:inputElement) {
@@ -136,7 +145,8 @@ module OceanEaters
                     if(this.touchPoints[i].timeAlive < .3) {
                         var dy = input.y - this.touchPoints[i].originY;
                         if(dy < -5) {
-                            this.player.jump();
+                            var double = this.touchPoints.length > 1;
+                            this.player.jump(double);
                         }
                     }
 
@@ -184,7 +194,8 @@ module OceanEaters
                     if(this.touchPoints[i].timeAlive < .3) {
                         var dy = event.data.getLocalPosition(this.stage).y - this.touchPoints[i].originY;
                         if(dy < -5) {
-                            this.player.jump();
+                            var double = this.touchPoints.length > 1;
+                            this.player.jump(double);
                         }
                     }
 

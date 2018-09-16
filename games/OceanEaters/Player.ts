@@ -47,11 +47,11 @@ module OceanEaters
             this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
         }
 
-        jump() {
+        jump(salto:boolean) {
             if(!this.jumping) {
                 this.jumping = true;
                 this.jumpParam = 0;
-                this.doRotation = Math.random() < .3;
+                this.doRotation = salto || Math.random() < .3;
             }
         }
 
