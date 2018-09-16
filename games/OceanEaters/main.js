@@ -16,7 +16,7 @@ var OceanEaters;
 (function (OceanEaters) {
     var Ocean = /** @class */ (function (_super) {
         __extends(Ocean, _super);
-        function Ocean(w, h) {
+        function Ocean() {
             var _this = _super.call(this) || this;
             // //init shader:
             var oceanTexture = PIXI.Texture.fromImage('assets/ripples.png');
@@ -283,12 +283,6 @@ var OceanEaters;
 ///<reference path="Player.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
-    var inputElement = /** @class */ (function () {
-        function inputElement() {
-        }
-        return inputElement;
-    }());
-    OceanEaters.inputElement = inputElement;
     var touchElement = /** @class */ (function () {
         function touchElement() {
         }
@@ -298,17 +292,22 @@ var OceanEaters;
     var Game = /** @class */ (function (_super) {
         __extends(Game, _super);
         function Game(w, h) {
-            return _super.call(this, w, h, { antialias: true, backgroundColor: 0x1099bb }) || this;
+            var _this = _super.call(this, w, h, { antialias: true, backgroundColor: 0x000000, transparent: false }) || this;
+            _this.backgroundTexture = PIXI.Texture.fromImage('assets/background.png');
+            _this.backgroundImage = new PIXI.Sprite(_this.backgroundTexture);
+            _this.stage.addChild(_this.backgroundImage);
+            _this.componentContainer = new PIXI.Container();
+            _this.stage.addChild(_this.componentContainer);
+            _this.componentMask = new PIXI.Graphics();
+            _this.componentMask.beginFill(0xFFFFFF);
+            _this.componentMask.drawRoundedRect(0, 0, w, h, 20);
+            _this.componentMask.endFill();
+            _this.componentMask.isMask = true;
+            _this.componentContainer.mask = _this.componentMask;
+            return _this;
         }
         Game.prototype.setup = function () {
             this.ticker.add(this.update, this);
-            this.componentContainer = new PIXI.Container();
-            this.stage.addChild(this.componentContainer);
-            var px_mask_outter_bounds = new PIXI.Graphics();
-            px_mask_outter_bounds.beginFill(0xFFFFFF);
-            px_mask_outter_bounds.drawRect(0, 0, this.screen.width, this.screen.height); // In this case it is 8000x8000
-            px_mask_outter_bounds.endFill();
-            this.componentContainer.mask = px_mask_outter_bounds;
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
@@ -316,11 +315,11 @@ var OceanEaters;
             this.stage.on("pointercancel", this.pointerUp, this);
             this.stage.on("pointerup", this.pointerUp, this);
             this.stage.on("pointerout", this.pointerUp, this);
-            this.ocean = new OceanEaters.Ocean(this.screen.width, .5 * this.screen.height);
-            this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
+            this.ocean = new OceanEaters.Ocean();
+            this.ocean.resetLayout(0, 300, 800, 300);
             this.componentContainer.addChild(this.ocean);
             this.sky = new OceanEaters.Sky();
-            this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
+            this.sky.resetLayout(0, 0, 800, 300);
             this.componentContainer.addChild(this.sky);
             var reps = 6;
             this.buoysParent = new PIXI.Container();
@@ -338,7 +337,8 @@ var OceanEaters;
             this.player = new OceanEaters.Player();
             this.componentContainer.addChild(this.player);
             this.playerPos = new PIXI.Point(0, 0);
-            this.playerDirection = 0;
+            this.playerAngle = 0;
+            this.playerDirection = new PIXI.Point(1, 0);
             this.angularSpeed = 0;
             this.touchPoints = [];
             this.debugText = new PIXI.Text('txt');
@@ -347,47 +347,6 @@ var OceanEaters;
             this.componentContainer.addChild(this.debugText);
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
-        };
-        Game.prototype.inputDown = function (input) {
-            for (var i = 0; i < this.touchPoints.length; ++i) {
-                if (this.touchPoints[i].id == input.id) {
-                    this.touchPoints.splice(i, 1);
-                    --i;
-                }
-            }
-            var pos = new PIXI.Point(input.x, input.y); // event.data.getLocalPosition(this.stage);
-            var touch = new touchElement();
-            touch.id = input.id; //event.data.identifier;
-            touch.currentX = pos.x;
-            touch.currentY = pos.y;
-            touch.originX = pos.x;
-            touch.originY = pos.y;
-            touch.timeAlive = 0;
-            this.touchPoints.push(touch);
-        };
-        Game.prototype.inputMove = function (input) {
-            var pos = new PIXI.Point(input.x, input.y); //event.data.getLocalPosition(this.stage);
-            for (var i = 0; i < this.touchPoints.length; ++i) {
-                if (this.touchPoints[i].id == input.id) {
-                    this.touchPoints[i].currentX = pos.x;
-                    this.touchPoints[i].currentY = pos.y;
-                }
-            }
-        };
-        Game.prototype.inputUp = function (input) {
-            for (var i = 0; i < this.touchPoints.length; ++i) {
-                if (this.touchPoints[i].id == input.id) {
-                    if (this.touchPoints[i].timeAlive < .3) {
-                        var dy = input.y - this.touchPoints[i].originY;
-                        if (dy < -5) {
-                            var double = this.touchPoints.length > 1;
-                            this.player.jump(double);
-                        }
-                    }
-                    this.touchPoints.splice(i, 1);
-                    --i;
-                }
-            }
         };
         Game.prototype.pointerDown = function (event) {
             for (var i = 0; i < this.touchPoints.length; ++i) {
@@ -431,14 +390,20 @@ var OceanEaters;
             }
         };
         Game.prototype.resize = function (w, h) {
-            // this.game.scale.setGameSize(w, h);
-        };
-        Game.prototype.updateLayout = function () {
-            // var width = this.screen.width;
-            // var height = this.stage.height;
-            // this.ocean.resetLayout(0, .5 * height, width, .5 * height);
-            // this.sky.resetLayout(0, 0, width, .5 * height);
-            // this.player.resetLayout(.5 * width, (1. - 1. / 6.) * height, width, height);
+            var bgScale = Math.max(w / 1920, h / 1080);
+            this.backgroundImage.scale.x = bgScale;
+            this.backgroundImage.scale.y = bgScale;
+            var resWidth = bgScale * 1920;
+            var resHeight = bgScale * 1080;
+            this.backgroundImage.x = (w - resWidth) / 2;
+            this.backgroundImage.y = (h - resHeight) / 2;
+            this.componentContainer.x = (w - 800) / 2;
+            this.componentContainer.y = (h - 600) / 2;
+            this.componentMask.clear();
+            this.componentMask.beginFill(0xffffff);
+            this.componentMask.drawRoundedRect(this.componentContainer.x, this.componentContainer.y, 800, 600, 20);
+            this.componentMask.endFill();
+            this.renderer.resize(w, h);
         };
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
@@ -464,41 +429,29 @@ var OceanEaters;
                 sumDx /= this.touchPoints.length;
             var newSpeedFactor = Math.min(1, 10 * dt);
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
-            this.playerDirection += dt * 1. * this.angularSpeed;
-            // //update player location:
-            // if(this.trackMouseDown) {
-            //     this.trackMouseTime += dt;
-            //     if(this.trackMousePos.x < .25 * this.screen.width) {
-            //         //move left:
-            //         this.playerDirection += dt * 1.;
-            //     }
-            //     else if(this.trackMousePos.x > .75 * this.screen.width) {
-            //         //move right:
-            //         this.playerDirection -= dt * 1.;
-            //     }
-            // }
-            this.playerDirection %= 2 * Math.PI;
-            var playerDirX = Math.cos(this.playerDirection);
-            var playerDirY = Math.sin(this.playerDirection);
+            this.playerAngle += dt * 1. * this.angularSpeed;
+            this.playerAngle %= 2 * Math.PI;
+            this.playerDirection.x = Math.cos(this.playerAngle);
+            this.playerDirection.y = Math.sin(this.playerAngle);
             var speedFactor = 2.0;
             var speed = dt * .05 * speedFactor;
-            this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
+            this.playerPos.x = (this.playerPos.x + speed * this.playerDirection.x) % 1.0;
             if (this.playerPos.x < 0.0)
                 this.playerPos.x += 1.0;
-            this.playerPos.y = (this.playerPos.y + speed * playerDirY) % 1.0;
+            this.playerPos.y = (this.playerPos.y + speed * this.playerDirection.y) % 1.0;
             if (this.playerPos.y < 0.0)
                 this.playerPos.y += 1.0;
             //draw debug graphics:
             var dbMargin = 20;
             var dbWidth = 200;
             this.debugGraphics.clear();
-            var dbX = this.screen.width - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
+            var dbX = 800 - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
             this.debugGraphics.beginFill(0x00ff00, 1);
             this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x, dbMargin + dbWidth * (1 - this.playerPos.y), 10);
-            this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x + 10 * playerDirX, dbMargin + dbWidth * (1 - this.playerPos.y) + 10 * -playerDirY, 5);
+            this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x + 10 * this.playerDirection.x, dbMargin + dbWidth * (1 - this.playerPos.y) + 10 * -this.playerDirection.y, 5);
             this.debugGraphics.beginFill(0xff0000, 1);
             for (var i = 0; i < this.buoys.length; ++i) {
                 var pos = this.buoys[i].relativePosition;
@@ -506,9 +459,9 @@ var OceanEaters;
                 //this.game.debug.text("" + this.buoys[i].index, dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y));
             }
             this.debugGraphics.endFill();
-            this.ocean.updateFrame(dt, this.playerPos, this.playerDirection);
-            this.sky.updateFrame(dt, this.playerPos, this.playerDirection);
-            this.player.updateFrame(dt, this.playerPos, this.playerDirection);
+            this.ocean.updateFrame(dt, this.playerPos, this.playerAngle);
+            this.sky.updateFrame(dt, this.playerPos, this.playerAngle);
+            this.player.updateFrame(dt, this.playerPos, this.playerAngle);
             for (var i = 0; i < this.buoys.length; ++i) {
                 var oceanUv = this.getRelativeOceanPosition(this.buoys[i].relativePosition);
                 var transUv = new PIXI.Point(oceanUv.x, oceanUv.y);
@@ -549,8 +502,6 @@ var OceanEaters;
         Game.prototype.getRelativeOceanPosition = function (p) {
             var toPosX = p.x - this.playerPos.x;
             var toPosY = p.y - this.playerPos.y;
-            var playerDirX = Math.cos(this.playerDirection);
-            var playerDirY = Math.sin(this.playerDirection);
             var closestDistance = 100;
             var v = 0;
             var u = 0;
@@ -558,8 +509,8 @@ var OceanEaters;
                 for (var j = 0; j < 3; ++j) {
                     var x = toPosX + i - 1;
                     var y = toPosY + j - 1;
-                    var curr_v = playerDirX * x + playerDirY * y;
-                    var curr_u = playerDirY * x - playerDirX * y;
+                    var curr_v = this.playerDirection.x * x + this.playerDirection.y * y;
+                    var curr_u = this.playerDirection.y * x - this.playerDirection.x * y;
                     if (curr_v > -.01) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);
                         if (distance < closestDistance) {
@@ -620,37 +571,18 @@ function fitApp(app) {
     var contentDiv = document.getElementById("content");
     var p_width = window.innerWidth;
     var p_height = window.innerHeight;
-    var app_width = app.view.clientWidth;
-    var app_height = app.view.clientHeight;
-    var appRatio = app_width / app_height;
-    var parentRatio = p_width / p_height;
-    console.log();
-    var scale = 1.0;
-    if (parentRatio > appRatio) {
-        scale = p_height / app_height;
-    }
-    else {
-        scale = p_width / app_width;
-    }
-    scale *= .95;
-    var transX = .5 * (p_width - scale * app_width);
-    var transY = .5 * (p_height - scale * app_height);
-    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", " + transX + ", " + transY + ")";
+    var p_ratio = p_width / p_height;
+    var containerWidth = gameWidth + 2 * margin;
+    var containerHeight = gameHeight + 2 * margin;
+    var containerInnerRatio = containerWidth / containerHeight;
+    if (containerInnerRatio < p_ratio)
+        containerWidth = containerHeight * p_ratio;
+    else
+        containerHeight = containerWidth / p_ratio;
+    var scale = p_width / containerWidth;
+    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", 0, 0)";
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
-}
-function generateTouchElement_Touch(touch) {
-    var res = new OceanEaters.inputElement();
-    res.id = touch.identifier;
-    res.x = touch.clientX;
-    res.y = touch.clientY;
-    return res;
-}
-function generateTouchElement_Pointer(event) {
-    var res = new OceanEaters.inputElement();
-    res.id = event.pointerId;
-    res.x = event.x;
-    res.y = event.y;
-    return res;
+    app.resize(containerWidth, containerHeight);
 }
 window.onload = function () {
     disableScroll();

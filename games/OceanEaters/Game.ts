@@ -6,12 +6,6 @@
 
 module OceanEaters
 {
-    export class inputElement {
-        id:number;
-        x:number;
-        y:number;
-    }
-
     export class touchElement {
         id:number;
         currentX:number;
@@ -29,7 +23,8 @@ module OceanEaters
 
         //movement:
         playerPos:PIXI.Point;
-        playerDirection:number;
+        playerAngle:number;
+        playerDirection:PIXI.Point;
         angularSpeed:number;
 
         //debug:
@@ -37,6 +32,10 @@ module OceanEaters
         debugGraphics:PIXI.Graphics;
 
         //game components:
+        backgroundTexture:PIXI.Texture;
+        backgroundImage:PIXI.Sprite;
+        // touchContainerGraphics:PIXI.Graphics;
+        componentMask:PIXI.Graphics;
         componentContainer:PIXI.Container;
         ocean:Ocean;
         sky:Sky;
@@ -45,19 +44,24 @@ module OceanEaters
         buoys:BadBuoy[];
 
         constructor(w:number, h:number) {
-            super(w, h, { antialias: true, backgroundColor : 0x1099bb });
+            super(w, h, { antialias: true, backgroundColor : 0x000000, transparent : false });
+
+            this.backgroundTexture = PIXI.Texture.fromImage('assets/background.png');
+            this.backgroundImage = new PIXI.Sprite(this.backgroundTexture);
+            this.stage.addChild(this.backgroundImage);
+
+            this.componentContainer = new PIXI.Container();
+            this.stage.addChild(this.componentContainer);
+            this.componentMask = new PIXI.Graphics();
+            this.componentMask.beginFill(0xFFFFFF);
+            this.componentMask.drawRoundedRect(0, 0, w, h, 20);
+            this.componentMask.endFill();
+            this.componentMask.isMask = true;
+            this.componentContainer.mask = this.componentMask;
         }
 
         setup() {
             this.ticker.add(this.update, this);
-
-            this.componentContainer = new PIXI.Container();
-            this.stage.addChild(this.componentContainer);
-            var px_mask_outter_bounds = new PIXI.Graphics();
-            px_mask_outter_bounds.beginFill(0xFFFFFF);
-            px_mask_outter_bounds.drawRect(0, 0, this.screen.width, this.screen.height); // In this case it is 8000x8000
-            px_mask_outter_bounds.endFill();
-            this.componentContainer.mask = px_mask_outter_bounds;
             
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
@@ -67,12 +71,12 @@ module OceanEaters
             this.stage.on("pointerup", this.pointerUp, this);
             this.stage.on("pointerout", this.pointerUp, this);
 
-            this.ocean = new Ocean(this.screen.width, .5 * this.screen.height);
-            this.ocean.resetLayout(0, .5 * this.screen.height, this.screen.width, .5 * this.screen.height);
+            this.ocean = new Ocean();
+            this.ocean.resetLayout(0,300,800,300);
             this.componentContainer.addChild(this.ocean);
 
             this.sky = new Sky();
-            this.sky.resetLayout(0, 0, this.screen.width, .5 * this.screen.height);
+            this.sky.resetLayout(0, 0, 800, 300);
             this.componentContainer.addChild(this.sky);
 
             const reps:number = 6;
@@ -92,7 +96,8 @@ module OceanEaters
             this.player = new Player();
             this.componentContainer.addChild(this.player);
             this.playerPos = new PIXI.Point(0,0);
-            this.playerDirection = 0;
+            this.playerAngle = 0;
+            this.playerDirection = new PIXI.Point(1,0);
             this.angularSpeed = 0;
 
             this.touchPoints = [];
@@ -104,56 +109,6 @@ module OceanEaters
 
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
-        }
-
-        inputDown(input:inputElement) {
-
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == input.id) {
-                    this.touchPoints.splice(i, 1);
-                    --i;
-                }
-            }
-
-            var pos = new PIXI.Point(input.x, input.y);// event.data.getLocalPosition(this.stage);
-
-            var touch:touchElement = new touchElement();
-            touch.id = input.id;//event.data.identifier;
-            touch.currentX = pos.x;
-            touch.currentY = pos.y;
-            touch.originX = pos.x;
-            touch.originY = pos.y;
-            touch.timeAlive = 0;
-
-            this.touchPoints.push(touch);
-        }
-
-        inputMove(input:inputElement) {
-            var pos =  new PIXI.Point(input.x, input.y);//event.data.getLocalPosition(this.stage);
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == input.id) {
-                    this.touchPoints[i].currentX = pos.x;
-                    this.touchPoints[i].currentY = pos.y;
-                }
-            }
-        }
-
-        inputUp(input:inputElement) {
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == input.id) {
-
-                    if(this.touchPoints[i].timeAlive < .3) {
-                        var dy = input.y - this.touchPoints[i].originY;
-                        if(dy < -5) {
-                            var double = this.touchPoints.length > 1;
-                            this.player.jump(double);
-                        }
-                    }
-
-                    this.touchPoints.splice(i, 1);
-                    --i;
-                }
-            }
         }
 
         pointerDown(event:PIXI.interaction.InteractionEvent) {
@@ -206,15 +161,23 @@ module OceanEaters
         }
 
         resize(w:number, h:number) {
-            // this.game.scale.setGameSize(w, h);
-        }
+            var bgScale = Math.max(w / 1920, h / 1080);
+            this.backgroundImage.scale.x = bgScale;
+            this.backgroundImage.scale.y = bgScale;
+            var resWidth = bgScale * 1920;
+            var resHeight = bgScale * 1080;
+            this.backgroundImage.x = (w - resWidth) / 2;
+            this.backgroundImage.y = (h - resHeight) / 2;
 
-        updateLayout() {
-            // var width = this.screen.width;
-            // var height = this.stage.height;
-            // this.ocean.resetLayout(0, .5 * height, width, .5 * height);
-            // this.sky.resetLayout(0, 0, width, .5 * height);
-            // this.player.resetLayout(.5 * width, (1. - 1. / 6.) * height, width, height);
+            this.componentContainer.x = (w - 800) / 2;
+            this.componentContainer.y = (h - 600) / 2;
+
+            this.componentMask.clear();
+            this.componentMask.beginFill(0xffffff);
+            this.componentMask.drawRoundedRect(this.componentContainer.x, this.componentContainer.y, 800, 600, 20);
+            this.componentMask.endFill();
+
+            this.renderer.resize(w, h);
         }
 
         update() {
@@ -245,33 +208,18 @@ module OceanEaters
             var newSpeedFactor = Math.min(1, 10 * dt);
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
 
-            this.playerDirection += dt * 1. * this.angularSpeed;
-
-            // //update player location:
-            // if(this.trackMouseDown) {
-            //     this.trackMouseTime += dt;
-            //     if(this.trackMousePos.x < .25 * this.screen.width) {
-            //         //move left:
-            //         this.playerDirection += dt * 1.;
-            //     }
-            //     else if(this.trackMousePos.x > .75 * this.screen.width) {
-            //         //move right:
-            //         this.playerDirection -= dt * 1.;
-            //     }
-            // }
-
-            this.playerDirection %= 2 * Math.PI;
-
-            var playerDirX:number = Math.cos(this.playerDirection);
-            var playerDirY:number = Math.sin(this.playerDirection);
+            this.playerAngle += dt * 1. * this.angularSpeed;
+            this.playerAngle %= 2 * Math.PI;
+            this.playerDirection.x = Math.cos(this.playerAngle);
+            this.playerDirection.y = Math.sin(this.playerAngle); 
 
             var speedFactor = 2.0;
 
             var speed = dt * .05 * speedFactor;
-            this.playerPos.x = (this.playerPos.x + speed * playerDirX) % 1.0;
+            this.playerPos.x = (this.playerPos.x + speed * this.playerDirection.x) % 1.0;
             if(this.playerPos.x < 0.0)
                 this.playerPos.x += 1.0;
-            this.playerPos.y = (this.playerPos.y + speed * playerDirY) % 1.0;
+            this.playerPos.y = (this.playerPos.y + speed * this.playerDirection.y) % 1.0;
             if(this.playerPos.y < 0.0)
                 this.playerPos.y += 1.0;
 
@@ -279,13 +227,13 @@ module OceanEaters
             const dbMargin:number = 20;
             const dbWidth:number = 200;
             this.debugGraphics.clear();
-            var dbX = this.screen.width - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
+            var dbX = 800 - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
             this.debugGraphics.beginFill(0x00ff00, 1);
             this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x, dbMargin + dbWidth * (1 - this.playerPos.y), 10);
-            this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x + 10 * playerDirX, dbMargin + dbWidth * (1 - this.playerPos.y) + 10 * -playerDirY, 5);
+            this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x + 10 * this.playerDirection.x, dbMargin + dbWidth * (1 - this.playerPos.y) + 10 * -this.playerDirection.y, 5);
             this.debugGraphics.beginFill(0xff0000, 1);
             for(var i:number=0; i<this.buoys.length; ++i) {
                 var pos = this.buoys[i].relativePosition;
@@ -295,9 +243,9 @@ module OceanEaters
 
             this.debugGraphics.endFill();
 
-            this.ocean.updateFrame(dt, this.playerPos, this.playerDirection);
-            this.sky.updateFrame(dt, this.playerPos, this.playerDirection);
-            this.player.updateFrame(dt, this.playerPos, this.playerDirection);
+            this.ocean.updateFrame(dt, this.playerPos, this.playerAngle);
+            this.sky.updateFrame(dt, this.playerPos, this.playerAngle);
+            this.player.updateFrame(dt, this.playerPos, this.playerAngle);
 
             for(var i:number=0; i<this.buoys.length; ++i) {
 
@@ -350,9 +298,6 @@ module OceanEaters
             var toPosX = p.x - this.playerPos.x;
             var toPosY = p.y - this.playerPos.y;
 
-            var playerDirX = Math.cos(this.playerDirection);
-            var playerDirY = Math.sin(this.playerDirection);
-
             var closestDistance = 100;
             var v = 0;
             var u = 0;
@@ -362,8 +307,8 @@ module OceanEaters
                     var x = toPosX + i - 1;
                     var y = toPosY + j - 1;
 
-                    var curr_v = playerDirX * x + playerDirY * y;
-                    var curr_u = playerDirY * x - playerDirX * y;
+                    var curr_v = this.playerDirection.x * x + this.playerDirection.y * y;
+                    var curr_u = this.playerDirection.y * x - this.playerDirection.x * y;
 
                     if(curr_v > -.01) {
                         var distance = Math.sqrt(curr_u * curr_u + curr_v * curr_v);

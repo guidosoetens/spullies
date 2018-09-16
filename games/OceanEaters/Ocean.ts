@@ -9,7 +9,7 @@ module OceanEaters
         playerPos:PIXI.Point; 
         playerDir:number;
 
-        constructor(w:number, h:number) {
+        constructor() {
             super();
 
             // //init shader:

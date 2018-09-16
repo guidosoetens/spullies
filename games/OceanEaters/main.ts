@@ -51,45 +51,21 @@ function fitApp(app:OceanEaters.Game) {
     var contentDiv = document.getElementById("content");
     var p_width = window.innerWidth;
     var p_height =  window.innerHeight;
-    var app_width = app.view.clientWidth;
-    var app_height = app.view.clientHeight;
-    
-    var appRatio = app_width / app_height;
-    var parentRatio = p_width / p_height;
+    var p_ratio = p_width / p_height;
 
-    console.log();
+    var containerWidth = gameWidth + 2 * margin;
+    var containerHeight = gameHeight + 2 * margin;
+    var containerInnerRatio = containerWidth / containerHeight;
 
-    var scale = 1.0;
+    if(containerInnerRatio < p_ratio)
+        containerWidth = containerHeight * p_ratio;
+    else
+        containerHeight = containerWidth / p_ratio;
 
-    if(parentRatio > appRatio) {
-        scale = p_height / app_height;
-    }
-    else {
-        scale = p_width / app_width;
-    }
-    scale *= .95;
-
-    var transX = .5 * (p_width - scale * app_width);
-    var transY = .5 * (p_height - scale * app_height);
-
-    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", " + transX + ", " + transY +")";
+    var scale = p_width / containerWidth;
+    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", 0, 0)";
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
-}
-
-function generateTouchElement_Touch(touch:Touch):OceanEaters.inputElement {
-    var res:OceanEaters.inputElement = new OceanEaters.inputElement();
-    res.id = touch.identifier;
-    res.x = touch.clientX;
-    res.y = touch.clientY;
-    return res;
-}
-
-function generateTouchElement_Pointer(event:PointerEvent):OceanEaters.inputElement {
-    var res:OceanEaters.inputElement = new OceanEaters.inputElement();
-    res.id = event.pointerId;
-    res.x = event.x;
-    res.y = event.y;
-    return res;
+    app.resize(containerWidth, containerHeight);
 }
 
 window.onload = () => {
