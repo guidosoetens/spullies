@@ -6,7 +6,13 @@
 
 module OceanEaters
 {
-    class touchElement {
+    export class inputElement {
+        id:number;
+        x:number;
+        y:number;
+    }
+
+    export class touchElement {
         id:number;
         currentX:number;
         currentY:number;
@@ -37,8 +43,6 @@ module OceanEaters
         buoysParent:PIXI.Container;
         buoys:BadBuoy[];
 
-
-        
         constructor(w:number, h:number) {
             super(w, h, { antialias: true, backgroundColor : 0x1099bb });
         }
@@ -91,6 +95,55 @@ module OceanEaters
 
             this.debugGraphics = new PIXI.Graphics();
             this.stage.addChild(this.debugGraphics);
+        }
+
+        inputDown(input:inputElement) {
+
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == input.id) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
+
+            var pos = new PIXI.Point(input.x, input.y);// event.data.getLocalPosition(this.stage);
+
+            var touch:touchElement = new touchElement();
+            touch.id = input.id;//event.data.identifier;
+            touch.currentX = pos.x;
+            touch.currentY = pos.y;
+            touch.originX = pos.x;
+            touch.originY = pos.y;
+            touch.timeAlive = 0;
+
+            this.touchPoints.push(touch);
+        }
+
+        inputMove(input:inputElement) {
+            var pos =  new PIXI.Point(input.x, input.y);//event.data.getLocalPosition(this.stage);
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == input.id) {
+                    this.touchPoints[i].currentX = pos.x;
+                    this.touchPoints[i].currentY = pos.y;
+                }
+            }
+        }
+
+        inputUp(input:inputElement) {
+            for(var i:number=0; i<this.touchPoints.length; ++i) {
+                if(this.touchPoints[i].id == input.id) {
+
+                    if(this.touchPoints[i].timeAlive < .3) {
+                        var dy = input.y - this.touchPoints[i].originY;
+                        if(dy < -5) {
+                            this.player.jump();
+                        }
+                    }
+
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
         }
 
         pointerDown(event:PIXI.interaction.InteractionEvent) {

@@ -1,4 +1,4 @@
-precision lowp float;
+precision highp float;
 
 //phaser variables:
 // uniform float time;

@@ -39,15 +39,16 @@ module OceanEaters
             var height = 350;
             var rad = Math.min(width, height) * .25;
 
-            this.beginFill(0x0, .2);
-            this.drawEllipse(0,0,.6 * width, .1 * width);
+            this.beginFill(0x0, .4);
+            // this.drawEllipse(0,0,.6 * width, .1 * width);
+            this.drawRoundedRect(-.7 * width, -.05 * height, 1.4 * width, .1 * height, .05 * height);
 
             clr = HSVtoRGB(Math.random(), 1, 1);
 
             this.beginFill(clr, 1);
-            this.lineStyle(.1 * width, 0x0, 1);
+            this.lineStyle(.05 * width, 0x0, 1);
             this.drawRoundedRect(-width/2,-height,width,height,rad);
-            this.drawEllipse(0,0,5,5);
+            // this.drawEllipse(0,0,5,5);
             this.endFill();
 
             this.relativePosition = new PIXI.Point(x, y);

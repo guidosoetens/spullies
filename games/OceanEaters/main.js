@@ -166,13 +166,14 @@ var OceanEaters;
             var width = 150;
             var height = 350;
             var rad = Math.min(width, height) * .25;
-            _this.beginFill(0x0, .2);
-            _this.drawEllipse(0, 0, .6 * width, .1 * width);
+            _this.beginFill(0x0, .4);
+            // this.drawEllipse(0,0,.6 * width, .1 * width);
+            _this.drawRoundedRect(-.7 * width, -.05 * height, 1.4 * width, .1 * height, .05 * height);
             clr = HSVtoRGB(Math.random(), 1, 1);
             _this.beginFill(clr, 1);
-            _this.lineStyle(.1 * width, 0x0, 1);
+            _this.lineStyle(.05 * width, 0x0, 1);
             _this.drawRoundedRect(-width / 2, -height, width, height, rad);
-            _this.drawEllipse(0, 0, 5, 5);
+            // this.drawEllipse(0,0,5,5);
             _this.endFill();
             _this.relativePosition = new PIXI.Point(x, y);
             var style = { font: (height * .4) + "px Arial", fill: "#ffffff", align: "center" };
@@ -282,11 +283,18 @@ var OceanEaters;
 ///<reference path="Player.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
+    var inputElement = /** @class */ (function () {
+        function inputElement() {
+        }
+        return inputElement;
+    }());
+    OceanEaters.inputElement = inputElement;
     var touchElement = /** @class */ (function () {
         function touchElement() {
         }
         return touchElement;
     }());
+    OceanEaters.touchElement = touchElement;
     var Game = /** @class */ (function (_super) {
         __extends(Game, _super);
         function Game(w, h) {
@@ -332,6 +340,46 @@ var OceanEaters;
             this.stage.addChild(this.debugText);
             this.debugGraphics = new PIXI.Graphics();
             this.stage.addChild(this.debugGraphics);
+        };
+        Game.prototype.inputDown = function (input) {
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == input.id) {
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
+            var pos = new PIXI.Point(input.x, input.y); // event.data.getLocalPosition(this.stage);
+            var touch = new touchElement();
+            touch.id = input.id; //event.data.identifier;
+            touch.currentX = pos.x;
+            touch.currentY = pos.y;
+            touch.originX = pos.x;
+            touch.originY = pos.y;
+            touch.timeAlive = 0;
+            this.touchPoints.push(touch);
+        };
+        Game.prototype.inputMove = function (input) {
+            var pos = new PIXI.Point(input.x, input.y); //event.data.getLocalPosition(this.stage);
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == input.id) {
+                    this.touchPoints[i].currentX = pos.x;
+                    this.touchPoints[i].currentY = pos.y;
+                }
+            }
+        };
+        Game.prototype.inputUp = function (input) {
+            for (var i = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == input.id) {
+                    if (this.touchPoints[i].timeAlive < .3) {
+                        var dy = input.y - this.touchPoints[i].originY;
+                        if (dy < -5) {
+                            this.player.jump();
+                        }
+                    }
+                    this.touchPoints.splice(i, 1);
+                    --i;
+                }
+            }
         };
         Game.prototype.pointerDown = function (event) {
             for (var i = 0; i < this.touchPoints.length; ++i) {
@@ -521,6 +569,60 @@ var OceanEaters;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="Game.ts"/>
+var OceanEaters;
+(function (OceanEaters) {
+    var InputOverlay = /** @class */ (function (_super) {
+        __extends(InputOverlay, _super);
+        function InputOverlay(w, h, game) {
+            var _this = _super.call(this, w, h, { antialias: true, backgroundColor: 0xff0000 }) || this;
+            _this.game = game;
+            return _this;
+        }
+        InputOverlay.prototype.setup = function () {
+            this.stage.interactive = true;
+            this.stage.on("pointerdown", this.pointerDown, this);
+            this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerupoutside", this.pointerUp, this);
+            this.stage.on("pointercancel", this.pointerUp, this);
+            this.stage.on("pointerup", this.pointerUp, this);
+            this.stage.on("pointerout", this.pointerUp, this);
+        };
+        InputOverlay.prototype.setLayout = function (overlayWidth, overlayHeight, gameWidth, gameHeight) {
+            this.overlayWidth = overlayWidth;
+            this.overlayHeight = overlayHeight;
+            this.gameWidth = gameWidth;
+            this.gameHeight = gameHeight;
+        };
+        InputOverlay.prototype.calcInputElement = function (event) {
+            var elem = new OceanEaters.inputElement();
+            var pt = event.data.getLocalPosition(this.stage);
+            pt.x = this.overlayWidth * pt.x / this.screen.width;
+            pt.y = this.overlayHeight * pt.y / this.screen.height;
+            pt.x = pt.x - (this.overlayWidth - this.gameWidth) / 2.0;
+            pt.y = pt.y - (this.overlayHeight - this.gameHeight) / 2.0;
+            pt.x = this.game.screen.width * pt.x / this.gameWidth;
+            pt.y = this.game.screen.width * pt.y / this.gameWidth;
+            elem.x = pt.x;
+            elem.y = pt.y;
+            elem.id = event.data.identifier;
+            return elem;
+        };
+        InputOverlay.prototype.pointerDown = function (event) {
+            this.game.inputDown(this.calcInputElement(event));
+        };
+        InputOverlay.prototype.pointerMove = function (event) {
+            this.game.inputMove(this.calcInputElement(event));
+        };
+        InputOverlay.prototype.pointerUp = function (event) {
+            this.game.inputUp(this.calcInputElement(event));
+        };
+        return InputOverlay;
+    }(PIXI.Application));
+    OceanEaters.InputOverlay = InputOverlay;
+})(OceanEaters || (OceanEaters = {}));
+///<reference path="../../pixi/pixi.js.d.ts"/>
+///<reference path="Game.ts"/>
+///<reference path="InputOverlay.ts"/>
 // left: 37, up: 38, right: 39, down: 40,
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
 var keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
@@ -552,30 +654,155 @@ function enableScroll() {
     window.ontouchmove = null;
     document.onkeydown = null;
 }
-function fitApp(appCanvas) {
+function fitApp(appCanvas, touchCanvas) {
+    var body = document.getElementById('body');
+    body.style.width = window.innerWidth + "px";
+    body.style.height = window.innerHeight + "px";
+    document.body.scrollTop = document.documentElement.scrollTop = 0;
     var contentDiv = document.getElementById("content");
-    var p_width = contentDiv.clientWidth;
-    var p_height = contentDiv.clientHeight;
-    var c_width = appCanvas.clientWidth;
-    var c_height = appCanvas.clientHeight;
+    var p_width = window.innerWidth; //contentDiv.clientWidth;
+    var p_height = window.innerHeight; //contentDiv.clientHeight;
+    var app_width = appCanvas.clientWidth;
+    var app_height = appCanvas.clientHeight;
+    var appRatio = app_width / app_height;
+    var parentRatio = p_width / p_height;
+    var scale = 1.0;
+    if (parentRatio > appRatio) {
+        scale = p_height / app_height;
+    }
+    else {
+        scale = p_width / app_width;
+    }
+    scale *= .95;
+    var transX = .5 * (p_width - scale * app_width);
+    var transY = .5 * (p_height - scale * app_height);
     // appCanvas.style.transform = "scale(" + (.5 * p_width / c_width) + ", " + (.5 * p_height / c_height) + ")"
-    appCanvas.style.transform = "matrix(" + (.8 * p_width / c_width) + ", 0, 0, " + (.8 * p_height / c_height) + ", 100, 100)";
-    appCanvas.style.transformOrigin = "0 0";
+    appCanvas.style.webkitTransform = appCanvas.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", " + transX + ", " + transY + ")";
+    appCanvas.style.webkitTransformOrigin = appCanvas.style.transformOrigin = "0 0";
+    var inputScaleX = p_width / touchCanvas.clientWidth;
+    var inputScaleY = p_height / touchCanvas.clientHeight;
+    touchCanvas.style.webkitTransform = touchCanvas.style.transform = "matrix(" + inputScaleX + ", 0, 0, " + inputScaleY + ", 0, 0)";
+    touchCanvas.style.webkitTransformOrigin = touchCanvas.style.transformOrigin = "0 0";
+}
+function generateTouchElement_Touch(touch) {
+    var res = new OceanEaters.inputElement();
+    res.id = touch.identifier; //.pointerId;
+    res.x = touch.clientX;
+    res.y = touch.clientY;
+    return res;
+}
+function generateTouchElement_Pointer(event) {
+    var res = new OceanEaters.inputElement();
+    res.id = event.pointerId;
+    res.x = event.x;
+    res.y = event.y;
+    return res;
 }
 window.onload = function () {
     disableScroll();
     var app = new OceanEaters.Game(800, 600);
+    app.view.style.position = "absolute";
+    var inputOverlay = new OceanEaters.InputOverlay(100, 100, app);
+    inputOverlay.view.style.position = "absolute";
+    inputOverlay.view.style.opacity = "0";
     var contentDiv = document.getElementById("content");
     contentDiv.appendChild(app.view);
-    app.view.style.boxShadow = "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)";
+    contentDiv.appendChild(inputOverlay.view);
+    // app.view.style.boxShadow = "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)";
     PIXI.loader.add('oceanShader', 'assets/oceanShader.frag')
         .add('skyShader', 'assets/skyShader.frag')
         .add('ripples', 'assets/ripples.png');
     PIXI.loader.load(function (loader, resources) {
         app.setup();
+        // inputOverlay.setup();
     });
-    fitApp(app.view);
+    fitApp(app.view, inputOverlay.view);
     window.onresize = function () {
-        fitApp(app.view);
+        fitApp(app.view, inputOverlay.view);
     };
+    /*
+
+    window.onpointerdown = (event) => { app.inputDown(generateTouchElement_Pointer(event)) };
+    window.onpointermove = (event) => { app.inputMove(generateTouchElement_Pointer(event)) };
+    window.onpointerup = (event) => { app.inputUp(generateTouchElement_Pointer(event)) };
+    window.onpointercancel = (event) => { app.inputUp(generateTouchElement_Pointer(event)) };
+
+    window.ontouchstart = (event) => {
+        for(var i:number=0; i<event.changedTouches.length; ++i) {
+            app.inputDown(generateTouchElement_Touch(event.changedTouches[i]));
+        }
+    };
+    window.ontouchmove = (event) => {
+        for(var i:number=0; i<event.changedTouches.length; ++i) {
+            app.inputMove(generateTouchElement_Touch(event.changedTouches[i]));
+        }
+    };
+    window.ontouchend = (event) => {
+        for(var i:number=0; i<event.changedTouches.length; ++i) {
+            app.inputUp(generateTouchElement_Touch(event.changedTouches[i]));
+        }
+    };
+    window.ontouchcancel = (event) => {
+        for(var i:number=0; i<event.changedTouches.length; ++i) {
+            app.inputUp(generateTouchElement_Touch(event.changedTouches[i]));
+        }
+    };
+
+    */
+    /*
+
+    window.onmousedown = (event) => { app.inputDown(generateTouchElementFromMouse(event)) };
+
+    if(!!window.PointerEvent) {
+        if (this.supportsPointerEvents)
+        {
+            window.document.addEventListener('pointermove', this.onPointerMove, true);
+            this.interactionDOMElement.addEventListener('pointerdown', this.onPointerDown, true);
+            // pointerout is fired in addition to pointerup (for touch events) and pointercancel
+            // we already handle those, so for the purposes of what we do in onPointerOut, we only
+            // care about the pointerleave event
+            this.interactionDOMElement.addEventListener('pointerleave', this.onPointerOut, true);
+            this.interactionDOMElement.addEventListener('pointerover', this.onPointerOver, true);
+            window.addEventListener('pointercancel', this.onPointerCancel, true);
+            window.addEventListener('pointerup', this.onPointerUp, true);
+        }
+        else
+        {
+            window.document.addEventListener('mousemove', this.onPointerMove, true);
+            this.interactionDOMElement.addEventListener('mousedown', this.onPointerDown, true);
+            this.interactionDOMElement.addEventListener('mouseout', this.onPointerOut, true);
+            this.interactionDOMElement.addEventListener('mouseover', this.onPointerOver, true);
+            window.addEventListener('mouseup', this.onPointerUp, true);
+        }
+    }
+
+    if(this.supportsTouchEvents) {
+
+    }
+
+    // if (this.supportsTouchEvents)
+    // {
+    //     this.interactionDOMElement.addEventListener('touchstart', this.onPointerDown, true);
+    //     this.interactionDOMElement.addEventListener('touchcancel', this.onPointerCancel, true);
+    //     this.interactionDOMElement.addEventListener('touchend', this.onPointerUp, true);
+    //     this.interactionDOMElement.addEventListener('touchmove', this.onPointerMove, true);
+    // }
+
+
+
+    window.onpointerdown = (event) => { app.inputDown(generateTouchElement(event)) };
+    window.onpointermove = (event) => { app.inputMove(generateTouchElement(event)) };
+    window.onpointerup = (event) => { app.inputUp(generateTouchElement(event)) };
+    window.onpointercancel = (event) => { app.inputUp(generateTouchElement(event)) };
+    // window.onpointerout = (event) => { app.inputUp(generateTouchElement(event)) };
+    // window.onpointerleave = (event) => { app.inputUp(generateTouchElement(event)) };
+    */
+    /*
+                this.stage.on("pointerdown", this.pointerDown, this);
+            this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerupoutside", this.pointerUp, this);
+            this.stage.on("pointercancel", this.pointerUp, this);
+            this.stage.on("pointerup", this.pointerUp, this);
+            this.stage.on("pointerout", this.pointerUp, this);
+    */
 };
