@@ -210,6 +210,7 @@ module OceanEaters
 
             this.playerAngle += dt * 1. * this.angularSpeed;
             this.playerAngle %= 2 * Math.PI;
+            this.player.compassAngle = this.playerAngle;
             this.playerDirection.x = Math.cos(this.playerAngle);
             this.playerDirection.y = Math.sin(this.playerAngle); 
 

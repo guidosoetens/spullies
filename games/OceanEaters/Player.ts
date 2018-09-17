@@ -5,6 +5,10 @@ module OceanEaters
     export class Player extends PIXI.Container  {
 
         shadow:PIXI.Graphics;
+        compassContainer:PIXI.Container;
+        compass:PIXI.Graphics;
+        compassShadow:PIXI.Graphics;
+        compassAngle:number;
         animIt:number;
 
         surfboardSprite:PIXI.Sprite;
@@ -23,6 +27,19 @@ module OceanEaters
             this.shadow.beginFill(0x000, .2);
             this.shadow.drawEllipse(0,0,70,50);
             this.shadow.endFill();
+
+            this.compassContainer = new PIXI.Container();
+            this.compassContainer.position.y = 15;
+            this.compassContainer.scale.y = 0.5;
+            // this.compassContainer.filters = [ new PIXI.filters.AlphaFilter(0.5) ];//, new PIXI.filters.BlurFilter(0.5)];
+            this.addChild(this.compassContainer);
+            this.compassAngle = 0;
+
+            this.compassShadow = new PIXI.Graphics();
+            this.compassShadow.y = 8;
+            this.drawCompass(this.compassShadow, 0x0);
+            this.compass = new PIXI.Graphics();
+            this.drawCompass(this.compass, 0x55ddaa);
 
             var tex = PIXI.Texture.fromImage('assets/surfboard.png');
             this.surfboardSprite = new PIXI.Sprite(tex);
@@ -47,6 +64,21 @@ module OceanEaters
             this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
         }
 
+        drawCompass(gr:PIXI.Graphics, clr:number) {
+            gr.lineStyle(10, clr);
+            gr.drawCircle(0,0,100);
+            gr.beginFill(clr,1);
+            gr.lineStyle(1, clr);
+            gr.moveTo(20,100);
+            gr.lineTo(-20,100);
+            gr.lineTo(0,130);
+            gr.drawCircle(0,145,10);
+            gr.drawCircle(0,172,8);
+            gr.drawCircle(0,195,6);
+            gr.endFill();
+            this.compassContainer.addChild(gr);
+        }
+
         jump(salto:boolean) {
             if(!this.jumping) {
                 this.jumping = true;
@@ -61,6 +93,8 @@ module OceanEaters
         }
 
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
+
+            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI;
 
             var jump = 0;
             var jumpTime = .5;

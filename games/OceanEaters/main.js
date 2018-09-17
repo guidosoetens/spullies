@@ -208,6 +208,17 @@ var OceanEaters;
             _this.shadow.beginFill(0x000, .2);
             _this.shadow.drawEllipse(0, 0, 70, 50);
             _this.shadow.endFill();
+            _this.compassContainer = new PIXI.Container();
+            _this.compassContainer.position.y = 15;
+            _this.compassContainer.scale.y = 0.5;
+            // this.compassContainer.filters = [ new PIXI.filters.AlphaFilter(0.5) ];//, new PIXI.filters.BlurFilter(0.5)];
+            _this.addChild(_this.compassContainer);
+            _this.compassAngle = 0;
+            _this.compassShadow = new PIXI.Graphics();
+            _this.compassShadow.y = 8;
+            _this.drawCompass(_this.compassShadow, 0x0);
+            _this.compass = new PIXI.Graphics();
+            _this.drawCompass(_this.compass, 0x55ddaa);
             var tex = PIXI.Texture.fromImage('assets/surfboard.png');
             _this.surfboardSprite = new PIXI.Sprite(tex);
             _this.surfboardSprite.anchor.x = 0.5;
@@ -228,6 +239,20 @@ var OceanEaters;
             _this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
             return _this;
         }
+        Player.prototype.drawCompass = function (gr, clr) {
+            gr.lineStyle(10, clr);
+            gr.drawCircle(0, 0, 100);
+            gr.beginFill(clr, 1);
+            gr.lineStyle(1, clr);
+            gr.moveTo(20, 100);
+            gr.lineTo(-20, 100);
+            gr.lineTo(0, 130);
+            gr.drawCircle(0, 145, 10);
+            gr.drawCircle(0, 172, 8);
+            gr.drawCircle(0, 195, 6);
+            gr.endFill();
+            this.compassContainer.addChild(gr);
+        };
         Player.prototype.jump = function (salto) {
             if (!this.jumping) {
                 this.jumping = true;
@@ -240,6 +265,7 @@ var OceanEaters;
             this.position.y = y;
         };
         Player.prototype.updateFrame = function (dt, pPos, pDir) {
+            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI;
             var jump = 0;
             var jumpTime = .5;
             var surferRotation = 0;
@@ -431,6 +457,7 @@ var OceanEaters;
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
             this.playerAngle += dt * 1. * this.angularSpeed;
             this.playerAngle %= 2 * Math.PI;
+            this.player.compassAngle = this.playerAngle;
             this.playerDirection.x = Math.cos(this.playerAngle);
             this.playerDirection.y = Math.sin(this.playerAngle);
             var speedFactor = 2.0;
