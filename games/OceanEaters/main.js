@@ -166,10 +166,14 @@ var OceanEaters;
             var width = 150;
             var height = 350;
             var rad = Math.min(width, height) * .25;
+            clr = HSVtoRGB(Math.random(), 1, 1);
+            _this.beginFill(clr, .1);
+            _this.lineStyle(.05 * width, 0x0, .1);
+            _this.drawRoundedRect(-width / 2, 0, width, height, rad);
+            _this.endFill();
             _this.beginFill(0x0, .4);
             // this.drawEllipse(0,0,.6 * width, .1 * width);
             _this.drawRoundedRect(-.7 * width, -.05 * height, 1.4 * width, .1 * height, .05 * height);
-            clr = HSVtoRGB(Math.random(), 1, 1);
             _this.beginFill(clr, 1);
             _this.lineStyle(.05 * width, 0x0, 1);
             _this.drawRoundedRect(-width / 2, -height, width, height, rad);
@@ -211,7 +215,6 @@ var OceanEaters;
             _this.compassContainer = new PIXI.Container();
             _this.compassContainer.position.y = 15;
             _this.compassContainer.scale.y = 0.5;
-            // this.compassContainer.filters = [ new PIXI.filters.AlphaFilter(0.5) ];//, new PIXI.filters.BlurFilter(0.5)];
             _this.addChild(_this.compassContainer);
             _this.compassAngle = 0;
             _this.compassShadow = new PIXI.Graphics();
@@ -239,6 +242,54 @@ var OceanEaters;
             _this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
             return _this;
         }
+        Player.prototype.updateCompassDirection = function (dt, toGoal, playerAngle, pos) {
+            // var toGoalAngle = Math.atan2(toGoal.y, toGoal.x);// - playerAngle;
+            // // toGoalAngle = toGoalAngle - Math.PI;
+            // toGoal.x = Math.cos(toGoalAngle);
+            // toGoal.y = Math.sin(toGoalAngle);
+            // if(toGoal.x > .5)
+            //     --toGoal.x;
+            // else if(toGoal.x < -.5)
+            //     ++toGoal.x;
+            // if(toGoal.y > .5)
+            //     --toGoal.y;
+            // else if(toGoal.y < -.5)
+            //     ++toGoal.y;
+            // var goalAngle = Math.atan2(toGoal.y, toGoal.x) - playerAngle;
+            // var currDir = new PIXI.Point(Math.cos(this.compassAngle), Math.sin(this.compassAngle));
+            // var goalDir = new PIXI.Point(Math.cos(goalAngle), Math.sin(goalAngle));
+            // var deltaAngle = Math.acos(currDir.x * goalDir.x + currDir.y * goalDir.y);
+            // if(currDir.x * goalDir.y - currDir.y * goalDir.x > 0)
+            //     deltaAngle = -deltaAngle;
+            // this.compassAngle -= Math.min(1.0, dt * 2.0) * deltaAngle;
+            /*
+            toGoal.x = .5 - pos.x;
+            toGoal.y = .5 - pos.y;
+            // toGoal.y *= -1;
+
+            // if(toGoal.x > .5)
+            //     --toGoal.x;
+            // else if(toGoal.x < -.5)
+            //     ++toGoal.x;
+            // if(toGoal.y > .5)
+            //     --toGoal.y;
+            // else if(toGoal.y < -.5)
+            //     ++toGoal.y;
+            var toGoalAngle = Math.atan2(toGoal.y, toGoal.x);// - playerAngle;
+            toGoalAngle = toGoalAngle - Math.PI;
+            toGoal.x = Math.cos(toGoalAngle);
+            toGoal.y = Math.sin(toGoalAngle);
+
+            var currDir = new PIXI.Point(Math.cos(this.compassAngle), Math.sin(this.compassAngle));
+            var deltaAngle = Math.acos(toGoal.x * currDir.x + toGoal.y * currDir.y);
+            // var turn = Math.min(1.0, dt * 2.0) * deltaAngle;
+
+            var mat:PIXI.Matrix = new PIXI.Matrix();
+            mat.rotate(deltaAngle);
+            currDir = mat.apply(currDir);
+            this.compassAngle = Math.atan2(currDir.y, currDir.x);
+            */
+        };
         Player.prototype.drawCompass = function (gr, clr) {
             gr.lineStyle(10, clr);
             gr.drawCircle(0, 0, 100);
@@ -247,9 +298,9 @@ var OceanEaters;
             gr.moveTo(20, 100);
             gr.lineTo(-20, 100);
             gr.lineTo(0, 130);
-            gr.drawCircle(0, 145, 10);
-            gr.drawCircle(0, 172, 8);
-            gr.drawCircle(0, 195, 6);
+            // gr.drawCircle(0,145,10);
+            // gr.drawCircle(0,172,8);
+            // gr.drawCircle(0,195,6);
             gr.endFill();
             this.compassContainer.addChild(gr);
         };
@@ -265,7 +316,7 @@ var OceanEaters;
             this.position.y = y;
         };
         Player.prototype.updateFrame = function (dt, pPos, pDir) {
-            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI;
+            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI; //Math.PI - this.compassAngle;// + .5 * Math.PI;
             var jump = 0;
             var jumpTime = .5;
             var surferRotation = 0;
@@ -303,10 +354,66 @@ var OceanEaters;
     OceanEaters.Player = Player;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../pixi/pixi.js.d.ts"/>
+///<reference path="BadBuoy.ts"/>
+var OceanEaters;
+(function (OceanEaters) {
+    var Collectible = /** @class */ (function (_super) {
+        __extends(Collectible, _super);
+        function Collectible() {
+            var _this = _super.call(this, .5, .5, 0) || this;
+            _this.direction = new PIXI.Point(1, 0);
+            _this.clear();
+            _this.beginFill(0x0000ff, 1);
+            _this.drawCircle(0, 0, 50);
+            _this.endFill();
+            _this.animationParam = 0;
+            _this.reset(.5, .5);
+            return _this;
+        }
+        Collectible.prototype.reset = function (x, y) {
+            var angle = Math.random() * 2 * Math.PI;
+            this.direction.x = Math.cos(angle);
+            this.direction.y = Math.sin(angle);
+            this.relativePosition.x = x;
+            this.relativePosition.y = y;
+            this.updateFrame(0.01);
+        };
+        Collectible.prototype.updateRender = function (x, y, s, alpha) {
+            _super.prototype.updateRender.call(this, x, y, s, alpha);
+            var t = Math.abs(Math.cos(this.animationParam * 2 * Math.PI));
+            var c_y = 60 + 40 * t;
+            this.clear();
+            this.beginFill(0x0000ff, .1);
+            this.drawCircle(0, c_y, 50);
+            this.beginFill(0x0, .4 - t * .3);
+            var scale = 1. - t * .5;
+            this.drawEllipse(0, 0, scale * 50, scale * 10);
+            this.beginFill(0x0000ff, 1);
+            this.drawCircle(0, -c_y, 50);
+            this.endFill();
+        };
+        Collectible.prototype.updateFrame = function (dt) {
+            _super.prototype.updateFrame.call(this, dt);
+            this.animationParam = (this.animationParam + dt) % 1.0;
+            this.relativePosition.x += this.direction.x * .025 * dt;
+            this.relativePosition.x = (this.relativePosition.x) % 1.0;
+            if (this.relativePosition.x < 0)
+                this.relativePosition.x += 1.0;
+            this.relativePosition.y += this.direction.y * .025 * dt;
+            this.relativePosition.y = (this.relativePosition.y) % 1.0;
+            if (this.relativePosition.y < 0)
+                this.relativePosition.y += 1.0;
+        };
+        return Collectible;
+    }(OceanEaters.BadBuoy));
+    OceanEaters.Collectible = Collectible;
+})(OceanEaters || (OceanEaters = {}));
+///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="Ocean.ts"/>
 ///<reference path="Sky.ts"/>
 ///<reference path="BadBuoy.ts"/>
 ///<reference path="Player.ts"/>
+///<reference path="Collectible.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
     var touchElement = /** @class */ (function () {
@@ -360,6 +467,9 @@ var OceanEaters;
                     this.buoysParent.addChild(buoy);
                 }
             }
+            this.collectible = new OceanEaters.Collectible();
+            this.buoys.push(this.collectible);
+            this.buoysParent.addChild(this.collectible);
             this.player = new OceanEaters.Player();
             this.componentContainer.addChild(this.player);
             this.playerPos = new PIXI.Point(0, 0);
@@ -367,7 +477,7 @@ var OceanEaters;
             this.playerDirection = new PIXI.Point(1, 0);
             this.angularSpeed = 0;
             this.touchPoints = [];
-            this.debugText = new PIXI.Text('txt');
+            this.debugText = new PIXI.Text('');
             this.debugText.x = 20;
             this.debugText.y = 10;
             this.componentContainer.addChild(this.debugText);
@@ -433,7 +543,7 @@ var OceanEaters;
         };
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
-            this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
+            // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
             //update input:
             var sumDx = 0;
             var centerX = this.screen.width / 2.0;
@@ -449,7 +559,7 @@ var OceanEaters;
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
                 this.touchPoints[i].timeAlive += dt;
-                this.debugText.text += "\n" + this.touchPoints[i].currentY;
+                // this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
             if (this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
@@ -457,7 +567,7 @@ var OceanEaters;
             this.angularSpeed = (1 - newSpeedFactor) * this.angularSpeed + newSpeedFactor * -sumDx;
             this.playerAngle += dt * 1. * this.angularSpeed;
             this.playerAngle %= 2 * Math.PI;
-            this.player.compassAngle = this.playerAngle;
+            // this.player.compassAngle = this.playerAngle;
             this.playerDirection.x = Math.cos(this.playerAngle);
             this.playerDirection.y = Math.sin(this.playerAngle);
             var speedFactor = 2.0;
@@ -468,11 +578,12 @@ var OceanEaters;
             this.playerPos.y = (this.playerPos.y + speed * this.playerDirection.y) % 1.0;
             if (this.playerPos.y < 0.0)
                 this.playerPos.y += 1.0;
+            /*
             //draw debug graphics:
-            var dbMargin = 20;
-            var dbWidth = 200;
+            const dbMargin:number = 20;
+            const dbWidth:number = 200;
             this.debugGraphics.clear();
-            var dbX = 800 - dbWidth - dbMargin; // this.screen.width - dbWidth - dbMargin;
+            var dbX = 800 - dbWidth - dbMargin;// this.screen.width - dbWidth - dbMargin;
             this.debugGraphics.lineStyle(2, 0xffffff, 1);
             this.debugGraphics.drawRect(dbX, dbMargin, dbWidth, dbWidth);
             this.debugGraphics.lineStyle(0);
@@ -480,12 +591,14 @@ var OceanEaters;
             this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x, dbMargin + dbWidth * (1 - this.playerPos.y), 10);
             this.debugGraphics.drawCircle(dbX + dbWidth * this.playerPos.x + 10 * this.playerDirection.x, dbMargin + dbWidth * (1 - this.playerPos.y) + 10 * -this.playerDirection.y, 5);
             this.debugGraphics.beginFill(0xff0000, 1);
-            for (var i = 0; i < this.buoys.length; ++i) {
+            for(var i:number=0; i<this.buoys.length; ++i) {
                 var pos = this.buoys[i].relativePosition;
                 this.debugGraphics.drawCircle(dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y), 5);
                 //this.game.debug.text("" + this.buoys[i].index, dbX + dbWidth * pos.x, dbMargin + dbWidth * (1 - pos.y));
             }
+
             this.debugGraphics.endFill();
+            */
             this.ocean.updateFrame(dt, this.playerPos, this.playerAngle);
             this.sky.updateFrame(dt, this.playerPos, this.playerAngle);
             this.player.updateFrame(dt, this.playerPos, this.playerAngle);
@@ -523,8 +636,18 @@ var OceanEaters;
             var sorted = this.buoys.sort(sortBuoys);
             for (var i = 0; i < sorted.length; ++i) {
                 this.buoysParent.setChildIndex(sorted[i], i);
-                // sorted[i].graphics.z = i;
             }
+            var to = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
+            var distance = Math.sqrt(to.x * to.x + to.y * to.y);
+            if (distance < .025) {
+                var angle = Math.random() * 2 * Math.PI;
+                var srcX = this.collectible.relativePosition.x + Math.cos(angle) * .5;
+                var srcY = this.collectible.relativePosition.y + Math.sin(angle) * .5;
+                this.collectible.reset(srcX, srcY);
+            }
+            // var toColl = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
+            // this.player.updateCompassDirection(dt, toColl, this.playerAngle, this.playerPos);
+            this.player.compassAngle = this.playerAngle;
         };
         Game.prototype.getRelativeOceanPosition = function (p) {
             var toPosX = p.x - this.playerPos.x;

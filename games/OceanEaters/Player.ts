@@ -31,7 +31,6 @@ module OceanEaters
             this.compassContainer = new PIXI.Container();
             this.compassContainer.position.y = 15;
             this.compassContainer.scale.y = 0.5;
-            // this.compassContainer.filters = [ new PIXI.filters.AlphaFilter(0.5) ];//, new PIXI.filters.BlurFilter(0.5)];
             this.addChild(this.compassContainer);
             this.compassAngle = 0;
 
@@ -64,6 +63,61 @@ module OceanEaters
             this.resetLayout(400, (.5 + .5 * (2 / 3.0)) * 600, 800, 600);
         }
 
+        updateCompassDirection(dt:number, toGoal:PIXI.Point, playerAngle:number, pos:PIXI.Point) {
+
+            // var toGoalAngle = Math.atan2(toGoal.y, toGoal.x);// - playerAngle;
+            // // toGoalAngle = toGoalAngle - Math.PI;
+            // toGoal.x = Math.cos(toGoalAngle);
+            // toGoal.y = Math.sin(toGoalAngle);
+
+            // if(toGoal.x > .5)
+            //     --toGoal.x;
+            // else if(toGoal.x < -.5)
+            //     ++toGoal.x;
+            // if(toGoal.y > .5)
+            //     --toGoal.y;
+            // else if(toGoal.y < -.5)
+            //     ++toGoal.y;
+
+            // var goalAngle = Math.atan2(toGoal.y, toGoal.x) - playerAngle;
+            // var currDir = new PIXI.Point(Math.cos(this.compassAngle), Math.sin(this.compassAngle));
+            // var goalDir = new PIXI.Point(Math.cos(goalAngle), Math.sin(goalAngle));
+
+            // var deltaAngle = Math.acos(currDir.x * goalDir.x + currDir.y * goalDir.y);
+            // if(currDir.x * goalDir.y - currDir.y * goalDir.x > 0)
+            //     deltaAngle = -deltaAngle;
+
+            // this.compassAngle -= Math.min(1.0, dt * 2.0) * deltaAngle;
+
+            /*
+            toGoal.x = .5 - pos.x;
+            toGoal.y = .5 - pos.y;
+            // toGoal.y *= -1;
+
+            // if(toGoal.x > .5)
+            //     --toGoal.x;
+            // else if(toGoal.x < -.5)
+            //     ++toGoal.x;
+            // if(toGoal.y > .5)
+            //     --toGoal.y;
+            // else if(toGoal.y < -.5)
+            //     ++toGoal.y;
+            var toGoalAngle = Math.atan2(toGoal.y, toGoal.x);// - playerAngle;
+            toGoalAngle = toGoalAngle - Math.PI;
+            toGoal.x = Math.cos(toGoalAngle);
+            toGoal.y = Math.sin(toGoalAngle);
+
+            var currDir = new PIXI.Point(Math.cos(this.compassAngle), Math.sin(this.compassAngle));
+            var deltaAngle = Math.acos(toGoal.x * currDir.x + toGoal.y * currDir.y);
+            // var turn = Math.min(1.0, dt * 2.0) * deltaAngle;
+
+            var mat:PIXI.Matrix = new PIXI.Matrix();
+            mat.rotate(deltaAngle);
+            currDir = mat.apply(currDir);
+            this.compassAngle = Math.atan2(currDir.y, currDir.x);
+            */
+        }
+
         drawCompass(gr:PIXI.Graphics, clr:number) {
             gr.lineStyle(10, clr);
             gr.drawCircle(0,0,100);
@@ -72,9 +126,9 @@ module OceanEaters
             gr.moveTo(20,100);
             gr.lineTo(-20,100);
             gr.lineTo(0,130);
-            gr.drawCircle(0,145,10);
-            gr.drawCircle(0,172,8);
-            gr.drawCircle(0,195,6);
+            // gr.drawCircle(0,145,10);
+            // gr.drawCircle(0,172,8);
+            // gr.drawCircle(0,195,6);
             gr.endFill();
             this.compassContainer.addChild(gr);
         }
@@ -94,7 +148,7 @@ module OceanEaters
 
         updateFrame(dt:number, pPos:PIXI.Point, pDir:number) {
 
-            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI;
+            this.compassShadow.rotation = this.compass.rotation = this.compassAngle + .5 * Math.PI;//Math.PI - this.compassAngle;// + .5 * Math.PI;
 
             var jump = 0;
             var jumpTime = .5;

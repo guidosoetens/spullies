@@ -3,6 +3,7 @@
 ///<reference path="Sky.ts"/>
 ///<reference path="BadBuoy.ts"/>
 ///<reference path="Player.ts"/>
+///<reference path="Collectible.ts"/>
 
 module OceanEaters
 {
@@ -42,6 +43,7 @@ module OceanEaters
         player:Player;
         buoysParent:PIXI.Container;
         buoys:BadBuoy[];
+        collectible:Collectible;
 
         constructor(w:number, h:number) {
             super(w, h, { antialias: true, backgroundColor : 0x000000, transparent : false });
@@ -93,6 +95,10 @@ module OceanEaters
                 }
             }
 
+            this.collectible = new Collectible();
+            this.buoys.push(this.collectible);
+            this.buoysParent.addChild(this.collectible);
+
             this.player = new Player();
             this.componentContainer.addChild(this.player);
             this.playerPos = new PIXI.Point(0,0);
@@ -102,7 +108,7 @@ module OceanEaters
 
             this.touchPoints = [];
 
-            this.debugText = new PIXI.Text('txt');
+            this.debugText = new PIXI.Text('');
             this.debugText.x = 20;
             this.debugText.y = 10;
             this.componentContainer.addChild(this.debugText);
@@ -182,7 +188,7 @@ module OceanEaters
 
         update() {
             var dt = this.ticker.elapsedMS * .001;
-            this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
+            // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
 
             //update input:
 
@@ -200,7 +206,7 @@ module OceanEaters
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
                 this.touchPoints[i].timeAlive += dt;
-                this.debugText.text += "\n" + this.touchPoints[i].currentY;
+                // this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
             if(this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
@@ -210,7 +216,7 @@ module OceanEaters
 
             this.playerAngle += dt * 1. * this.angularSpeed;
             this.playerAngle %= 2 * Math.PI;
-            this.player.compassAngle = this.playerAngle;
+            // this.player.compassAngle = this.playerAngle;
             this.playerDirection.x = Math.cos(this.playerAngle);
             this.playerDirection.y = Math.sin(this.playerAngle); 
 
@@ -224,6 +230,7 @@ module OceanEaters
             if(this.playerPos.y < 0.0)
                 this.playerPos.y += 1.0;
 
+            /*
             //draw debug graphics:
             const dbMargin:number = 20;
             const dbWidth:number = 200;
@@ -243,6 +250,7 @@ module OceanEaters
             }
 
             this.debugGraphics.endFill();
+            */
 
             this.ocean.updateFrame(dt, this.playerPos, this.playerAngle);
             this.sky.updateFrame(dt, this.playerPos, this.playerAngle);
@@ -291,8 +299,20 @@ module OceanEaters
             var sorted = this.buoys.sort(sortBuoys);
             for(var i:number=0; i<sorted.length; ++i) {
                 this.buoysParent.setChildIndex(sorted[i], i);
-                // sorted[i].graphics.z = i;
             }
+
+            var to = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
+            var distance = Math.sqrt(to.x * to.x + to.y * to.y);
+            if(distance < .025) {
+                var angle = Math.random() * 2 * Math.PI;
+                var srcX = this.collectible.relativePosition.x + Math.cos(angle) * .5;
+                var srcY = this.collectible.relativePosition.y + Math.sin(angle) * .5;
+                this.collectible.reset(srcX, srcY);
+            }
+
+            // var toColl = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
+            // this.player.updateCompassDirection(dt, toColl, this.playerAngle, this.playerPos);
+            this.player.compassAngle = this.playerAngle;
         }
 
         getRelativeOceanPosition(p:PIXI.Point) : PIXI.Point {
