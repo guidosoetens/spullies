@@ -30,26 +30,62 @@ module OceanEaters
             this.topGraphics.lineStyle(3, 0xaaaaaa);
             this.topGraphics.beginFill(0xffffff, 1);
             this.topGraphics.moveTo(-20,0);
-            this.topGraphics.bezierCurveTo(-20,-35, 20,-35,20,0);
+            this.topGraphics.bezierCurveTo(-20,-20, -5,-20,0,-20);
+            this.topGraphics.bezierCurveTo(5,-20, 20,-20,20,0);
             var teeth = 4;
             for(var i:number=0; i<teeth; ++i) {
                 var x = 20 - 40 * (i + 1) / (teeth);
                 this.topGraphics.lineTo(x,5 * ((i + 1) % 2));
             }
-            this.topGraphics.drawEllipse(0,-28,5,2);
+
+            //draw top:
+            this.topGraphics.beginFill(0xaaaaaa, 1);
+            this.topGraphics.drawEllipse(0,-22,5,2);
+
+            //draw eyes:
+            this.topGraphics.lineStyle(3, 0x0);
+            this.topGraphics.beginFill(0x0, 1);
+            this.topGraphics.drawCircle(-10,-8,2);
+            this.topGraphics.drawCircle(10,-8,2);
+
+            //draw mouth:
+            this.topGraphics.lineStyle(3, 0xff0000);
+            this.topGraphics.beginFill(0xffaaaa, 1);
+            this.topGraphics.moveTo(-2,-5);
+            this.topGraphics.lineTo(2,-5);
+            this.topGraphics.bezierCurveTo(2,-3,-2,-3,-2,-5);
+
+
+            this.topGraphics.scale.x = 3;
+            this.topGraphics.scale.y = 3;
             this.addChild(this.topGraphics);
 
             this.bottomGraphics = new PIXI.Graphics();
             this.bottomGraphics.clear();
+
+            //draw hook:
+            this.bottomGraphics.endFill();
+            this.bottomGraphics.lineStyle(4, 0x888888, 1);
+            this.bottomGraphics.moveTo(0, 25);
+            this.bottomGraphics.lineTo(0, 32);
+            this.bottomGraphics.bezierCurveTo(-10,32,-10,45,0,45);
+            this.bottomGraphics.bezierCurveTo(10,45,10,40,8,35);
+            this.bottomGraphics.lineTo(5, 40);
+
+            //draw base:
             this.bottomGraphics.lineStyle(3, 0xaaaaaa);
             this.bottomGraphics.beginFill(0xffffff, 1);
             this.bottomGraphics.moveTo(-20,0);
-            this.bottomGraphics.bezierCurveTo(-20,35, 20,35,20,0);
+            this.bottomGraphics.bezierCurveTo(-20,35,20,35,20,0);
             for(var i:number=0; i<teeth; ++i) {
                 var x = 20 - 40 * (i + 1) / (teeth);
                 this.bottomGraphics.lineTo(x,5 * ((i + 1) % 2));
             }
+
+
             this.bottomGraphics.y = 10;
+            this.bottomGraphics.scale.x = 3;
+            this.bottomGraphics.scale.y = 3;
             this.addChild(this.bottomGraphics);
         }
 

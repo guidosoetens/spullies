@@ -373,16 +373,41 @@ var OceanEaters;
             _this.topGraphics.lineStyle(3, 0xaaaaaa);
             _this.topGraphics.beginFill(0xffffff, 1);
             _this.topGraphics.moveTo(-20, 0);
-            _this.topGraphics.bezierCurveTo(-20, -35, 20, -35, 20, 0);
+            _this.topGraphics.bezierCurveTo(-20, -20, -5, -20, 0, -20);
+            _this.topGraphics.bezierCurveTo(5, -20, 20, -20, 20, 0);
             var teeth = 4;
             for (var i = 0; i < teeth; ++i) {
                 var x = 20 - 40 * (i + 1) / (teeth);
                 _this.topGraphics.lineTo(x, 5 * ((i + 1) % 2));
             }
-            _this.topGraphics.drawEllipse(0, -28, 5, 2);
+            //draw top:
+            _this.topGraphics.beginFill(0xaaaaaa, 1);
+            _this.topGraphics.drawEllipse(0, -22, 5, 2);
+            //draw eyes:
+            _this.topGraphics.lineStyle(3, 0x0);
+            _this.topGraphics.beginFill(0x0, 1);
+            _this.topGraphics.drawCircle(-10, -8, 2);
+            _this.topGraphics.drawCircle(10, -8, 2);
+            //draw mouth:
+            _this.topGraphics.lineStyle(3, 0xff0000);
+            _this.topGraphics.beginFill(0xffaaaa, 1);
+            _this.topGraphics.moveTo(-2, -5);
+            _this.topGraphics.lineTo(2, -5);
+            _this.topGraphics.bezierCurveTo(2, -3, -2, -3, -2, -5);
+            _this.topGraphics.scale.x = 3;
+            _this.topGraphics.scale.y = 3;
             _this.addChild(_this.topGraphics);
             _this.bottomGraphics = new PIXI.Graphics();
             _this.bottomGraphics.clear();
+            //draw hook:
+            _this.bottomGraphics.endFill();
+            _this.bottomGraphics.lineStyle(4, 0x888888, 1);
+            _this.bottomGraphics.moveTo(0, 25);
+            _this.bottomGraphics.lineTo(0, 32);
+            _this.bottomGraphics.bezierCurveTo(-10, 32, -10, 45, 0, 45);
+            _this.bottomGraphics.bezierCurveTo(10, 45, 10, 40, 8, 35);
+            _this.bottomGraphics.lineTo(5, 40);
+            //draw base:
             _this.bottomGraphics.lineStyle(3, 0xaaaaaa);
             _this.bottomGraphics.beginFill(0xffffff, 1);
             _this.bottomGraphics.moveTo(-20, 0);
@@ -392,6 +417,8 @@ var OceanEaters;
                 _this.bottomGraphics.lineTo(x, 5 * ((i + 1) % 2));
             }
             _this.bottomGraphics.y = 10;
+            _this.bottomGraphics.scale.x = 3;
+            _this.bottomGraphics.scale.y = 3;
             _this.addChild(_this.bottomGraphics);
             return _this;
         }
