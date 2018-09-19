@@ -119,6 +119,11 @@ module OceanEaters
 
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
+
+            var foo = new Collectible();
+            foo.position.x = 100;
+            foo.position.y = 100;
+            this.stage.addChild(foo)
         }
 
         pointerDown(event:PIXI.interaction.InteractionEvent) {

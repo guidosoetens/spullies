@@ -8,6 +8,9 @@ module OceanEaters
         direction:PIXI.Point;
         animationParam:number;
 
+        topGraphics:PIXI.Graphics;
+        bottomGraphics:PIXI.Graphics;
+
         constructor() {
             super(.5, .5, 0);
 
@@ -21,6 +24,14 @@ module OceanEaters
             this.animationParam = 0;
 
             this.reset(.5, .5);
+
+            this.topGraphics = new PIXI.Graphics();
+            this.topGraphics.clear();
+            this.topGraphics.lineStyle(3, 0xff0000);
+            this.topGraphics.moveTo(0,0);
+            this.topGraphics.arcTo(0,50,50,50,50);
+            this.addChild(this.topGraphics);
+            // this.topGraphics
         }
 
         reset(x:number, y:number) {

@@ -368,7 +368,14 @@ var OceanEaters;
             _this.endFill();
             _this.animationParam = 0;
             _this.reset(.5, .5);
+            _this.topGraphics = new PIXI.Graphics();
+            _this.topGraphics.clear();
+            _this.topGraphics.lineStyle(3, 0xff0000);
+            _this.topGraphics.moveTo(0, 0);
+            _this.topGraphics.arcTo(0, 50, 50, 50, 50);
+            _this.addChild(_this.topGraphics);
             return _this;
+            // this.topGraphics
         }
         Collectible.prototype.reset = function (x, y) {
             var angle = Math.random() * 2 * Math.PI;
@@ -487,6 +494,10 @@ var OceanEaters;
             this.componentContainer.addChild(this.debugText);
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
+            var foo = new OceanEaters.Collectible();
+            foo.position.x = 100;
+            foo.position.y = 100;
+            this.stage.addChild(foo);
         };
         Game.prototype.pointerDown = function (event) {
             for (var i = 0; i < this.touchPoints.length; ++i) {
