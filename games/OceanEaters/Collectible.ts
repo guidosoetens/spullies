@@ -10,6 +10,7 @@ module OceanEaters
 
         topGraphics:PIXI.Graphics;
         bottomGraphics:PIXI.Graphics;
+        ringGraphics:PIXI.Graphics;
 
         constructor() {
             super(.5, .5, 0);
@@ -73,8 +74,11 @@ module OceanEaters
             this.bottomGraphics.lineTo(5, 40);
 
             //draw base:
-            this.bottomGraphics.lineStyle(3, 0xaaaaaa);
-            this.bottomGraphics.beginFill(0xffffff, 1);
+            var hue = Math.random();
+            var clr = this.HSVtoRGB(hue, 1, 1);
+            var clr2 = this.HSVtoRGB(hue, 1, .7);
+            this.bottomGraphics.lineStyle(3, clr2);
+            this.bottomGraphics.beginFill(clr, 1);
             this.bottomGraphics.moveTo(-20,0);
             this.bottomGraphics.bezierCurveTo(-20,35,20,35,20,0);
             for(var i:number=0; i<teeth; ++i) {
@@ -82,11 +86,26 @@ module OceanEaters
                 this.bottomGraphics.lineTo(x,5 * ((i + 1) % 2));
             }
 
-
             this.bottomGraphics.y = 10;
             this.bottomGraphics.scale.x = 3;
             this.bottomGraphics.scale.y = 3;
             this.addChild(this.bottomGraphics);
+
+            this.ringGraphics = new PIXI.Graphics();
+            this.ringGraphics.beginFill(0xaaaaaa, 1);
+            this.ringGraphics.lineStyle(3, 0x888888, 1);
+            this.ringGraphics.drawEllipse(0,0,30,15);
+            this.ringGraphics.endFill();
+            this.ringGraphics.moveTo(-15,-5);
+            this.ringGraphics.bezierCurveTo(-5,0,5,0,15,-5);
+            this.ringGraphics.y = -80;
+            this.ringGraphics.pivot.x = -20;
+            this.ringGraphics.rotation = 0;//.25 * Math.PI;
+            this.addChild(this.ringGraphics);
+
+            // PIXI.ticker.shared.add(
+            //     () => { this.ringGraphics.rotation += .01; }
+            // );
         }
 
         reset(x:number, y:number) {
@@ -106,14 +125,21 @@ module OceanEaters
             var c_y = 60 + 40 * t;
 
             this.clear();
-            this.beginFill(0x0000ff, .1);
-            this.drawCircle(0,c_y,50);
-            this.beginFill(0x0, .4 - t * .3);
-            var scale = 1. - t * .5;
-            this.drawEllipse(0,0,scale * 50,scale * 10);
-            this.beginFill(0x0000ff, 1);
-            this.drawCircle(0,-c_y,50);
-            this.endFill();
+            // this.beginFill(0x0000ff, .1);
+            // this.drawCircle(0,c_y,50);
+            // this.beginFill(0x0, .4 - t * .3);
+            // var scale = 1. - t * .5;
+            // this.drawEllipse(0,0,scale * 50,scale * 10);
+            // this.beginFill(0x0000ff, 1);
+            // this.drawCircle(0,-c_y,50);
+            // this.endFill();
+
+            if(this.topGraphics) {
+                this.topGraphics.y = -c_y - t * 20;
+                this.bottomGraphics.y = -c_y;
+                this.ringGraphics.y = this.topGraphics.y - 80;
+                this.ringGraphics.rotation = (.25 - 1. * t);
+            }
         }
 
         updateFrame(dt:number) {

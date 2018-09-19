@@ -125,38 +125,6 @@ var OceanEaters;
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
-    function HSVtoRGB(h, s, v) {
-        var r, g, b, i, f, p, q, t;
-        if (arguments.length === 1) {
-            s = h.s, v = h.v, h = h.h;
-        }
-        i = Math.floor(h * 6);
-        f = h * 6 - i;
-        p = v * (1 - s);
-        q = v * (1 - f * s);
-        t = v * (1 - (1 - f) * s);
-        switch (i % 6) {
-            case 0:
-                r = v, g = t, b = p;
-                break;
-            case 1:
-                r = q, g = v, b = p;
-                break;
-            case 2:
-                r = p, g = v, b = t;
-                break;
-            case 3:
-                r = p, g = q, b = v;
-                break;
-            case 4:
-                r = t, g = p, b = v;
-                break;
-            case 5:
-                r = v, g = p, b = q;
-                break;
-        }
-        return Math.round(r * 255) * 256 * 256 + Math.round(g * 255) * 256 + Math.round(b * 255);
-    }
     var BadBuoy = /** @class */ (function (_super) {
         __extends(BadBuoy, _super);
         function BadBuoy(x, y, index) {
@@ -166,7 +134,7 @@ var OceanEaters;
             var width = 150;
             var height = 350;
             var rad = Math.min(width, height) * .25;
-            clr = HSVtoRGB(Math.random(), 1, 1);
+            clr = _this.HSVtoRGB(Math.random(), 1, 1);
             _this.beginFill(clr, .1);
             _this.lineStyle(.05 * width, 0x0, .1);
             _this.drawRoundedRect(-width / 2, 0, width, height, rad);
@@ -187,6 +155,38 @@ var OceanEaters;
             _this.updateRender(x * 200, y * 200, 1, 1);
             return _this;
         }
+        BadBuoy.prototype.HSVtoRGB = function (h, s, v) {
+            var r, g, b, i, f, p, q, t;
+            if (arguments.length === 1) {
+                s = h.s, v = h.v, h = h.h;
+            }
+            i = Math.floor(h * 6);
+            f = h * 6 - i;
+            p = v * (1 - s);
+            q = v * (1 - f * s);
+            t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0:
+                    r = v, g = t, b = p;
+                    break;
+                case 1:
+                    r = q, g = v, b = p;
+                    break;
+                case 2:
+                    r = p, g = v, b = t;
+                    break;
+                case 3:
+                    r = p, g = q, b = v;
+                    break;
+                case 4:
+                    r = t, g = p, b = v;
+                    break;
+                case 5:
+                    r = v, g = p, b = q;
+                    break;
+            }
+            return Math.round(r * 255) * 256 * 256 + Math.round(g * 255) * 256 + Math.round(b * 255);
+        };
         BadBuoy.prototype.updateRender = function (x, y, s, alpha) {
             this.position.x = x;
             this.position.y = y;
@@ -408,8 +408,11 @@ var OceanEaters;
             _this.bottomGraphics.bezierCurveTo(10, 45, 10, 40, 8, 35);
             _this.bottomGraphics.lineTo(5, 40);
             //draw base:
-            _this.bottomGraphics.lineStyle(3, 0xaaaaaa);
-            _this.bottomGraphics.beginFill(0xffffff, 1);
+            var hue = Math.random();
+            var clr = _this.HSVtoRGB(hue, 1, 1);
+            var clr2 = _this.HSVtoRGB(hue, 1, .7);
+            _this.bottomGraphics.lineStyle(3, clr2);
+            _this.bottomGraphics.beginFill(clr, 1);
             _this.bottomGraphics.moveTo(-20, 0);
             _this.bottomGraphics.bezierCurveTo(-20, 35, 20, 35, 20, 0);
             for (var i = 0; i < teeth; ++i) {
@@ -420,7 +423,21 @@ var OceanEaters;
             _this.bottomGraphics.scale.x = 3;
             _this.bottomGraphics.scale.y = 3;
             _this.addChild(_this.bottomGraphics);
+            _this.ringGraphics = new PIXI.Graphics();
+            _this.ringGraphics.beginFill(0xaaaaaa, 1);
+            _this.ringGraphics.lineStyle(3, 0x888888, 1);
+            _this.ringGraphics.drawEllipse(0, 0, 30, 15);
+            _this.ringGraphics.endFill();
+            _this.ringGraphics.moveTo(-15, -5);
+            _this.ringGraphics.bezierCurveTo(-5, 0, 5, 0, 15, -5);
+            _this.ringGraphics.y = -80;
+            _this.ringGraphics.pivot.x = -20;
+            _this.ringGraphics.rotation = 0; //.25 * Math.PI;
+            _this.addChild(_this.ringGraphics);
             return _this;
+            // PIXI.ticker.shared.add(
+            //     () => { this.ringGraphics.rotation += .01; }
+            // );
         }
         Collectible.prototype.reset = function (x, y) {
             var angle = Math.random() * 2 * Math.PI;
@@ -435,14 +452,20 @@ var OceanEaters;
             var t = Math.abs(Math.cos(this.animationParam * 2 * Math.PI));
             var c_y = 60 + 40 * t;
             this.clear();
-            this.beginFill(0x0000ff, .1);
-            this.drawCircle(0, c_y, 50);
-            this.beginFill(0x0, .4 - t * .3);
-            var scale = 1. - t * .5;
-            this.drawEllipse(0, 0, scale * 50, scale * 10);
-            this.beginFill(0x0000ff, 1);
-            this.drawCircle(0, -c_y, 50);
-            this.endFill();
+            // this.beginFill(0x0000ff, .1);
+            // this.drawCircle(0,c_y,50);
+            // this.beginFill(0x0, .4 - t * .3);
+            // var scale = 1. - t * .5;
+            // this.drawEllipse(0,0,scale * 50,scale * 10);
+            // this.beginFill(0x0000ff, 1);
+            // this.drawCircle(0,-c_y,50);
+            // this.endFill();
+            if (this.topGraphics) {
+                this.topGraphics.y = -c_y - t * 20;
+                this.bottomGraphics.y = -c_y;
+                this.ringGraphics.y = this.topGraphics.y - 80;
+                this.ringGraphics.rotation = (.25 - 1. * t);
+            }
         };
         Collectible.prototype.updateFrame = function (dt) {
             _super.prototype.updateFrame.call(this, dt);
