@@ -4,6 +4,7 @@
 ///<reference path="BadBuoy.ts"/>
 ///<reference path="Player.ts"/>
 ///<reference path="Collectible.ts"/>
+///<reference path="ScoreOverlay.ts"/>
 
 module OceanEaters
 {
@@ -33,6 +34,7 @@ module OceanEaters
         debugGraphics:PIXI.Graphics;
 
         //game components:
+        scoreOverlay:ScoreOverlay;
         backgroundTexture:PIXI.Texture;
         backgroundImage:PIXI.Sprite;
         // touchContainerGraphics:PIXI.Graphics;
@@ -120,10 +122,8 @@ module OceanEaters
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
 
-            var foo = new Collectible();
-            foo.position.x = 100;
-            foo.position.y = 100;
-            this.stage.addChild(foo)
+            this.scoreOverlay = new ScoreOverlay();
+            this.componentContainer.addChild(this.scoreOverlay);
         }
 
         pointerDown(event:PIXI.interaction.InteractionEvent) {
@@ -197,6 +197,7 @@ module OceanEaters
 
         update() {
             var dt = this.ticker.elapsedMS * .001;
+            dt = Math.min(.1, dt);
             // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
 
             //update input:
@@ -315,16 +316,23 @@ module OceanEaters
                 var to = new PIXI.Point(collectible.relativePosition.x - this.playerPos.x, collectible.relativePosition.y - this.playerPos.y);
                 var distance = Math.sqrt(to.x * to.x + to.y * to.y);
                 if(distance < .005) {
+
+                    this.scoreOverlay.pushCollectible(collectible);
+
                     var angle = Math.random() * 2 * Math.PI;
                     var srcX = collectible.relativePosition.x + Math.cos(angle) * .5;
                     var srcY = collectible.relativePosition.y + Math.sin(angle) * .5;
                     collectible.reset(srcX, srcY);
+
+                    //hide, will be properly reset next frame:
+                    collectible.scale.x = 0;
+                    collectible.scale.y = 0;
                 }
             }
 
-            // var toColl = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
-            // this.player.updateCompassDirection(dt, toColl, this.playerAngle, this.playerPos);
             this.player.compassAngle = this.playerAngle;
+
+            this.scoreOverlay.updateFrame(dt);
         }
 
         getRelativeOceanPosition(p:PIXI.Point) : PIXI.Point {

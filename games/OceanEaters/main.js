@@ -354,7 +354,128 @@ var OceanEaters;
     OceanEaters.Player = Player;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../pixi/pixi.js.d.ts"/>
+var OceanEaters;
+(function (OceanEaters) {
+    var CollectibleVisual = /** @class */ (function (_super) {
+        __extends(CollectibleVisual, _super);
+        function CollectibleVisual(hue) {
+            var _this = _super.call(this) || this;
+            _this.topGraphics = new PIXI.Graphics();
+            _this.addChild(_this.topGraphics);
+            _this.bottomGraphics = new PIXI.Graphics();
+            _this.addChild(_this.bottomGraphics);
+            _this.ringGraphics = new PIXI.Graphics();
+            _this.addChild(_this.ringGraphics);
+            _this.resetGraphics(hue);
+            return _this;
+        }
+        CollectibleVisual.prototype.resetGraphics = function (hue) {
+            this.hue = hue;
+            this.topGraphics.clear();
+            this.topGraphics.lineStyle(3, 0xaaaaaa);
+            this.topGraphics.beginFill(0xffffff, 1);
+            this.topGraphics.moveTo(-20, 0);
+            this.topGraphics.bezierCurveTo(-20, -20, -5, -20, 0, -20);
+            this.topGraphics.bezierCurveTo(5, -20, 20, -20, 20, 0);
+            var teeth = 4;
+            for (var i = 0; i < teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                this.topGraphics.lineTo(x, 5 * ((i + 1) % 2));
+            }
+            //draw top:
+            this.topGraphics.beginFill(0xaaaaaa, 1);
+            this.topGraphics.drawEllipse(0, -22, 5, 2);
+            //draw eyes:
+            this.topGraphics.lineStyle(3, 0x0);
+            this.topGraphics.beginFill(0x0, 1);
+            this.topGraphics.drawCircle(-10, -8, 2);
+            this.topGraphics.drawCircle(10, -8, 2);
+            //draw mouth:
+            this.topGraphics.lineStyle(3, 0xff0000);
+            this.topGraphics.beginFill(0xffaaaa, 1);
+            this.topGraphics.moveTo(-2, -5);
+            this.topGraphics.lineTo(2, -5);
+            this.topGraphics.bezierCurveTo(2, -3, -2, -3, -2, -5);
+            this.topGraphics.scale.x = 3;
+            this.topGraphics.scale.y = 3;
+            this.bottomGraphics.clear();
+            //draw hook:
+            this.bottomGraphics.endFill();
+            this.bottomGraphics.lineStyle(4, 0x333333, 1);
+            this.bottomGraphics.moveTo(0, 25);
+            this.bottomGraphics.lineTo(0, 32);
+            this.bottomGraphics.bezierCurveTo(-10, 32, -10, 45, 0, 45);
+            this.bottomGraphics.bezierCurveTo(10, 45, 10, 40, 8, 35);
+            this.bottomGraphics.lineTo(5, 40);
+            //draw base:
+            var clr = this.HSVtoRGB(hue, 1, 1);
+            var clr2 = this.HSVtoRGB(hue, 1, .7);
+            this.bottomGraphics.lineStyle(3, clr2);
+            this.bottomGraphics.beginFill(clr, 1);
+            this.bottomGraphics.moveTo(-20, 0);
+            this.bottomGraphics.bezierCurveTo(-20, 35, 20, 35, 20, 0);
+            for (var i = 0; i < teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                this.bottomGraphics.lineTo(x, 5 * ((i + 1) % 2));
+            }
+            this.bottomGraphics.y = 10;
+            this.bottomGraphics.scale.x = 3;
+            this.bottomGraphics.scale.y = 3;
+            this.ringGraphics.beginFill(0xaaaaaa, 1);
+            this.ringGraphics.lineStyle(3, 0x888888, 1);
+            this.ringGraphics.drawEllipse(0, 0, 30, 15);
+            this.ringGraphics.endFill();
+            this.ringGraphics.moveTo(-15, -5);
+            this.ringGraphics.bezierCurveTo(-5, 0, 5, 0, 15, -5);
+            this.ringGraphics.y = -80;
+            this.ringGraphics.pivot.x = -20;
+            this.ringGraphics.rotation = 0;
+        };
+        CollectibleVisual.prototype.HSVtoRGB = function (h, s, v) {
+            var r, g, b, i, f, p, q, t;
+            if (arguments.length === 1) {
+                s = h.s, v = h.v, h = h.h;
+            }
+            i = Math.floor(h * 6);
+            f = h * 6 - i;
+            p = v * (1 - s);
+            q = v * (1 - f * s);
+            t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0:
+                    r = v, g = t, b = p;
+                    break;
+                case 1:
+                    r = q, g = v, b = p;
+                    break;
+                case 2:
+                    r = p, g = v, b = t;
+                    break;
+                case 3:
+                    r = p, g = q, b = v;
+                    break;
+                case 4:
+                    r = t, g = p, b = v;
+                    break;
+                case 5:
+                    r = v, g = p, b = q;
+                    break;
+            }
+            return Math.round(r * 255) * 256 * 256 + Math.round(g * 255) * 256 + Math.round(b * 255);
+        };
+        CollectibleVisual.prototype.setAnimationState = function (t) {
+            this.topGraphics.y = -t * 20;
+            this.bottomGraphics.y = 0;
+            this.ringGraphics.y = this.topGraphics.y - 80;
+            this.ringGraphics.rotation = (.25 - 1. * t);
+        };
+        return CollectibleVisual;
+    }(PIXI.Container));
+    OceanEaters.CollectibleVisual = CollectibleVisual;
+})(OceanEaters || (OceanEaters = {}));
+///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="BadBuoy.ts"/>
+///<reference path="CollectibleVisual.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
     var Collectible = /** @class */ (function (_super) {
@@ -363,81 +484,22 @@ var OceanEaters;
             var _this = _super.call(this, .5, .5, 0) || this;
             _this.direction = new PIXI.Point(1, 0);
             _this.clear();
-            _this.beginFill(0x0000ff, 1);
-            _this.drawCircle(0, 0, 50);
-            _this.endFill();
             _this.animationParam = 0;
-            _this.reset(.5, .5);
-            _this.topGraphics = new PIXI.Graphics();
-            _this.topGraphics.clear();
-            _this.topGraphics.lineStyle(3, 0xaaaaaa);
-            _this.topGraphics.beginFill(0xffffff, 1);
-            _this.topGraphics.moveTo(-20, 0);
-            _this.topGraphics.bezierCurveTo(-20, -20, -5, -20, 0, -20);
-            _this.topGraphics.bezierCurveTo(5, -20, 20, -20, 20, 0);
-            var teeth = 4;
-            for (var i = 0; i < teeth; ++i) {
-                var x = 20 - 40 * (i + 1) / (teeth);
-                _this.topGraphics.lineTo(x, 5 * ((i + 1) % 2));
-            }
-            //draw top:
-            _this.topGraphics.beginFill(0xaaaaaa, 1);
-            _this.topGraphics.drawEllipse(0, -22, 5, 2);
-            //draw eyes:
-            _this.topGraphics.lineStyle(3, 0x0);
-            _this.topGraphics.beginFill(0x0, 1);
-            _this.topGraphics.drawCircle(-10, -8, 2);
-            _this.topGraphics.drawCircle(10, -8, 2);
-            //draw mouth:
-            _this.topGraphics.lineStyle(3, 0xff0000);
-            _this.topGraphics.beginFill(0xffaaaa, 1);
-            _this.topGraphics.moveTo(-2, -5);
-            _this.topGraphics.lineTo(2, -5);
-            _this.topGraphics.bezierCurveTo(2, -3, -2, -3, -2, -5);
-            _this.topGraphics.scale.x = 3;
-            _this.topGraphics.scale.y = 3;
-            _this.addChild(_this.topGraphics);
-            _this.bottomGraphics = new PIXI.Graphics();
-            _this.bottomGraphics.clear();
-            //draw hook:
-            _this.bottomGraphics.endFill();
-            _this.bottomGraphics.lineStyle(4, 0x888888, 1);
-            _this.bottomGraphics.moveTo(0, 25);
-            _this.bottomGraphics.lineTo(0, 32);
-            _this.bottomGraphics.bezierCurveTo(-10, 32, -10, 45, 0, 45);
-            _this.bottomGraphics.bezierCurveTo(10, 45, 10, 40, 8, 35);
-            _this.bottomGraphics.lineTo(5, 40);
-            //draw base:
             var hue = Math.random();
-            var clr = _this.HSVtoRGB(hue, 1, 1);
-            var clr2 = _this.HSVtoRGB(hue, 1, .7);
-            _this.bottomGraphics.lineStyle(3, clr2);
-            _this.bottomGraphics.beginFill(clr, 1);
-            _this.bottomGraphics.moveTo(-20, 0);
-            _this.bottomGraphics.bezierCurveTo(-20, 35, 20, 35, 20, 0);
-            for (var i = 0; i < teeth; ++i) {
-                var x = 20 - 40 * (i + 1) / (teeth);
-                _this.bottomGraphics.lineTo(x, 5 * ((i + 1) % 2));
-            }
-            _this.bottomGraphics.y = 10;
-            _this.bottomGraphics.scale.x = 3;
-            _this.bottomGraphics.scale.y = 3;
-            _this.addChild(_this.bottomGraphics);
-            _this.ringGraphics = new PIXI.Graphics();
-            _this.ringGraphics.beginFill(0xaaaaaa, 1);
-            _this.ringGraphics.lineStyle(3, 0x888888, 1);
-            _this.ringGraphics.drawEllipse(0, 0, 30, 15);
-            _this.ringGraphics.endFill();
-            _this.ringGraphics.moveTo(-15, -5);
-            _this.ringGraphics.bezierCurveTo(-5, 0, 5, 0, 15, -5);
-            _this.ringGraphics.y = -80;
-            _this.ringGraphics.pivot.x = -20;
-            _this.ringGraphics.rotation = 0; //.25 * Math.PI;
-            _this.addChild(_this.ringGraphics);
+            _this.bottomVisual = new OceanEaters.CollectibleVisual(hue);
+            _this.bottomVisual.scale.y = -1;
+            _this.bottomVisual.alpha = .2;
+            _this.addChild(_this.bottomVisual);
+            _this.shadow = new PIXI.Graphics();
+            _this.shadow.clear();
+            _this.shadow.beginFill(0x0, .5);
+            _this.shadow.drawEllipse(0, 0, 50, 10);
+            _this.shadow.endFill();
+            _this.addChild(_this.shadow);
+            _this.topVisual = new OceanEaters.CollectibleVisual(hue);
+            _this.addChild(_this.topVisual);
+            _this.reset(.5, .5);
             return _this;
-            // PIXI.ticker.shared.add(
-            //     () => { this.ringGraphics.rotation += .01; }
-            // );
         }
         Collectible.prototype.reset = function (x, y) {
             var angle = Math.random() * 2 * Math.PI;
@@ -446,25 +508,35 @@ var OceanEaters;
             this.relativePosition.x = x;
             this.relativePosition.y = y;
             this.updateFrame(0.01);
+            var hue = Math.random();
+            this.topVisual.resetGraphics(hue);
+            this.bottomVisual.resetGraphics(hue);
         };
         Collectible.prototype.updateRender = function (x, y, s, alpha) {
             _super.prototype.updateRender.call(this, x, y, s, alpha);
-            var t = Math.abs(Math.cos(this.animationParam * 2 * Math.PI));
-            var c_y = 60 + 40 * t;
-            this.clear();
-            // this.beginFill(0x0000ff, .1);
-            // this.drawCircle(0,c_y,50);
-            // this.beginFill(0x0, .4 - t * .3);
-            // var scale = 1. - t * .5;
-            // this.drawEllipse(0,0,scale * 50,scale * 10);
-            // this.beginFill(0x0000ff, 1);
-            // this.drawCircle(0,-c_y,50);
-            // this.endFill();
-            if (this.topGraphics) {
-                this.topGraphics.y = -c_y - t * 20;
-                this.bottomGraphics.y = -c_y;
-                this.ringGraphics.y = this.topGraphics.y - 80;
-                this.ringGraphics.rotation = (.25 - 1. * t);
+            if (this.topVisual) {
+                var t = Math.abs(Math.cos(this.animationParam * 2 * Math.PI));
+                // this.clear();
+                // this.beginFill(0x0000ff, .1);
+                // this.drawCircle(0,c_y,50);
+                // this.beginFill(0x0, .4 - t * .3);
+                // var scale = 1. - t * .5;
+                // this.drawEllipse(0,0,scale * 50,scale * 10);
+                // this.beginFill(0x0000ff, 1);
+                // this.drawCircle(0,-c_y,50);
+                // this.endFill();
+                var shadowScale = 1. - t * .5;
+                this.shadow.scale.x = shadowScale;
+                this.shadow.scale.y = shadowScale;
+                this.shadow.alpha = 1 - t * .8;
+                this.topVisual.y = -(120 + 60 * t);
+                this.topVisual.setAnimationState(t);
+                this.bottomVisual.y = 40 - this.topVisual.y;
+                this.bottomVisual.setAnimationState(t);
+                // this.topGraphics.y = -c_y - t * 20;
+                // this.bottomGraphics.y = -c_y;
+                // this.ringGraphics.y = this.topGraphics.y - 80;
+                // this.ringGraphics.rotation = (.25 - 1. * t);
             }
         };
         Collectible.prototype.updateFrame = function (dt) {
@@ -484,11 +556,52 @@ var OceanEaters;
     OceanEaters.Collectible = Collectible;
 })(OceanEaters || (OceanEaters = {}));
 ///<reference path="../../pixi/pixi.js.d.ts"/>
+///<reference path="CollectibleVisual.ts"/>
+///<reference path="Collectible.ts"/>
+var OceanEaters;
+(function (OceanEaters) {
+    var ScoreOverlay = /** @class */ (function (_super) {
+        __extends(ScoreOverlay, _super);
+        function ScoreOverlay() {
+            var _this = _super.call(this) || this;
+            _this.collVisual = new OceanEaters.CollectibleVisual(0);
+            _this.collVisual.x = 380;
+            _this.collVisual.y = 50;
+            _this.collVisual.rotation = -.4;
+            _this.collVisual.scale.x = .3;
+            _this.collVisual.scale.y = .3;
+            _this.addChild(_this.collVisual);
+            _this.text = new PIXI.Text(': 0');
+            _this.text.style.fontFamily = "groboldregular";
+            _this.text.style.fontSize = 40;
+            _this.text.style.stroke = 0xffffff;
+            _this.text.style.fill = 0xffffff;
+            _this.text.style.dropShadow = true;
+            _this.text.style.dropShadowAlpha = .5;
+            _this.text.x = 420;
+            _this.text.y = 25;
+            _this.addChild(_this.text);
+            _this.score = 0;
+            return _this;
+        }
+        ScoreOverlay.prototype.updateFrame = function (dt) {
+            this.text.text = ": " + this.score + (Math.random() < .5 ? "" : " ");
+        };
+        ScoreOverlay.prototype.pushCollectible = function (c) {
+            this.score = this.score + 1;
+            this.text.text = ": " + this.score;
+        };
+        return ScoreOverlay;
+    }(PIXI.Container));
+    OceanEaters.ScoreOverlay = ScoreOverlay;
+})(OceanEaters || (OceanEaters = {}));
+///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="Ocean.ts"/>
 ///<reference path="Sky.ts"/>
 ///<reference path="BadBuoy.ts"/>
 ///<reference path="Player.ts"/>
 ///<reference path="Collectible.ts"/>
+///<reference path="ScoreOverlay.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
     var touchElement = /** @class */ (function () {
@@ -562,10 +675,8 @@ var OceanEaters;
             this.componentContainer.addChild(this.debugText);
             this.debugGraphics = new PIXI.Graphics();
             this.componentContainer.addChild(this.debugGraphics);
-            var foo = new OceanEaters.Collectible();
-            foo.position.x = 100;
-            foo.position.y = 100;
-            this.stage.addChild(foo);
+            this.scoreOverlay = new OceanEaters.ScoreOverlay();
+            this.componentContainer.addChild(this.scoreOverlay);
         };
         Game.prototype.pointerDown = function (event) {
             for (var i = 0; i < this.touchPoints.length; ++i) {
@@ -626,6 +737,7 @@ var OceanEaters;
         };
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
+            dt = Math.min(.1, dt);
             // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
             //update input:
             var sumDx = 0;
@@ -725,15 +837,18 @@ var OceanEaters;
                 var to = new PIXI.Point(collectible.relativePosition.x - this.playerPos.x, collectible.relativePosition.y - this.playerPos.y);
                 var distance = Math.sqrt(to.x * to.x + to.y * to.y);
                 if (distance < .005) {
+                    this.scoreOverlay.pushCollectible(collectible);
                     var angle = Math.random() * 2 * Math.PI;
                     var srcX = collectible.relativePosition.x + Math.cos(angle) * .5;
                     var srcY = collectible.relativePosition.y + Math.sin(angle) * .5;
                     collectible.reset(srcX, srcY);
+                    //hide, will be properly reset next frame:
+                    collectible.scale.x = 0;
+                    collectible.scale.y = 0;
                 }
             }
-            // var toColl = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
-            // this.player.updateCompassDirection(dt, toColl, this.playerAngle, this.playerPos);
             this.player.compassAngle = this.playerAngle;
+            this.scoreOverlay.updateFrame(dt);
         };
         Game.prototype.getRelativeOceanPosition = function (p) {
             var toPosX = p.x - this.playerPos.x;
