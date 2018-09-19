@@ -43,7 +43,7 @@ module OceanEaters
         player:Player;
         buoysParent:PIXI.Container;
         buoys:BadBuoy[];
-        collectible:Collectible;
+        collectibles:Collectible[];
 
         constructor(w:number, h:number) {
             super(w, h, { antialias: true, backgroundColor : 0x000000, transparent : false });
@@ -81,7 +81,7 @@ module OceanEaters
             this.sky.resetLayout(0, 0, 800, 300);
             this.componentContainer.addChild(this.sky);
 
-            const reps:number = 6;
+            const reps:number = 5;
             this.buoysParent = new PIXI.Container();
             this.componentContainer.addChild(this.buoysParent);
             this.buoys = [];
@@ -95,9 +95,13 @@ module OceanEaters
                 }
             }
 
-            this.collectible = new Collectible();
-            this.buoys.push(this.collectible);
-            this.buoysParent.addChild(this.collectible);
+            this.collectibles = [];
+            while(this.collectibles.length < 5) {
+                var c = new Collectible();
+                this.collectibles.push(c);
+                this.buoys.push(c);
+                this.buoysParent.addChild(c);
+            }
 
             this.player = new Player();
             this.componentContainer.addChild(this.player);
@@ -301,13 +305,16 @@ module OceanEaters
                 this.buoysParent.setChildIndex(sorted[i], i);
             }
 
-            var to = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
-            var distance = Math.sqrt(to.x * to.x + to.y * to.y);
-            if(distance < .025) {
-                var angle = Math.random() * 2 * Math.PI;
-                var srcX = this.collectible.relativePosition.x + Math.cos(angle) * .5;
-                var srcY = this.collectible.relativePosition.y + Math.sin(angle) * .5;
-                this.collectible.reset(srcX, srcY);
+            for(var i:number=0; i<this.collectibles.length; ++i) {
+                var collectible = this.collectibles[i];
+                var to = new PIXI.Point(collectible.relativePosition.x - this.playerPos.x, collectible.relativePosition.y - this.playerPos.y);
+                var distance = Math.sqrt(to.x * to.x + to.y * to.y);
+                if(distance < .005) {
+                    var angle = Math.random() * 2 * Math.PI;
+                    var srcX = collectible.relativePosition.x + Math.cos(angle) * .5;
+                    var srcY = collectible.relativePosition.y + Math.sin(angle) * .5;
+                    collectible.reset(srcX, srcY);
+                }
             }
 
             // var toColl = new PIXI.Point(this.collectible.relativePosition.x - this.playerPos.x, this.collectible.relativePosition.y - this.playerPos.y);
