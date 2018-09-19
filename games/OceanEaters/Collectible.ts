@@ -27,11 +27,30 @@ module OceanEaters
 
             this.topGraphics = new PIXI.Graphics();
             this.topGraphics.clear();
-            this.topGraphics.lineStyle(3, 0xff0000);
-            this.topGraphics.moveTo(0,0);
-            this.topGraphics.arcTo(0,50,50,50,50);
+            this.topGraphics.lineStyle(3, 0xaaaaaa);
+            this.topGraphics.beginFill(0xffffff, 1);
+            this.topGraphics.moveTo(-20,0);
+            this.topGraphics.bezierCurveTo(-20,-35, 20,-35,20,0);
+            var teeth = 4;
+            for(var i:number=0; i<teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                this.topGraphics.lineTo(x,5 * ((i + 1) % 2));
+            }
+            this.topGraphics.drawEllipse(0,-28,5,2);
             this.addChild(this.topGraphics);
-            // this.topGraphics
+
+            this.bottomGraphics = new PIXI.Graphics();
+            this.bottomGraphics.clear();
+            this.bottomGraphics.lineStyle(3, 0xaaaaaa);
+            this.bottomGraphics.beginFill(0xffffff, 1);
+            this.bottomGraphics.moveTo(-20,0);
+            this.bottomGraphics.bezierCurveTo(-20,35, 20,35,20,0);
+            for(var i:number=0; i<teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                this.bottomGraphics.lineTo(x,5 * ((i + 1) % 2));
+            }
+            this.bottomGraphics.y = 10;
+            this.addChild(this.bottomGraphics);
         }
 
         reset(x:number, y:number) {

@@ -370,12 +370,30 @@ var OceanEaters;
             _this.reset(.5, .5);
             _this.topGraphics = new PIXI.Graphics();
             _this.topGraphics.clear();
-            _this.topGraphics.lineStyle(3, 0xff0000);
-            _this.topGraphics.moveTo(0, 0);
-            _this.topGraphics.arcTo(0, 50, 50, 50, 50);
+            _this.topGraphics.lineStyle(3, 0xaaaaaa);
+            _this.topGraphics.beginFill(0xffffff, 1);
+            _this.topGraphics.moveTo(-20, 0);
+            _this.topGraphics.bezierCurveTo(-20, -35, 20, -35, 20, 0);
+            var teeth = 4;
+            for (var i = 0; i < teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                _this.topGraphics.lineTo(x, 5 * ((i + 1) % 2));
+            }
+            _this.topGraphics.drawEllipse(0, -28, 5, 2);
             _this.addChild(_this.topGraphics);
+            _this.bottomGraphics = new PIXI.Graphics();
+            _this.bottomGraphics.clear();
+            _this.bottomGraphics.lineStyle(3, 0xaaaaaa);
+            _this.bottomGraphics.beginFill(0xffffff, 1);
+            _this.bottomGraphics.moveTo(-20, 0);
+            _this.bottomGraphics.bezierCurveTo(-20, 35, 20, 35, 20, 0);
+            for (var i = 0; i < teeth; ++i) {
+                var x = 20 - 40 * (i + 1) / (teeth);
+                _this.bottomGraphics.lineTo(x, 5 * ((i + 1) % 2));
+            }
+            _this.bottomGraphics.y = 10;
+            _this.addChild(_this.bottomGraphics);
             return _this;
-            // this.topGraphics
         }
         Collectible.prototype.reset = function (x, y) {
             var angle = Math.random() * 2 * Math.PI;
