@@ -40,6 +40,7 @@ module OceanEaters
         // touchContainerGraphics:PIXI.Graphics;
         componentMask:PIXI.Graphics;
         componentContainer:PIXI.Container;
+        componentBoundary:PIXI.Graphics;
         ocean:Ocean;
         sky:Sky;
         player:Player;
@@ -58,10 +59,21 @@ module OceanEaters
             this.stage.addChild(this.componentContainer);
             this.componentMask = new PIXI.Graphics();
             this.componentMask.beginFill(0xFFFFFF);
-            this.componentMask.drawRoundedRect(0, 0, w, h, 20);
+            this.componentMask.drawRect(0, 0, w, h);
             this.componentMask.endFill();
             this.componentMask.isMask = true;
             this.componentContainer.mask = this.componentMask;
+
+            this.componentBoundary = new PIXI.Graphics();
+            var thickness:number[] = [20, 15, 4];
+            var offset:number[] = [5, 5, 3];
+            var colors:number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
+            for(var i:number=0; i<2; ++i) {
+                var t = offset[i];
+                this.componentBoundary.lineStyle(thickness[i], colors[i]);
+                this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+            }
+            this.stage.addChild(this.componentBoundary);
         }
 
         setup() {
@@ -83,7 +95,7 @@ module OceanEaters
             this.sky.resetLayout(0, 0, 800, 300);
             this.componentContainer.addChild(this.sky);
 
-            const reps:number = 5;
+            const reps:number = 4;
             this.buoysParent = new PIXI.Container();
             this.componentContainer.addChild(this.buoysParent);
             this.buoys = [];
@@ -98,7 +110,7 @@ module OceanEaters
             }
 
             this.collectibles = [];
-            while(this.collectibles.length < 5) {
+            while(this.collectibles.length < 8) {
                 var c = new Collectible();
                 this.collectibles.push(c);
                 this.buoys.push(c);
@@ -187,9 +199,12 @@ module OceanEaters
             this.componentContainer.x = (w - 800) / 2;
             this.componentContainer.y = (h - 600) / 2;
 
+            this.componentBoundary.x = w / 2;
+            this.componentBoundary.y = h / 2;
+
             this.componentMask.clear();
             this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRoundedRect(this.componentContainer.x, this.componentContainer.y, 800, 600, 20);
+            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, 800, 600);
             this.componentMask.endFill();
 
             this.renderer.resize(w, h);

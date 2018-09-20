@@ -421,10 +421,11 @@ var OceanEaters;
             this.bottomGraphics.y = 10;
             this.bottomGraphics.scale.x = 3;
             this.bottomGraphics.scale.y = 3;
-            this.ringGraphics.beginFill(0xaaaaaa, 1);
-            this.ringGraphics.lineStyle(3, 0x888888, 1);
+            this.ringGraphics.beginFill(0xffffff, 1);
+            this.ringGraphics.lineStyle(9, 0xaaaaaa, 1);
             this.ringGraphics.drawEllipse(0, 0, 30, 15);
             this.ringGraphics.endFill();
+            this.ringGraphics.lineStyle(4, 0xaaaaaa, 1);
             this.ringGraphics.moveTo(-15, -5);
             this.ringGraphics.bezierCurveTo(-5, 0, 5, 0, 15, -5);
             this.ringGraphics.y = -80;
@@ -560,6 +561,36 @@ var OceanEaters;
 ///<reference path="Collectible.ts"/>
 var OceanEaters;
 (function (OceanEaters) {
+    var OverlayCollectElement = /** @class */ (function (_super) {
+        __extends(OverlayCollectElement, _super);
+        function OverlayCollectElement(hue, x, y, scale) {
+            var _this = _super.call(this, hue) || this;
+            _this.startPos = new PIXI.Point(x, y);
+            _this.startScale = scale;
+            _this.animParam = 0;
+            _this.updateFrame(0);
+            return _this;
+        }
+        OverlayCollectElement.prototype.updateFrame = function (dt) {
+            this.animParam = this.animParam + dt;
+            var t = Math.min(this.animParam, 1);
+            var currScale = 1;
+            if (t < .5) {
+                currScale = 1 + .5 * Math.sin(t * Math.PI);
+            }
+            else {
+                currScale = 1.5 * Math.cos((t - .5) * Math.PI);
+            }
+            var tt = t * t;
+            this.position.x = (1 - tt) * this.startPos.x + tt * 400 - Math.sin(t * Math.PI) * 300;
+            this.position.y = (1 - tt) * this.startPos.y + tt * 50;
+            this.scale.x = currScale;
+            this.scale.y = currScale;
+            this.rotation = 10 * Math.sin(t * .5 * Math.PI);
+        };
+        return OverlayCollectElement;
+    }(OceanEaters.CollectibleVisual));
+    OceanEaters.OverlayCollectElement = OverlayCollectElement;
     var ScoreOverlay = /** @class */ (function (_super) {
         __extends(ScoreOverlay, _super);
         function ScoreOverlay() {
@@ -582,14 +613,31 @@ var OceanEaters;
             _this.text.y = 25;
             _this.addChild(_this.text);
             _this.score = 0;
+            _this.wobbleAnimIt = 1.0;
+            _this.elements = [];
             return _this;
         }
         ScoreOverlay.prototype.updateFrame = function (dt) {
             this.text.text = ": " + this.score + (Math.random() < .5 ? "" : " ");
+            this.wobbleAnimIt = Math.min(this.wobbleAnimIt + dt / .5, 1.0);
+            var scaleX = 1. + .2 * Math.sin(this.wobbleAnimIt * 15.) * (1 - this.wobbleAnimIt);
+            this.collVisual.scale.x = .3 * scaleX;
+            this.collVisual.scale.y = .3 * (2 - scaleX);
+            for (var i = 0; i < this.elements.length; ++i) {
+                this.elements[i].updateFrame(dt);
+                if (this.elements[i].animParam > 1.0) {
+                    this.removeChild(this.elements[i]);
+                    this.elements.splice(i, 1);
+                    this.score = this.score + 1;
+                    this.wobbleAnimIt = 0;
+                    --i;
+                }
+            }
         };
         ScoreOverlay.prototype.pushCollectible = function (c) {
-            this.score = this.score + 1;
-            this.text.text = ": " + this.score;
+            var elem = new OverlayCollectElement(c.topVisual.hue, c.x, c.y + c.topVisual.y, c.scale.x);
+            this.addChild(elem);
+            this.elements.push(elem);
         };
         return ScoreOverlay;
     }(PIXI.Container));
@@ -621,10 +669,20 @@ var OceanEaters;
             _this.stage.addChild(_this.componentContainer);
             _this.componentMask = new PIXI.Graphics();
             _this.componentMask.beginFill(0xFFFFFF);
-            _this.componentMask.drawRoundedRect(0, 0, w, h, 20);
+            _this.componentMask.drawRect(0, 0, w, h);
             _this.componentMask.endFill();
             _this.componentMask.isMask = true;
             _this.componentContainer.mask = _this.componentMask;
+            _this.componentBoundary = new PIXI.Graphics();
+            var thickness = [20, 15, 4];
+            var offset = [5, 5, 3];
+            var colors = [0xaaaaaa, 0xffffff, 0xbbbbbb];
+            for (var i = 0; i < 2; ++i) {
+                var t = offset[i];
+                _this.componentBoundary.lineStyle(thickness[i], colors[i]);
+                _this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+            }
+            _this.stage.addChild(_this.componentBoundary);
             return _this;
         }
         Game.prototype.setup = function () {
@@ -642,7 +700,7 @@ var OceanEaters;
             this.sky = new OceanEaters.Sky();
             this.sky.resetLayout(0, 0, 800, 300);
             this.componentContainer.addChild(this.sky);
-            var reps = 5;
+            var reps = 4;
             this.buoysParent = new PIXI.Container();
             this.componentContainer.addChild(this.buoysParent);
             this.buoys = [];
@@ -656,7 +714,7 @@ var OceanEaters;
                 }
             }
             this.collectibles = [];
-            while (this.collectibles.length < 5) {
+            while (this.collectibles.length < 8) {
                 var c = new OceanEaters.Collectible();
                 this.collectibles.push(c);
                 this.buoys.push(c);
@@ -729,9 +787,11 @@ var OceanEaters;
             this.backgroundImage.y = (h - resHeight) / 2;
             this.componentContainer.x = (w - 800) / 2;
             this.componentContainer.y = (h - 600) / 2;
+            this.componentBoundary.x = w / 2;
+            this.componentBoundary.y = h / 2;
             this.componentMask.clear();
             this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRoundedRect(this.componentContainer.x, this.componentContainer.y, 800, 600, 20);
+            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, 800, 600);
             this.componentMask.endFill();
             this.renderer.resize(w, h);
         };
