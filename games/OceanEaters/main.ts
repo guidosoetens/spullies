@@ -5,6 +5,9 @@
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
 var keys = {37: 1, 38: 1, 39: 1, 40: 1};
 
+const APP_WIDTH = 800;
+const APP_HEIGHT = 600;
+
 function preventDefault(e) {
   e = e || window.event;
   if (e.preventDefault)
@@ -39,8 +42,6 @@ function enableScroll() {
 
 function fitApp(app:OceanEaters.Game) {
 
-    const gameWidth = 800;
-    const gameHeight = 600;
     const margin = 30;
 
     var body = document.getElementById('body');
@@ -53,8 +54,8 @@ function fitApp(app:OceanEaters.Game) {
     var p_height =  window.innerHeight;
     var p_ratio = p_width / p_height;
 
-    var containerWidth = gameWidth + 2 * margin;
-    var containerHeight = gameHeight + 2 * margin;
+    var containerWidth = APP_WIDTH + 2 * margin;
+    var containerHeight = APP_HEIGHT + 2 * margin;
     var containerInnerRatio = containerWidth / containerHeight;
 
     if(containerInnerRatio < p_ratio)
@@ -65,7 +66,7 @@ function fitApp(app:OceanEaters.Game) {
     var scale = p_width / containerWidth;
     app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", 0, 0)";
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
-    app.resize(containerWidth, containerHeight);
+    app.resize(containerWidth, containerHeight, APP_WIDTH, APP_HEIGHT);
 }
 
 window.onload = () => {

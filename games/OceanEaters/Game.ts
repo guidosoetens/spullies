@@ -65,15 +65,28 @@ module OceanEaters
             this.componentContainer.mask = this.componentMask;
 
             this.componentBoundary = new PIXI.Graphics();
+            // var thickness:number[] = [20, 15, 4];
+            // var offset:number[] = [5, 5, 3];
+            // var colors:number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
+            // for(var i:number=0; i<2; ++i) {
+            //     var t = offset[i];
+            //     this.componentBoundary.lineStyle(thickness[i], colors[i]);
+            //     this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+            // }
+            this.stage.addChild(this.componentBoundary);
+            // this.setInnerAppSize(800, 600);
+        }
+
+        setInnerAppSize(w:number, h:number) {
+            this.componentBoundary.clear();
             var thickness:number[] = [20, 15, 4];
             var offset:number[] = [5, 5, 3];
             var colors:number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
             for(var i:number=0; i<2; ++i) {
                 var t = offset[i];
                 this.componentBoundary.lineStyle(thickness[i], colors[i]);
-                this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+                this.componentBoundary.drawRoundedRect(-w/2 - t, -h/2 - t, w + 2 * t, h + 2 * t, 20 + t);
             }
-            this.stage.addChild(this.componentBoundary);
         }
 
         setup() {
@@ -187,7 +200,7 @@ module OceanEaters
             }
         }
 
-        resize(w:number, h:number) {
+        resize(w:number, h:number, appWidth:number, appHeight:number) {
             var bgScale = Math.max(w / 1920, h / 1080);
             this.backgroundImage.scale.x = bgScale;
             this.backgroundImage.scale.y = bgScale;
@@ -196,18 +209,19 @@ module OceanEaters
             this.backgroundImage.x = (w - resWidth) / 2;
             this.backgroundImage.y = (h - resHeight) / 2;
 
-            this.componentContainer.x = (w - 800) / 2;
-            this.componentContainer.y = (h - 600) / 2;
+            this.componentContainer.x = (w - appWidth) / 2;
+            this.componentContainer.y = (h - appHeight) / 2;
 
             this.componentBoundary.x = w / 2;
             this.componentBoundary.y = h / 2;
 
             this.componentMask.clear();
             this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, 800, 600);
+            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, appWidth, appHeight);
             this.componentMask.endFill();
 
             this.renderer.resize(w, h);
+            this.setInnerAppSize(appWidth, appHeight);
         }
 
         update() {

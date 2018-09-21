@@ -673,17 +673,29 @@ var OceanEaters;
             _this.componentMask.isMask = true;
             _this.componentContainer.mask = _this.componentMask;
             _this.componentBoundary = new PIXI.Graphics();
+            // var thickness:number[] = [20, 15, 4];
+            // var offset:number[] = [5, 5, 3];
+            // var colors:number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
+            // for(var i:number=0; i<2; ++i) {
+            //     var t = offset[i];
+            //     this.componentBoundary.lineStyle(thickness[i], colors[i]);
+            //     this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+            // }
+            _this.stage.addChild(_this.componentBoundary);
+            return _this;
+            // this.setInnerAppSize(800, 600);
+        }
+        Game.prototype.setInnerAppSize = function (w, h) {
+            this.componentBoundary.clear();
             var thickness = [20, 15, 4];
             var offset = [5, 5, 3];
             var colors = [0xaaaaaa, 0xffffff, 0xbbbbbb];
             for (var i = 0; i < 2; ++i) {
                 var t = offset[i];
-                _this.componentBoundary.lineStyle(thickness[i], colors[i]);
-                _this.componentBoundary.drawRoundedRect(-400 - t, -300 - t, 800 + 2 * t, 600 + 2 * t, 20 + t);
+                this.componentBoundary.lineStyle(thickness[i], colors[i]);
+                this.componentBoundary.drawRoundedRect(-w / 2 - t, -h / 2 - t, w + 2 * t, h + 2 * t, 20 + t);
             }
-            _this.stage.addChild(_this.componentBoundary);
-            return _this;
-        }
+        };
         Game.prototype.setup = function () {
             this.ticker.add(this.update, this);
             this.stage.interactive = true;
@@ -776,7 +788,7 @@ var OceanEaters;
                 }
             }
         };
-        Game.prototype.resize = function (w, h) {
+        Game.prototype.resize = function (w, h, appWidth, appHeight) {
             var bgScale = Math.max(w / 1920, h / 1080);
             this.backgroundImage.scale.x = bgScale;
             this.backgroundImage.scale.y = bgScale;
@@ -784,15 +796,16 @@ var OceanEaters;
             var resHeight = bgScale * 1080;
             this.backgroundImage.x = (w - resWidth) / 2;
             this.backgroundImage.y = (h - resHeight) / 2;
-            this.componentContainer.x = (w - 800) / 2;
-            this.componentContainer.y = (h - 600) / 2;
+            this.componentContainer.x = (w - appWidth) / 2;
+            this.componentContainer.y = (h - appHeight) / 2;
             this.componentBoundary.x = w / 2;
             this.componentBoundary.y = h / 2;
             this.componentMask.clear();
             this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, 800, 600);
+            this.componentMask.drawRect(this.componentContainer.x, this.componentContainer.y, appWidth, appHeight);
             this.componentMask.endFill();
             this.renderer.resize(w, h);
+            this.setInnerAppSize(appWidth, appHeight);
         };
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
@@ -942,6 +955,8 @@ var OceanEaters;
 // left: 37, up: 38, right: 39, down: 40,
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
 var keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
+var APP_WIDTH = 800;
+var APP_HEIGHT = 600;
 function preventDefault(e) {
     e = e || window.event;
     if (e.preventDefault)
@@ -971,8 +986,6 @@ function enableScroll() {
     document.onkeydown = null;
 }
 function fitApp(app) {
-    var gameWidth = 800;
-    var gameHeight = 600;
     var margin = 30;
     var body = document.getElementById('body');
     body.style.width = window.innerWidth + "px";
@@ -982,8 +995,8 @@ function fitApp(app) {
     var p_width = window.innerWidth;
     var p_height = window.innerHeight;
     var p_ratio = p_width / p_height;
-    var containerWidth = gameWidth + 2 * margin;
-    var containerHeight = gameHeight + 2 * margin;
+    var containerWidth = APP_WIDTH + 2 * margin;
+    var containerHeight = APP_HEIGHT + 2 * margin;
     var containerInnerRatio = containerWidth / containerHeight;
     if (containerInnerRatio < p_ratio)
         containerWidth = containerHeight * p_ratio;
@@ -992,7 +1005,7 @@ function fitApp(app) {
     var scale = p_width / containerWidth;
     app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", 0, 0)";
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
-    app.resize(containerWidth, containerHeight);
+    app.resize(containerWidth, containerHeight, APP_WIDTH, APP_HEIGHT);
 }
 window.onload = function () {
     disableScroll();
