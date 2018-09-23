@@ -695,6 +695,8 @@ var OceanEaters;
                 this.componentBoundary.lineStyle(thickness[i], colors[i]);
                 this.componentBoundary.drawRoundedRect(-w / 2 - t, -h / 2 - t, w + 2 * t, h + 2 * t, 20 + t);
             }
+            this.componentContainer.scale.x = w / 800;
+            this.componentContainer.scale.y = h / 600;
         };
         Game.prototype.setup = function () {
             this.ticker.add(this.update, this);
@@ -810,7 +812,7 @@ var OceanEaters;
         Game.prototype.update = function () {
             var dt = this.ticker.elapsedMS * .001;
             dt = Math.min(.1, dt);
-            // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
+            this.debugText.text = "FPS: 30"; // + Math.round(1.0 / dt);
             //update input:
             var sumDx = 0;
             var centerX = this.screen.width / 2.0;
@@ -826,7 +828,7 @@ var OceanEaters;
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
                 this.touchPoints[i].timeAlive += dt;
-                // this.debugText.text += "\n" + this.touchPoints[i].currentY;
+                this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
             if (this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
@@ -955,8 +957,8 @@ var OceanEaters;
 // left: 37, up: 38, right: 39, down: 40,
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
 var keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
-var APP_WIDTH = 800;
-var APP_HEIGHT = 600;
+var APP_WIDTH = 800; //400;//400;//800;
+var APP_HEIGHT = 600; //300;//300;//600;
 function preventDefault(e) {
     e = e || window.event;
     if (e.preventDefault)

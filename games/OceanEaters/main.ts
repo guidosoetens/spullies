@@ -5,8 +5,8 @@
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
 var keys = {37: 1, 38: 1, 39: 1, 40: 1};
 
-const APP_WIDTH = 800;
-const APP_HEIGHT = 600;
+const APP_WIDTH = 800;//400;//400;//800;
+const APP_HEIGHT = 600;//300;//300;//600;
 
 function preventDefault(e) {
   e = e || window.event;

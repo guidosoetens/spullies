@@ -87,6 +87,9 @@ module OceanEaters
                 this.componentBoundary.lineStyle(thickness[i], colors[i]);
                 this.componentBoundary.drawRoundedRect(-w/2 - t, -h/2 - t, w + 2 * t, h + 2 * t, 20 + t);
             }
+
+            this.componentContainer.scale.x = w / 800;
+            this.componentContainer.scale.y = h / 600;
         }
 
         setup() {
@@ -227,7 +230,7 @@ module OceanEaters
         update() {
             var dt = this.ticker.elapsedMS * .001;
             dt = Math.min(.1, dt);
-            // this.debugText.text = "FPS: " + Math.round(1.0 / dt) + " " + this.screen.width;
+            this.debugText.text = "FPS: 30";// + Math.round(1.0 / dt);
 
             //update input:
 
@@ -245,7 +248,7 @@ module OceanEaters
                     dx = Math.sign(dx);
                 sumDx += factor * dx;
                 this.touchPoints[i].timeAlive += dt;
-                // this.debugText.text += "\n" + this.touchPoints[i].currentY;
+                this.debugText.text += "\n" + this.touchPoints[i].currentY;
             }
             if(this.touchPoints.length > 0)
                 sumDx /= this.touchPoints.length;
