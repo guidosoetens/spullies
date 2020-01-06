@@ -207,7 +207,6 @@ module CircuitFreaks
             }
         }
 
-
         updateState(dt:number) {
             switch(this.state) {
                 case BoardState.Idle:
@@ -222,7 +221,7 @@ module CircuitFreaks
                     this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
                     break;
                 case BoardState.Drop:
-                    this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
+                    this.updateCurrentState(dt, 0.66, BoardState.ProcessCircuits);
                     break;
                 case BoardState.ProcessCircuits:
                     //not a continuous state: changes to other state when set to 'ProcessCircuits'
@@ -348,28 +347,26 @@ module CircuitFreaks
 
             var offset = -(set.tiles.length - 1) * .5 * this.tileWidth;
 
+            var slotsAvailable = true;
             var column = Math.floor((pos.x - this.boardWidth / 2.0 + (set.isHorizontal ? offset : 0)) / this.tileWidth + this.columns / 2.0);
             if(column < 0 || column > this.columns - stepCols) 
-                return false;
+                slotsAvailable = false;
 
             var row = Math.floor((pos.y - this.boardHeight / 2.0 + (set.isHorizontal ? 0 : offset)) / this.tileWidth + this.rows / 2.0);
             if(row < 0 || row > this.rows - stepRows) 
-                return false;
+                slotsAvailable = false;
 
             //make sure slots are empty:
-            var allEmpty = true;
-            for(var i:number=0; i<set.tiles.length && allEmpty; ++i) {
+            for(var i:number=0; i<set.tiles.length && slotsAvailable; ++i) {
                 var calcRow = row + (set.isHorizontal ? 0 : i);
                 var calcCol = column + (set.isHorizontal ? i : 0);
                 if(this.slots[calcRow][calcCol] != null)
-                    allEmpty = false;
+                    slotsAvailable = false;
             }
 
-            
+            if(slotsAvailable) {
 
-            if(allEmpty) {
-
-                for(var i:number=0; i<set.tiles.length && allEmpty; ++i) {
+                for(var i:number=0; i<set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
                     var calcCol = column + (set.isHorizontal ? i : 0);
                     var tile = new Tile(this.tileWidth, set.tiles[i].type);
@@ -389,8 +386,19 @@ module CircuitFreaks
                 return true;
             }
             else {
-                this.circuitDetector.degradeDeadlock(row, column);
-                this.setState(BoardState.DegradeDeadlock);
+
+                column = Math.floor((pos.x - this.boardWidth / 2.0) / this.tileWidth + this.columns / 2.0);
+                if(column < 0 || column >= this.columns) 
+                    return false;
+    
+                row = Math.floor((pos.y - this.boardHeight / 2.0) / this.tileWidth + this.rows / 2.0);
+                if(row < 0 || row >= this.rows) 
+                    return false;
+
+                if(this.slots[row][column] != null) {
+                    this.circuitDetector.degradeDeadlock(row, column);
+                    this.setState(BoardState.DegradeDeadlock);
+                }
             }
 
             return false;

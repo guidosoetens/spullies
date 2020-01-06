@@ -443,9 +443,20 @@ module CircuitFreaks
                     break;
                 case TileState.Dropping:
                     {
-                        var t = 1 - easeBounceOut(this.stateParameter);
-                        this.graphics.position.y = t * this.dropDistance;
-                        this.updateCurrentState(dt, 0.5, TileState.Idle);
+                        var t = this.stateParameter;//1 - easeBounceOut(this.stateParameter);
+                        let dropFrac = 0.66;
+                        if(t < dropFrac) {
+                            let tt = t / dropFrac;
+                            this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
+                        }
+                        else {
+                            let tt = (t - dropFrac) / (1 - dropFrac);
+                            this.graphics.position.y = 0;
+                            this.graphics.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
+                            this.graphics.scale.y = 2 - this.graphics.scale.x;
+                        }
+                        // this.graphics.position.y = t * this.dropDistance;
+                        this.updateCurrentState(dt, 0.66, TileState.Idle);
                     }
                     break;
                 case TileState.Degrading:

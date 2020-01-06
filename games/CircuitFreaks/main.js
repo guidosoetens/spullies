@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    };
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -495,9 +495,20 @@ var CircuitFreaks;
                     break;
                 case TileState.Dropping:
                     {
-                        var t = 1 - CircuitFreaks.easeBounceOut(this.stateParameter);
-                        this.graphics.position.y = t * this.dropDistance;
-                        this.updateCurrentState(dt, 0.5, TileState.Idle);
+                        var t = this.stateParameter; //1 - easeBounceOut(this.stateParameter);
+                        var dropFrac = 0.66;
+                        if (t < dropFrac) {
+                            var tt = t / dropFrac;
+                            this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
+                        }
+                        else {
+                            var tt = (t - dropFrac) / (1 - dropFrac);
+                            this.graphics.position.y = 0;
+                            this.graphics.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
+                            this.graphics.scale.y = 2 - this.graphics.scale.x;
+                        }
+                        // this.graphics.position.y = t * this.dropDistance;
+                        this.updateCurrentState(dt, 0.66, TileState.Idle);
                     }
                     break;
                 case TileState.Degrading:
@@ -1209,7 +1220,7 @@ var CircuitFreaks;
                     this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
                     break;
                 case BoardState.Drop:
-                    this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
+                    this.updateCurrentState(dt, 0.66, BoardState.ProcessCircuits);
                     break;
                 case BoardState.ProcessCircuits:
                     //not a continuous state: changes to other state when set to 'ProcessCircuits'
@@ -1315,22 +1326,22 @@ var CircuitFreaks;
             else
                 stepRows = set.tiles.length;
             var offset = -(set.tiles.length - 1) * .5 * this.tileWidth;
+            var slotsAvailable = true;
             var column = Math.floor((pos.x - this.boardWidth / 2.0 + (set.isHorizontal ? offset : 0)) / this.tileWidth + this.columns / 2.0);
             if (column < 0 || column > this.columns - stepCols)
-                return false;
+                slotsAvailable = false;
             var row = Math.floor((pos.y - this.boardHeight / 2.0 + (set.isHorizontal ? 0 : offset)) / this.tileWidth + this.rows / 2.0);
             if (row < 0 || row > this.rows - stepRows)
-                return false;
+                slotsAvailable = false;
             //make sure slots are empty:
-            var allEmpty = true;
-            for (var i = 0; i < set.tiles.length && allEmpty; ++i) {
+            for (var i = 0; i < set.tiles.length && slotsAvailable; ++i) {
                 var calcRow = row + (set.isHorizontal ? 0 : i);
                 var calcCol = column + (set.isHorizontal ? i : 0);
                 if (this.slots[calcRow][calcCol] != null)
-                    allEmpty = false;
+                    slotsAvailable = false;
             }
-            if (allEmpty) {
-                for (var i = 0; i < set.tiles.length && allEmpty; ++i) {
+            if (slotsAvailable) {
+                for (var i = 0; i < set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
                     var calcCol = column + (set.isHorizontal ? i : 0);
                     var tile = new CircuitFreaks.Tile(this.tileWidth, set.tiles[i].type);
@@ -1347,8 +1358,16 @@ var CircuitFreaks;
                 return true;
             }
             else {
-                this.circuitDetector.degradeDeadlock(row, column);
-                this.setState(BoardState.DegradeDeadlock);
+                column = Math.floor((pos.x - this.boardWidth / 2.0) / this.tileWidth + this.columns / 2.0);
+                if (column < 0 || column >= this.columns)
+                    return false;
+                row = Math.floor((pos.y - this.boardHeight / 2.0) / this.tileWidth + this.rows / 2.0);
+                if (row < 0 || row >= this.rows)
+                    return false;
+                if (this.slots[row][column] != null) {
+                    this.circuitDetector.degradeDeadlock(row, column);
+                    this.setState(BoardState.DegradeDeadlock);
+                }
             }
             return false;
         };
