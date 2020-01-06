@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Polygon Level Editor</title>
+    <script src="../libs/phaser/phaser.js"></script>
+    <script src="sidePanel.js"></script>
+    <script src="main.js"></script>
+    <script src="topPanel.js"></script>
+</head>
+<body>
+    <h1>Polygon Level Editor:</h1>
+    <button onclick="clearClicked()">CLEAR</button>
+    <button onclick="loadClicked()">LOAD</button>
+    <button onclick="saveClicked()">SAVE</button>
+    <button id="btnAnimate" onclick="btnAnimateClicked()">PLAY ANIMATION</button><br/><br/>
+    <div id="content" oncontextmenu="javascript:return false;" style="float:left;"></div>
+    <div id="rightPanel" style="background:lightblue; width:200px; float:left; padding:10px; border-radius:10px; margin-left:10px;">
+        
+        <label style="display:block;text-align:center;">POLYGON</label><br/>
+        
+        <!--input id="cbIsObstacle" type="checkbox" onchange="formChanged()">Is Obstacle</input-->
+        <select id="optsType" style="width:100%;" onchange="formChanged()">
+            <option value="obstacle">Obstacle</option>
+            <option value="hill">Hill</option>
+            <option value="sand">Sand</option>
+        </select><br/>
+        
+        <hr>
+        
+        <!-- Translation X -->
+        <input id="cbTransX" type="checkbox" onchange="formChanged()">Translate X</input><br/>
+        <select id="optsTransX" style="width:100%;" onchange="formChanged()">
+            <option value="cos">Cos</option>
+            <option value="sin">Sin</option>
+            <option value="negcos">Neg Cos</option>
+            <option value="negsin">Neg Sin</option>
+        </select><br/>
+        <table style="width:100%;">
+            <tr>
+                <td>Duration:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationTransX', -1, 1, 10)">◀</button></td>
+                <td style="width:50px;"><label id='lblDurationTransX' style="display:block;text-align:center;">3</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationTransX', 1, 1, 10)">▶</button></td>
+            </tr>
+        </table>
+        <table style="width:100%;">
+            <tr>
+                <td>Offset:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetTransX', -10, 10, 200)">◀</button></td>
+                <td style="width:50px;"><label id='lblOffsetTransX' style="display:block;text-align:center;">20</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetTransX', 10, 10, 200)">▶</button></td>
+            </tr>
+        </table>
+        
+        <hr>
+        
+        <!-- Translation Y -->
+        <input id="cbTransY" type="checkbox" onchange="formChanged()">Translate Y</input><br/>
+        <select id="optsTransY" style="width:100%;" onchange="formChanged()">
+            <option value="cos">Cos</option>
+            <option value="sin">Sin</option>
+            <option value="negcos">Neg Cos</option>
+            <option value="negsin">Neg Sin</option>
+        </select><br/>
+        <table style="width:100%;">
+            <tr>
+                <td>Duration:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationTransY', -1, 1, 10)">◀</button></td>
+                <td style="width:50px;"><label id='lblDurationTransY' style="display:block;text-align:center;">3</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationTransY', 1, 1, 10)">▶</button></td>
+            </tr>
+        </table>
+        <table style="width:100%;">
+            <tr>
+                <td>Offset:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetTransY', -10, 10, 200)">◀</button></td>
+                <td style="width:50px;"><label id='lblOffsetTransY' style="display:block;text-align:center;">20</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetTransY', 10, 10, 200)">▶</button></td>
+            </tr>
+        </table>
+        
+        <hr>
+        
+        <!-- Rotation -->
+        <input id="cbRotate" type="checkbox" onchange="formChanged()">Rotate</input><br/>
+        <select id="optsRotDir" style="width:100%;" onchange="formChanged()">
+            <option value="cw">Clockwise</option>
+            <option value="ccw">Counterclockwise</option>
+            <option value="osc">Oscillate</option>
+        </select><br/>
+        <select id="optsRot" style="width:100%;" onchange="formChanged()">
+            <option value="cos">Cos</option>
+            <option value="sin">Sin</option>
+            <option value="negcos">Neg Cos</option>
+            <option value="negsin">Neg Sin</option>
+        </select>
+        <table id="tblRotDuration" style="width:100%;">
+            <tr>
+                <td>Duration:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationRot', -1, 1, 10)">◀</button></td>
+                <td style="width:50px;"><label id='lblDurationRot' style="display:block;text-align:center;">3</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblDurationRot', 1, 1, 10)">▶</button></td>
+            </tr>
+        </table>
+        <table id="tblRotOffset" style="width:100%;">
+            <tr>
+                <td>Offset:</td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetRot', -10, -360, 360)">◀</button></td>
+                <td style="width:50px;"><label id='lblOffsetRot' style="display:block;text-align:center;">0</label></td>
+                <td style="width:30px;"><button style="width:100%;" onclick="changeValue('lblOffsetRot', 10, -360, 360)">▶</button></td>
+            </tr>
+        </table>
+        
+        <hr>
+        
+        <!-- COPY -->
+        <button id="btnClick" onclick="copyPolygonClicked()" style="width:100%;">COPY</button>
+        
+        <!-- Deletion -->
+        <button id="btnDelete" onclick="deletePolygonClicked()" style="width:100%;">DELETE</button>
+        
+    </div>
+    
+    <div id="nodePanel" style="background:antiquewhite; width:200px; float:left; padding:10px; border-radius:10px; margin-left:10px;">
+    
+        <label style="display:block;text-align:center;">NODE</label><br/>
+
+        <input id="cbUseTangents" type="checkbox" onchange="useTangentsChanged()">Use Tangents</input><br/>
+
+        <div style="margin-left:20px;">
+
+            <input id="cbLockTangents" type="checkbox" onchange="formChanged()">Lock Tangents</input><br/>
+            
+            <input id="cbTangent1" type="checkbox" onchange="formChanged()">CW Tangent</input><br/>
+            
+            <input id="cbTangent2" type="checkbox" onchange="formChanged()">CCW Tangent</input>
+
+        </div>
+        
+        <br/>
+
+        <!--hr>
+        
+        <button style="width:100%;">RESET NODE</button-->
+    </div>
+</body>
+</html>

@@ -4,7 +4,7 @@
     "version": "0.1.0",
     "command": "tsc",
     "isShellCommand": true,
-    "args": [ "--out", "OceanEaters/main.js", "OceanEaters/main.ts", "--target", "ES5" ],//"args": ["-p", "."],
+    "args": [ "--out", "CircuitFreaks/main.js", "CircuitFreaks/main.ts", "--target", "ES5" ],//"args": ["-p", "."],
     "showOutput": "silent",
     "problemMatcher": "$tsc",
     "isBuildCommand" : true
