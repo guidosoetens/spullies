@@ -18,6 +18,37 @@ module CircuitFreaks
         Count
     }
 
+    export class TileDescriptor {
+        type:TileType;
+        groupIndex:number;
+
+        constructor(type:TileType, groupIndex:number) {
+            this.type = type;
+            this.groupIndex = groupIndex;
+        }
+    }
+
+    export class BoardDescriptor {
+        rows:number;
+        columns:number
+        tiles:TileDescriptor[];
+
+        constructor(rows:number, columns:number, tiles:TileDescriptor[]) {
+            this.rows = rows;
+            this.columns = columns;
+            this.tiles = tiles;
+        }
+    }
+
+    export class TilePanelDescriptor {
+        currentType:TileType[];
+        nextTypes:TileType[][];
+        constructor(currentType:TileType[], nextTypes:TileType[][]) {
+            this.currentType = currentType;
+            this.nextTypes = nextTypes;
+        }
+    }
+
     export function rotateTypeCW(type:TileType) : TileType {
         switch(type) {
             case TileType.Curve_NE:

@@ -444,7 +444,7 @@ module CircuitFreaks
                 case TileState.Dropping:
                     {
                         var t = this.stateParameter;//1 - easeBounceOut(this.stateParameter);
-                        let dropFrac = 0.66;
+                        let dropFrac = 0.5;
                         if(t < dropFrac) {
                             let tt = t / dropFrac;
                             this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;

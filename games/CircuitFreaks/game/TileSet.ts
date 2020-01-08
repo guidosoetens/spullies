@@ -5,6 +5,7 @@ module CircuitFreaks
 {
     export class TileSet extends PIXI.Container {
 
+        types:TileType[];
         tiles:Tile[];
         tileWidth:number;
 
@@ -13,6 +14,8 @@ module CircuitFreaks
 
         constructor(tileWidth:number, types:TileType[]) {
             super();
+
+            this.types = types;
             this.tileWidth = tileWidth;
             this.tiles = [];
 

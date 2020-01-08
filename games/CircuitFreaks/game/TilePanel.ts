@@ -6,6 +6,8 @@ module CircuitFreaks
 {
     export class TilePanel extends PIXI.Container {
 
+        prevSet:TileSet;
+
         nextSets:TileSet[];
         nextTypes:TileType[][];
 
@@ -34,6 +36,23 @@ module CircuitFreaks
             this.nextSets = [];
             this.resetPanel();
             this.setSelectedIndex(Math.min(this.tileCount - 1, 0));
+
+            this.prevSet = null;
+        }
+
+        undo() {
+            if(this.prevSet == null)
+                return;
+
+            var curr = this.nextSets[this.selectedIndex];
+            if(curr != null) {
+                this.nextTypes.splice(0, 0, curr.types);
+                this.removeChild(curr);
+            }
+
+            this.nextSets[this.selectedIndex] = this.prevSet;
+            this.addChild(this.prevSet);
+            this.prevSet = null;
         }
 
         update(dt:number) {
@@ -45,12 +64,15 @@ module CircuitFreaks
             this.nextTypes = [];
             for(var i:number = 0; i<this.tileCount; ++i)
                 this.changeTile(i);
+            this.prevSet = null;
         }
 
         changeTile(index:number) {
 
-            if(this.nextSets[index] != null)
-                this.removeChild(this.nextSets[index]);
+            if(this.nextSets[index] != null) {
+                this.prevSet = this.nextSets[index];
+                this.removeChild(this.prevSet);
+            }
 
             var tileSet = new TileSet(this.tileWidth, this.getNextType());
             this.nextSets[index] = tileSet;
@@ -92,7 +114,9 @@ module CircuitFreaks
 
             if(this.nextTypes.length == 0) {
 
-                var topTypes = [ TileType.Curve_NE, TileType.Curve_NW, TileType.Curve_SE, TileType.Curve_SW, TileType.Double_NW, TileType.Double_NE ];
+                var topTypes = [ TileType.Curve_NE, TileType.Curve_NW, TileType.Curve_SE, TileType.Curve_SW, 
+                                TileType.Double_NW, TileType.Double_NE,
+                                TileType.Straight_H, TileType.Straight_V ];
                 var btmTypes =  [...topTypes];
                 this.shuffle(btmTypes);
 

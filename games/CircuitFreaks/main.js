@@ -30,6 +30,14 @@ var CircuitFreaks;
         TileType[TileType["Trash"] = 11] = "Trash";
         TileType[TileType["Count"] = 12] = "Count";
     })(TileType = CircuitFreaks.TileType || (CircuitFreaks.TileType = {}));
+    var TileDescriptor = /** @class */ (function () {
+        function TileDescriptor(type, groupIndex) {
+            this.type = type;
+            this.groupIndex = groupIndex;
+        }
+        return TileDescriptor;
+    }());
+    CircuitFreaks.TileDescriptor = TileDescriptor;
     function rotateTypeCW(type) {
         switch (type) {
             case TileType.Curve_NE:
@@ -496,7 +504,7 @@ var CircuitFreaks;
                 case TileState.Dropping:
                     {
                         var t = this.stateParameter; //1 - easeBounceOut(this.stateParameter);
-                        var dropFrac = 0.66;
+                        var dropFrac = 0.5;
                         if (t < dropFrac) {
                             var tt = t / dropFrac;
                             this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
@@ -1065,10 +1073,13 @@ var CircuitFreaks;
             _this.stateParameter = 0;
             //create empty grid:
             _this.slots = [];
+            _this.snapshot = [];
             for (var i = 0; i < _this.rows; ++i) {
                 _this.slots[i] = [];
+                _this.snapshot[i] = [];
                 for (var j = 0; j < _this.columns; ++j) {
                     _this.slots[i][j] = null;
+                    _this.snapshot[i][j] = null;
                 }
             }
             _this.circuitDetector = new CircuitFreaks.CircuitDetector(_this.slots, _this.rows, _this.columns);
@@ -1091,8 +1102,35 @@ var CircuitFreaks;
             }
             _this.addChild(grid);
             _this.resetBoard();
+            _this.createSnapshot();
             return _this;
         }
+        Board.prototype.createSnapshot = function () {
+            for (var i = 0; i < this.rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
+                    var tile = this.slots[i][j];
+                    this.snapshot[i][j] = (tile == null) ? null : new CircuitFreaks.TileDescriptor(tile.type, tile.groupIndex);
+                }
+            }
+        };
+        Board.prototype.revertToSnapshot = function () {
+            this.clearBoard();
+            for (var i = 0; i < this.rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
+                    if (this.snapshot[i][j] != null) {
+                        var desc = this.snapshot[i][j];
+                        var tile = new CircuitFreaks.Tile(this.tileWidth, desc.type);
+                        var res = this.toScreenPos(i, j);
+                        tile.position.x = res.x;
+                        tile.position.y = res.y;
+                        this.slots[i][j] = tile;
+                        this.addChild(tile);
+                        tile.groupIndex = desc.groupIndex;
+                        tile.redraw();
+                    }
+                }
+            }
+        };
         Board.prototype.clearBoard = function () {
             while (this.discardTiles.length > 0) {
                 this.removeChild(this.discardTiles[0]);
@@ -1161,6 +1199,9 @@ var CircuitFreaks;
                 }
             }
             this.setState(BoardState.Idle);
+        };
+        Board.prototype.undo = function () {
+            this.revertToSnapshot();
         };
         Board.prototype.setState = function (state) {
             this.state = state;
@@ -1341,6 +1382,7 @@ var CircuitFreaks;
                     slotsAvailable = false;
             }
             if (slotsAvailable) {
+                this.createSnapshot();
                 for (var i = 0; i < set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
                     var calcCol = column + (set.isHorizontal ? i : 0);
@@ -1365,6 +1407,7 @@ var CircuitFreaks;
                 if (row < 0 || row >= this.rows)
                     return false;
                 if (this.slots[row][column] != null) {
+                    this.createSnapshot();
                     this.circuitDetector.degradeDeadlock(row, column);
                     this.setState(BoardState.DegradeDeadlock);
                 }
@@ -1383,6 +1426,7 @@ var CircuitFreaks;
         __extends(TileSet, _super);
         function TileSet(tileWidth, types) {
             var _this = _super.call(this) || this;
+            _this.types = types;
             _this.tileWidth = tileWidth;
             _this.tiles = [];
             _this.rotateAnimParam = 1;
@@ -1460,8 +1504,21 @@ var CircuitFreaks;
             _this.nextSets = [];
             _this.resetPanel();
             _this.setSelectedIndex(Math.min(_this.tileCount - 1, 0));
+            _this.prevSet = null;
             return _this;
         }
+        TilePanel.prototype.undo = function () {
+            if (this.prevSet == null)
+                return;
+            var curr = this.nextSets[this.selectedIndex];
+            if (curr != null) {
+                this.nextTypes.splice(0, 0, curr.types);
+                this.removeChild(curr);
+            }
+            this.nextSets[this.selectedIndex] = this.prevSet;
+            this.addChild(this.prevSet);
+            this.prevSet = null;
+        };
         TilePanel.prototype.update = function (dt) {
             for (var i = 0; i < this.nextSets.length; ++i)
                 this.nextSets[i].update(dt);
@@ -1470,10 +1527,13 @@ var CircuitFreaks;
             this.nextTypes = [];
             for (var i = 0; i < this.tileCount; ++i)
                 this.changeTile(i);
+            this.prevSet = null;
         };
         TilePanel.prototype.changeTile = function (index) {
-            if (this.nextSets[index] != null)
-                this.removeChild(this.nextSets[index]);
+            if (this.nextSets[index] != null) {
+                this.prevSet = this.nextSets[index];
+                this.removeChild(this.prevSet);
+            }
             var tileSet = new CircuitFreaks.TileSet(this.tileWidth, this.getNextType());
             this.nextSets[index] = tileSet;
             this.addChild(tileSet);
@@ -1504,7 +1564,9 @@ var CircuitFreaks;
         };
         TilePanel.prototype.getNextType = function () {
             if (this.nextTypes.length == 0) {
-                var topTypes = [CircuitFreaks.TileType.Curve_NE, CircuitFreaks.TileType.Curve_NW, CircuitFreaks.TileType.Curve_SE, CircuitFreaks.TileType.Curve_SW, CircuitFreaks.TileType.Double_NW, CircuitFreaks.TileType.Double_NE];
+                var topTypes = [CircuitFreaks.TileType.Curve_NE, CircuitFreaks.TileType.Curve_NW, CircuitFreaks.TileType.Curve_SE, CircuitFreaks.TileType.Curve_SW,
+                    CircuitFreaks.TileType.Double_NW, CircuitFreaks.TileType.Double_NE,
+                    CircuitFreaks.TileType.Straight_H, CircuitFreaks.TileType.Straight_V];
                 var btmTypes = topTypes.slice();
                 this.shuffle(btmTypes);
                 for (var i in btmTypes)
@@ -1542,9 +1604,55 @@ var CircuitFreaks;
     CircuitFreaks.TilePanel = TilePanel;
 })(CircuitFreaks || (CircuitFreaks = {}));
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
+///<reference path="Defs.ts"/>
+var CircuitFreaks;
+(function (CircuitFreaks) {
+    var Button = /** @class */ (function (_super) {
+        __extends(Button, _super);
+        function Button(text, func) {
+            var _this = _super.call(this) || this;
+            _this.func = func;
+            var base_width = 50;
+            var radius = 20.0;
+            var hw = base_width / 2.0;
+            _this.graphics = new PIXI.Graphics();
+            _this.graphics.beginFill(0x22ff22);
+            _this.graphics.lineStyle(.2 * radius, 0xffffff, 1);
+            _this.graphics.moveTo(-hw, -radius);
+            _this.graphics.lineTo(hw, -radius);
+            _this.graphics.arc(hw, 0, radius, -.5 * Math.PI, .5 * Math.PI);
+            _this.graphics.lineTo(-hw, radius);
+            _this.graphics.arc(-hw, 0, radius, .5 * Math.PI, 1.5 * Math.PI);
+            _this.graphics.endFill();
+            _this.graphics.beginFill(0xffffff, 0.5);
+            _this.graphics.lineStyle(0);
+            _this.graphics.drawCircle(.5 * base_width, -.25 * radius, .5 * radius);
+            _this.graphics.endFill();
+            _this.addChild(_this.graphics);
+            _this.text = new PIXI.Text(text);
+            _this.text.style.fontFamily = "groboldregular";
+            _this.text.style.fontSize = 40;
+            _this.text.style.stroke = 0xffffff;
+            _this.text.style.fill = 0xffffff;
+            _this.text.anchor.set(0.5, 0.5);
+            _this.text.style.dropShadow = true;
+            _this.text.style.dropShadowAlpha = .5;
+            _this.text.x = 0;
+            _this.text.y = 0;
+            _this.addChild(_this.text);
+            // this.text.text = ": ssdsds";
+            console.log(_this.text.text, _this.text.parent);
+            return _this;
+        }
+        return Button;
+    }(PIXI.Container));
+    CircuitFreaks.Button = Button;
+})(CircuitFreaks || (CircuitFreaks = {}));
+///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Board.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="TilePanel.ts"/>
+///<reference path="Button.ts"/>
 var CircuitFreaks;
 (function (CircuitFreaks) {
     var Game = /** @class */ (function (_super) {
@@ -1560,19 +1668,47 @@ var CircuitFreaks;
             _this.tilePanel.x = w / 2.0;
             _this.tilePanel.y = h * .9;
             _this.addChild(_this.tilePanel);
-            _this.board = new CircuitFreaks.Board(w * 0.95, h * 0.775);
+            _this.board = new CircuitFreaks.Board(w * 0.95, h * 0.7);
             _this.board.x = w * 0.025;
-            _this.board.y = h * 0.025;
+            _this.board.y = h * 0.1;
             _this.addChild(_this.board);
+            _this.buttons = [];
+            var txts = ['♚', '♞', '↺'];
+            var callbacks = [_this.resetGame, _this.loadDefault, _this.undo];
+            for (var i = 0; i < txts.length; ++i) {
+                var btn = new CircuitFreaks.Button(txts[i], callbacks[i]);
+                btn.x = w * (i + 1) / 4.0;
+                btn.y = h * .05;
+                _this.addChild(btn);
+                _this.buttons.push(btn);
+            }
             return _this;
         }
         Game.prototype.resetGame = function () {
+            this.board.clearBoard();
+            this.tilePanel.resetPanel();
+        };
+        Game.prototype.loadDefault = function () {
+            this.board.resetBoard();
+            this.tilePanel.resetPanel();
+        };
+        Game.prototype.undo = function () {
+            this.board.undo();
+            this.tilePanel.undo();
         };
         Game.prototype.update = function (dt) {
             this.board.update(dt);
             this.tilePanel.update(dt);
         };
         Game.prototype.touchDown = function (p) {
+            for (var _i = 0, _a = this.buttons; _i < _a.length; _i++) {
+                var btn = _a[_i];
+                var toBtn = new PIXI.Point(p.x - btn.position.x, p.y - btn.position.y);
+                if (Math.abs(toBtn.x) < 50 && Math.abs(toBtn.y) < 20) {
+                    btn.func.call(this);
+                    return;
+                }
+            }
             var locPos = new PIXI.Point(p.x - this.tilePanel.position.x, p.y - this.tilePanel.position.y);
             if (this.tilePanel.select(locPos))
                 return;
@@ -1591,14 +1727,12 @@ var CircuitFreaks;
         Game.prototype.right = function () {
         };
         Game.prototype.up = function () {
-            this.board.clearBoard();
-            this.tilePanel.resetPanel();
+            this.resetGame();
         };
         Game.prototype.down = function () {
         };
         Game.prototype.rotate = function () {
-            this.board.resetBoard();
-            this.tilePanel.resetPanel();
+            this.loadDefault();
         };
         return Game;
     }(PIXI.Container));

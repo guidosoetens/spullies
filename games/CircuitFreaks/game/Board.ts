@@ -20,6 +20,8 @@ module CircuitFreaks
         tileWidth:number;
         slots:Tile[][];
 
+        snapshot:TileDescriptor[][];
+
         discardTiles:Tile[];
 
         boardWidth:number;
@@ -28,6 +30,9 @@ module CircuitFreaks
         stateParameter:number;
 
         circuitDetector:CircuitDetector;
+
+        stateChangedListener:any;
+        onStateChanged:Function;
 
         constructor(w:number, h:number) {
             super();
@@ -46,10 +51,13 @@ module CircuitFreaks
 
             //create empty grid:
             this.slots = [];
+            this.snapshot = [];
             for(var i:number=0; i<this.rows; ++i) {
                 this.slots[i] = [];
+                this.snapshot[i] = [];
                 for(var j:number=0; j<this.columns; ++j) {
                     this.slots[i][j] = null;
+                    this.snapshot[i][j] = null;
                 }
             }
 
@@ -76,6 +84,37 @@ module CircuitFreaks
             this.addChild(grid);
 
             this.resetBoard();
+
+            this.createSnapshot();
+        }
+
+        createSnapshot() {
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var j:number=0; j<this.columns; ++j) {
+                    let tile = this.slots[i][j];
+                    this.snapshot[i][j] = (tile == null) ? null : new TileDescriptor(tile.type, tile.groupIndex);
+                }
+            }
+        }
+
+        revertToSnapshot() {
+            this.clearBoard();
+
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var j:number=0; j<this.columns; ++j) {
+                    if(this.snapshot[i][j] != null) {
+                        let desc = this.snapshot[i][j];
+                        var tile = new Tile(this.tileWidth, desc.type);
+                        var res =  this.toScreenPos(i, j);
+                        tile.position.x = res.x;
+                        tile.position.y = res.y;
+                        this.slots[i][j] = tile;
+                        this.addChild(tile);
+                        tile.groupIndex = desc.groupIndex;
+                        tile.redraw();
+                    }
+                }
+            }
         }
 
         clearBoard() {
@@ -156,6 +195,10 @@ module CircuitFreaks
             }
 
             this.setState(BoardState.Idle);
+        }
+
+        undo() {
+            this.revertToSnapshot();
         }
 
         setState(state:BoardState) {
@@ -366,6 +409,8 @@ module CircuitFreaks
 
             if(slotsAvailable) {
 
+                this.createSnapshot();
+
                 for(var i:number=0; i<set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
                     var calcCol = column + (set.isHorizontal ? i : 0);
@@ -396,6 +441,7 @@ module CircuitFreaks
                     return false;
 
                 if(this.slots[row][column] != null) {
+                    this.createSnapshot();
                     this.circuitDetector.degradeDeadlock(row, column);
                     this.setState(BoardState.DegradeDeadlock);
                 }
