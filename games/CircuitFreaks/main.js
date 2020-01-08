@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    }
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -38,6 +38,28 @@ var CircuitFreaks;
         return TileDescriptor;
     }());
     CircuitFreaks.TileDescriptor = TileDescriptor;
+    /*
+    export class BoardDescriptor {
+        rows:number;
+        columns:number
+        tiles:TileDescriptor[];
+
+        constructor(rows:number, columns:number, tiles:TileDescriptor[]) {
+            this.rows = rows;
+            this.columns = columns;
+            this.tiles = tiles;
+        }
+    }
+
+    export class TilePanelDescriptor {
+        currentType:TileType[];
+        nextTypes:TileType[][];
+        constructor(currentType:TileType[], nextTypes:TileType[][]) {
+            this.currentType = currentType;
+            this.nextTypes = nextTypes;
+        }
+    }
+    */
     function rotateTypeCW(type) {
         switch (type) {
             case TileType.Curve_NE:
@@ -1071,6 +1093,7 @@ var CircuitFreaks;
             _this.discardTiles = [];
             _this.state = BoardState.Idle;
             _this.stateParameter = 0;
+            _this.tileWasPushedTMP = false;
             //create empty grid:
             _this.slots = [];
             _this.snapshot = [];
@@ -1102,10 +1125,11 @@ var CircuitFreaks;
             }
             _this.addChild(grid);
             _this.resetBoard();
-            _this.createSnapshot();
+            _this.createSnapshot(false);
             return _this;
         }
-        Board.prototype.createSnapshot = function () {
+        Board.prototype.createSnapshot = function (tilePushed) {
+            this.tileWasPushedTMP = tilePushed;
             for (var i = 0; i < this.rows; ++i) {
                 for (var j = 0; j < this.columns; ++j) {
                     var tile = this.slots[i][j];
@@ -1130,6 +1154,8 @@ var CircuitFreaks;
                     }
                 }
             }
+            this.tileWasPushedTMP = false;
+            this.setState(BoardState.ProcessCircuits);
         };
         Board.prototype.clearBoard = function () {
             while (this.discardTiles.length > 0) {
@@ -1382,7 +1408,7 @@ var CircuitFreaks;
                     slotsAvailable = false;
             }
             if (slotsAvailable) {
-                this.createSnapshot();
+                this.createSnapshot(true);
                 for (var i = 0; i < set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
                     var calcCol = column + (set.isHorizontal ? i : 0);
@@ -1407,7 +1433,7 @@ var CircuitFreaks;
                 if (row < 0 || row >= this.rows)
                     return false;
                 if (this.slots[row][column] != null) {
-                    this.createSnapshot();
+                    this.createSnapshot(false);
                     this.circuitDetector.degradeDeadlock(row, column);
                     this.setState(BoardState.DegradeDeadlock);
                 }
@@ -1687,14 +1713,17 @@ var CircuitFreaks;
         Game.prototype.resetGame = function () {
             this.board.clearBoard();
             this.tilePanel.resetPanel();
+            this.board.createSnapshot(false);
         };
         Game.prototype.loadDefault = function () {
             this.board.resetBoard();
             this.tilePanel.resetPanel();
+            this.board.createSnapshot(false);
         };
         Game.prototype.undo = function () {
+            if (this.board.tileWasPushedTMP)
+                this.tilePanel.undo();
             this.board.undo();
-            this.tilePanel.undo();
         };
         Game.prototype.update = function (dt) {
             this.board.update(dt);

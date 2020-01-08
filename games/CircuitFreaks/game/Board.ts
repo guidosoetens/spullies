@@ -19,6 +19,7 @@ module CircuitFreaks
         columns:number;
         tileWidth:number;
         slots:Tile[][];
+        tileWasPushedTMP:boolean;
 
         snapshot:TileDescriptor[][];
 
@@ -48,6 +49,8 @@ module CircuitFreaks
 
             this.state = BoardState.Idle;
             this.stateParameter = 0;
+
+            this.tileWasPushedTMP = false;
 
             //create empty grid:
             this.slots = [];
@@ -85,10 +88,11 @@ module CircuitFreaks
 
             this.resetBoard();
 
-            this.createSnapshot();
+            this.createSnapshot(false);
         }
 
-        createSnapshot() {
+        createSnapshot(tilePushed:boolean) {
+            this.tileWasPushedTMP = tilePushed;
             for(var i:number=0; i<this.rows; ++i) {
                 for(var j:number=0; j<this.columns; ++j) {
                     let tile = this.slots[i][j];
@@ -115,6 +119,10 @@ module CircuitFreaks
                     }
                 }
             }
+
+            this.tileWasPushedTMP = false;
+
+            this.setState(BoardState.ProcessCircuits);
         }
 
         clearBoard() {
@@ -409,7 +417,7 @@ module CircuitFreaks
 
             if(slotsAvailable) {
 
-                this.createSnapshot();
+                this.createSnapshot(true);
 
                 for(var i:number=0; i<set.tiles.length; ++i) {
                     var calcRow = row + (set.isHorizontal ? 0 : i);
@@ -441,7 +449,7 @@ module CircuitFreaks
                     return false;
 
                 if(this.slots[row][column] != null) {
-                    this.createSnapshot();
+                    this.createSnapshot(false);
                     this.circuitDetector.degradeDeadlock(row, column);
                     this.setState(BoardState.DegradeDeadlock);
                 }

@@ -48,16 +48,19 @@ module CircuitFreaks
         resetGame() {
             this.board.clearBoard();
             this.tilePanel.resetPanel();
+            this.board.createSnapshot(false);
         }
 
         loadDefault() {
             this.board.resetBoard();
             this.tilePanel.resetPanel();
+            this.board.createSnapshot(false);
         }
 
         undo() {
+            if(this.board.tileWasPushedTMP)
+                this.tilePanel.undo();
             this.board.undo();
-            this.tilePanel.undo();
         }
 
         update(dt:number) {

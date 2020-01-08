@@ -28,6 +28,7 @@ module CircuitFreaks
         }
     }
 
+    /*
     export class BoardDescriptor {
         rows:number;
         columns:number
@@ -48,6 +49,7 @@ module CircuitFreaks
             this.nextTypes = nextTypes;
         }
     }
+    */
 
     export function rotateTypeCW(type:TileType) : TileType {
         switch(type) {
