@@ -352,9 +352,9 @@ module CircuitFreaks
             switch(this.type) {
                 case TileType.DoubleSource:
                     return this.sourceHitCount >= 2;
-                case TileType.Double_NE:
-                case TileType.Double_NW:
-                    return bothCircuit;    
+                // case TileType.Double_NE:
+                // case TileType.Double_NW:
+                //     return bothCircuit;    
             }
             return true;
         }

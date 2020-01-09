@@ -41,7 +41,7 @@ module CircuitFreaks
             this.boardWidth = w;
             this.boardHeight = h;
 
-            this.rows = 10;
+            this.rows = 8;
             this.columns = 6;
             this.tileWidth = Math.min(w / this.columns, h / this.rows);// 60;
 

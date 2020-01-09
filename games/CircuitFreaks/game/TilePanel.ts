@@ -123,6 +123,7 @@ module CircuitFreaks
                 for(let i in btmTypes) 
                     this.nextTypes.push([topTypes[i], btmTypes[i]]);
                 // this.nextTypes.push([TileType.Double_NE]);
+                this.nextTypes.push([TileType.Trash]);
                 this.shuffle(this.nextTypes);
 
                 //create new 

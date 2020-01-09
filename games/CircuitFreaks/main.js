@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    };
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -439,9 +439,9 @@ var CircuitFreaks;
             switch (this.type) {
                 case CircuitFreaks.TileType.DoubleSource:
                     return this.sourceHitCount >= 2;
-                case CircuitFreaks.TileType.Double_NE:
-                case CircuitFreaks.TileType.Double_NW:
-                    return bothCircuit;
+                // case TileType.Double_NE:
+                // case TileType.Double_NW:
+                //     return bothCircuit;    
             }
             return true;
         };
@@ -1087,7 +1087,7 @@ var CircuitFreaks;
             var _this = _super.call(this) || this;
             _this.boardWidth = w;
             _this.boardHeight = h;
-            _this.rows = 10;
+            _this.rows = 8;
             _this.columns = 6;
             _this.tileWidth = Math.min(w / _this.columns, h / _this.rows); // 60;
             _this.discardTiles = [];
@@ -1598,6 +1598,7 @@ var CircuitFreaks;
                 for (var i in btmTypes)
                     this.nextTypes.push([topTypes[i], btmTypes[i]]);
                 // this.nextTypes.push([TileType.Double_NE]);
+                this.nextTypes.push([CircuitFreaks.TileType.Trash]);
                 this.shuffle(this.nextTypes);
                 //create new 
                 // this.nextTypes = [ [TileType.Curve_NE], [TileType.Curve_NW], [TileType.Curve_SE], [TileType.Curve_SW], [TileType.Double_NE], [TileType.Double_NW]];
