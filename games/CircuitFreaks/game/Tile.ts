@@ -96,7 +96,7 @@ module CircuitFreaks
                 borderColor = 0xaacccc;
                 // subWidth *= .8;
             }
-            else if(type == TileType.Source || type == TileType.DoubleSource) {
+            else if(type == TileType.Source || type == TileType.DoubleSource || type == TileType.TripleSource) {
                 switch(this.groupIndex) {
                     case 1:
                         baseColor = 0xff00aa;
@@ -175,6 +175,11 @@ module CircuitFreaks
                 case TileType.DoubleSource:
                     this.graphics.drawCircle(0,0,rad * .5);
                     this.graphics.drawCircle(0,0,rad - lineWidth * .5);
+                    break;
+                case TileType.TripleSource:
+                    this.graphics.drawCircle(0,0,rad * .5);
+                    this.graphics.drawCircle(0,0,rad - lineWidth * .5);
+                    this.graphics.drawCircle(0,0,rad * .1);
                     break;
                 case TileType.Blockade:
                     break;
@@ -352,6 +357,8 @@ module CircuitFreaks
             switch(this.type) {
                 case TileType.DoubleSource:
                     return this.sourceHitCount >= 2;
+                case TileType.TripleSource:
+                    return this.sourceHitCount >= 3;
                 // case TileType.Double_NE:
                 // case TileType.Double_NW:
                 //     return bothCircuit;    
@@ -410,6 +417,12 @@ module CircuitFreaks
             switch(this.type) {
                 case TileType.DoubleSource:
                     if(this.sourceHitCount == 1)
+                        newType = TileType.Source;
+                    break;
+                case TileType.TripleSource:
+                    if(this.sourceHitCount == 1)
+                        newType = TileType.DoubleSource;
+                    else if(this.sourceHitCount == 2)
                         newType = TileType.Source;
                     break;
                 case TileType.Double_NE:
@@ -521,6 +534,7 @@ module CircuitFreaks
                     return true;
                 case TileType.Source:
                 case TileType.DoubleSource:
+                case TileType.TripleSource:
                 case TileType.Trash:
                     return true;
                 case TileType.Blockade:

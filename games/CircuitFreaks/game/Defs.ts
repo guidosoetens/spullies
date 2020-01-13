@@ -13,6 +13,7 @@ module CircuitFreaks
         Double_NW,
         Source,
         DoubleSource,
+        TripleSource,
         Blockade,
         Trash,
         Count

@@ -3,6 +3,7 @@
 ///<reference path="Tile.ts"/>
 ///<reference path="TilePanel.ts"/>
 ///<reference path="Button.ts"/>
+///<reference path="LevelSelector.ts"/>
 
 module CircuitFreaks
 {
@@ -11,6 +12,7 @@ module CircuitFreaks
         board:Board;
         tilePanel:TilePanel;
         buttons:Button[];
+        levelSelector:LevelSelector;
 
         text:PIXI.Text;
 
@@ -43,6 +45,11 @@ module CircuitFreaks
                 this.addChild(btn);
                 this.buttons.push(btn);
             }
+
+            this.levelSelector = new LevelSelector(w * .8, h * .8);
+            this.levelSelector.x = .1 * w;
+            this.levelSelector.y = .1 * h;
+            // this.addChild(this.levelSelector);
         }
 
         resetGame() {

@@ -25,6 +25,29 @@ module CircuitFreaks
             }
         }
 
+        performFunctionOnBorderTiles(f:Function) {
+            var dirs:Direction[] = [Direction.Right, Direction.Down, Direction.Left, Direction.Up];
+            for(var sideIdx:number=0; sideIdx<4; ++sideIdx) {
+                let dir = dirs[sideIdx];
+                var row:number = sideIdx < 2 ? -1 : this.rows;
+                var col:number = sideIdx < 2 ? -1 : this.columns;
+                var travRow = sideIdx % 2 == 0;
+                var its = travRow ? this.rows : this.columns;
+                for(var i:number=0; i<its; ++i) {
+                    if(travRow)
+                        row = i;
+                    else col = i;
+                    var n = new PIXI.Point(row, col);
+                    this.stepCoord(n, dir);
+                    var tile = this.slots[n.x][n.y];
+                    if(tile != null) {
+                        if(this.connects(n.x, n.y, dir) && this.isPathType(tile.type))
+                            f(this, n.x, n.y, tile, dir);
+                    }
+                }
+            }
+        }
+
         stepCoord(coord:PIXI.Point, dir:Direction) {
             //NOTE: x is row, y is column!
             switch(dir) {
@@ -60,6 +83,7 @@ module CircuitFreaks
             switch(type) {
                 case TileType.Source:
                 case TileType.DoubleSource:
+                case TileType.TripleSource:
                 case TileType.Trash:
                     return true;
                 default:
@@ -91,7 +115,8 @@ module CircuitFreaks
             switch(t1.type) {
                 case TileType.Source:
                 case TileType.DoubleSource:
-                    return t2.type == TileType.Source || t2.type == TileType.DoubleSource;
+                case TileType.TripleSource:
+                    return t2.type == TileType.Source || t2.type == TileType.DoubleSource || t2.type == TileType.TripleSource;
                 case TileType.Blockade:
                 case TileType.Trash:
                     return t1.type == t2.type;
@@ -198,10 +223,50 @@ module CircuitFreaks
             }
         }
 
+        coordOutOfBounds(i:number, j:number) : boolean {
+            if(i < 0 || i >= this.rows)
+                return true;
+            else if(j < 0 || j >= this.columns)
+                return true;
+            return false;
+        }
+
         propagateCircuits() {
 
             let clearPropState = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { tile.clearCircuitState(); }
             this.performFunctionOnTiles(clearPropState);
+
+            let pushBorderTiles = function(caller:CircuitDetector, i:number, j:number, tile:Tile, dir:Direction) : boolean {
+
+                var isCircuit = false;
+                if(tile.type == TileType.Trash) {
+                    isCircuit = true;
+                }
+                else if(caller.isPathType(tile.type)) {
+                    //continue propagation:
+                    var nextDir = tile.getNextDirection(dir);
+                    var coord = new PIXI.Point(i, j);
+                    caller.stepCoord(coord, nextDir);
+
+                    if(caller.coordOutOfBounds(coord.x, coord.y)) {
+                        isCircuit = true;
+                    }
+                    else {
+                        var nextTile = caller.getTile(coord.x, coord.y);
+                        if(nextTile != null) {
+                            if(nextTile.connects(nextDir)) {
+                                isCircuit = pushBorderTiles(caller, coord.x, coord.y, nextTile, nextDir);
+                            }
+                        }
+                    }
+
+                }
+
+                if(isCircuit)
+                    tile.setStateFromDirection(dir, CircuitState.Circuit);
+                return isCircuit;
+            }
+            this.performFunctionOnBorderTiles(pushBorderTiles);
 
             let pushSource = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { 
                 if(caller.isSourceType(tile.type)) {

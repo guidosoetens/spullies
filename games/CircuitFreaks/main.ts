@@ -94,4 +94,8 @@ window.onload = () => {
     window.onkeydown = (e) => {
         app.keyDown(e.keyCode);
     }
+
+    // window.onmousedown = (e) => {
+    //     fitApp(app);
+    // }
 }

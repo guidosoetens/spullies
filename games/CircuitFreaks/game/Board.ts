@@ -168,7 +168,7 @@ module CircuitFreaks
                     }
                     else if(i == 1) {
                         if(j == 2) {
-                            type = TileType.DoubleSource;
+                            type = TileType.TripleSource;
                             group = 0;
                         }
                         else if(j == 3) {
