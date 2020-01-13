@@ -9,24 +9,25 @@ module CircuitFreaks
         text:PIXI.Text;
         func:Function;
 
-        constructor(text:string, func:Function) {
+        visWidth:number;
+        visHeight:number;
+
+        constructor(text:string, func:Function, radius:number = 20, base_width:number = 50, base_height:number = 1) {
             super();
+
+            base_width = Math.max(base_width, 1);
+            base_height = Math.max(base_height, 1);
 
             this.func = func;
 
-            var base_width:number = 50;
-            var radius = 20.0;
             var hw = base_width / 2.0;
 
             this.graphics = new PIXI.Graphics();
             this.graphics.beginFill(0x22ff22);
-            this.graphics.lineStyle(.2 * radius, 0xffffff, 1);
-            this.graphics.moveTo(-hw, -radius);
-            this.graphics.lineTo(hw, -radius);
-            this.graphics.arc(hw, 0, radius, -.5 * Math.PI, .5 * Math.PI);
-            this.graphics.lineTo(-hw, radius);
-            this.graphics.arc(-hw, 0, radius, .5 * Math.PI, 1.5 * Math.PI);
-            this.graphics.endFill();
+            this.graphics.lineStyle(5, 0xffffff, 1);
+            this.visWidth = base_width + 2 * radius;
+            this.visHeight = base_height + 2 * radius;
+            this.graphics.drawRoundedRect(-this.visWidth/2, -this.visHeight/2, this.visWidth, this.visHeight, radius);
 
             this.graphics.beginFill(0xffffff, 0.5);
             this.graphics.lineStyle(0);
@@ -46,10 +47,11 @@ module CircuitFreaks
             this.text.x = 0;
             this.text.y = 0;
             this.addChild(this.text);
+        }
 
-            // this.text.text = ": ssdsds";
-
-            console.log(this.text.text, this.text.parent);
+        hitTestPt(p:PIXI.Point) : boolean {
+            var toBtn = new PIXI.Point(p.x - this.position.x, p.y - this.position.y);
+            return Math.abs(toBtn.x) < this.visWidth / 2 && Math.abs(toBtn.y) < this.visHeight / 2;
         }
     }
 }

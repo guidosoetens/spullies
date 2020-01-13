@@ -4,6 +4,7 @@
 ///<reference path="TilePanel.ts"/>
 ///<reference path="Button.ts"/>
 ///<reference path="LevelSelector.ts"/>
+///<reference path="LevelLoader.ts"/>
 
 module CircuitFreaks
 {
@@ -13,6 +14,7 @@ module CircuitFreaks
         tilePanel:TilePanel;
         buttons:Button[];
         levelSelector:LevelSelector;
+        levelLoader:LevelLoader;
 
         text:PIXI.Text;
 
@@ -37,7 +39,7 @@ module CircuitFreaks
 
             this.buttons = [];
             let txts:string[] = ['♚', '♞', '↺'];
-            let callbacks:Function[] = [ this.resetGame, this.loadDefault, this.undo ];
+            let callbacks:Function[] = [ this.openLevelSelect, this.loadDefault, this.undo ];
             for(var i:number=0; i<txts.length; ++i) {
                 var btn = new Button(txts[i], callbacks[i]);
                 btn.x = w * (i + 1) / 4.0;
@@ -46,10 +48,18 @@ module CircuitFreaks
                 this.buttons.push(btn);
             }
 
-            this.levelSelector = new LevelSelector(w * .8, h * .8);
-            this.levelSelector.x = .1 * w;
-            this.levelSelector.y = .1 * h;
-            // this.addChild(this.levelSelector);
+            this.levelSelector = new LevelSelector(w, h);
+            this.addChild(this.levelSelector);
+
+            this.levelLoader = new LevelLoader(this.loadLevel, this);
+        }
+
+        loadLevel(data:LevelData) {
+            this.board.loadBoard(data);
+        }
+
+        openLevelSelect() {
+            this.levelSelector.show();
         }
 
         resetGame() {
@@ -77,9 +87,21 @@ module CircuitFreaks
 
         touchDown(p:PIXI.Point) {
 
+            if(this.levelSelector.isEnabled()) {
+                var res = this.levelSelector.touchDown(p);
+                if(res >= 0) {
+                    // if(res % 2 == 0)
+                    //     this.resetGame();
+                    // else
+                    //     this.loadDefault();
+
+                    this.levelLoader.loadLevel(res);
+                }
+                return;
+            }
+
             for(let btn of this.buttons) {
-                var toBtn = new PIXI.Point(p.x - btn.position.x, p.y - btn.position.y);
-                if(Math.abs(toBtn.x) < 50 && Math.abs(toBtn.y) < 20) {
+                if(btn.hitTestPt(p)) {
                     btn.func.call(this);
                     return;
                 }

@@ -15,6 +15,8 @@ module CircuitFreaks
 
     export class Board extends PIXI.Container {
 
+        gridGraphics:PIXI.Graphics;
+
         rows:number;
         columns:number;
         tileWidth:number;
@@ -41,9 +43,9 @@ module CircuitFreaks
             this.boardWidth = w;
             this.boardHeight = h;
 
-            this.rows = 8;
-            this.columns = 6;
-            this.tileWidth = Math.min(w / this.columns, h / this.rows);// 60;
+            // this.rows = 8;
+            // this.columns = 6;
+            // this.tileWidth = Math.min(w / this.columns, h / this.rows);// 60;
 
             this.discardTiles = [];
 
@@ -51,6 +53,52 @@ module CircuitFreaks
             this.stateParameter = 0;
 
             this.tileWasPushedTMP = false;
+
+            // //create empty grid:
+            // this.slots = [];
+            // this.snapshot = [];
+            // for(var i:number=0; i<this.rows; ++i) {
+            //     this.slots[i] = [];
+            //     this.snapshot[i] = [];
+            //     for(var j:number=0; j<this.columns; ++j) {
+            //         this.slots[i][j] = null;
+            //         this.snapshot[i][j] = null;
+            //     }
+            // }
+
+            // this.circuitDetector = new CircuitDetector(this.slots, this.rows, this.columns);
+
+            // var center = new PIXI.Point(w / 2.0, h / 2.0);
+            // var size = new PIXI.Point(this.columns * this.tileWidth, this.rows * this.tileWidth);
+
+            this.gridGraphics = new PIXI.Graphics();
+            // this.gridGraphics.beginFill(0x0, 0.3);
+            // this.gridGraphics.lineStyle(this.tileWidth * .05, 0xffffff, 1);
+            // this.gridGraphics.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
+            // this.gridGraphics.endFill();
+            // for(var i:number=1; i<this.rows; ++i) {
+            //     var y = center.y + (i / this.rows - .5) * size.y;
+            //     this.gridGraphics.moveTo(center.x - size.x / 2.0, y);
+            //     this.gridGraphics.lineTo(center.x + size.x / 2.0, y);
+            // }
+            // for(var i:number=1; i<this.columns; ++i) {
+            //     var x = center.x + (i / this.columns - .5) * size.x;
+            //     this.gridGraphics.moveTo(x, center.y - size.y / 2.0);
+            //     this.gridGraphics.lineTo(x, center.y + size.y / 2.0);
+            // }
+            this.addChild(this.gridGraphics);
+
+            this.setBoardSize(8, 6);
+
+            this.resetBoard();
+
+            this.createSnapshot(false);
+        }
+
+        setBoardSize(rows:number, cols:number) {
+            this.rows = rows;
+            this.columns = cols;
+            this.tileWidth = Math.min(this.boardWidth / this.columns, this.boardHeight / this.rows);
 
             //create empty grid:
             this.slots = [];
@@ -66,29 +114,24 @@ module CircuitFreaks
 
             this.circuitDetector = new CircuitDetector(this.slots, this.rows, this.columns);
 
-            var center = new PIXI.Point(w / 2.0, h / 2.0);
+            var center = new PIXI.Point(this.boardWidth / 2.0, this.boardHeight / 2.0);
             var size = new PIXI.Point(this.columns * this.tileWidth, this.rows * this.tileWidth);
 
-            var grid = new PIXI.Graphics();
-            grid.beginFill(0x0, 0.3);
-            grid.lineStyle(this.tileWidth * .05, 0xffffff, 1);
-            grid.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
-            grid.endFill();
+            this.gridGraphics.clear();
+            this.gridGraphics.beginFill(0x0, 0.3);
+            this.gridGraphics.lineStyle(this.tileWidth * .05, 0xffffff, 1);
+            this.gridGraphics.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
+            this.gridGraphics.endFill();
             for(var i:number=1; i<this.rows; ++i) {
                 var y = center.y + (i / this.rows - .5) * size.y;
-                grid.moveTo(center.x - size.x / 2.0, y);
-                grid.lineTo(center.x + size.x / 2.0, y);
+                this.gridGraphics.moveTo(center.x - size.x / 2.0, y);
+                this.gridGraphics.lineTo(center.x + size.x / 2.0, y);
             }
             for(var i:number=1; i<this.columns; ++i) {
                 var x = center.x + (i / this.columns - .5) * size.x;
-                grid.moveTo(x, center.y - size.y / 2.0);
-                grid.lineTo(x, center.y + size.y / 2.0);
+                this.gridGraphics.moveTo(x, center.y - size.y / 2.0);
+                this.gridGraphics.lineTo(x, center.y + size.y / 2.0);
             }
-            this.addChild(grid);
-
-            this.resetBoard();
-
-            this.createSnapshot(false);
         }
 
         createSnapshot(tilePushed:boolean) {
@@ -140,6 +183,38 @@ module CircuitFreaks
                     this.slots[i][j] = null;
                 }
             }
+        }
+
+        loadBoard(data:LevelData) {
+            this.clearBoard();
+
+            console.log("gaat ie");
+
+            this.setBoardSize(data.rows, data.columns);
+
+            console.log(data);
+
+            //fill top few rows:
+            for(var i:number=0; i<data.rows; ++i) {
+                for(var j:number=0; j<data.columns; ++j) {
+                    var idx = i * data.columns + j;
+                    if(data.tiles[idx] == undefined)
+                        continue;
+
+                    console.log("ok");
+
+                    var tile = new Tile(this.tileWidth, data.tiles[idx]);
+                    var res =  this.toScreenPos(i, j);
+                    tile.position.x = res.x;
+                    tile.position.y = res.y;
+                    this.slots[i][j] = tile;
+                    this.addChild(tile);
+                    tile.groupIndex = 0;
+                    tile.redraw();
+                }
+            }
+
+            this.setState(BoardState.Idle);
         }
 
         resetBoard() {
