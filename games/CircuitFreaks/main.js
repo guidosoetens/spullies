@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    }
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1268,7 +1268,6 @@ var CircuitFreaks;
                     this.gridGraphics.lineStyle(this.tileWidth * 0.15, 0xffffff, 1);
                     CircuitFreaks.drawHex(this.gridGraphics, pos, this.tileWidth);
                     this.gridGraphics.endFill();
-                    console.log(pos);
                 }
             }
             // this.gridGraphics.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
@@ -1517,11 +1516,16 @@ var CircuitFreaks;
             for (var i = 0; i < this.rows; ++i) {
                 for (var oddIt = 0; oddIt < 2; ++oddIt) {
                     for (var j = (1 - oddIt); j < this.columns; j += 2) {
+                        var tile = this.slots[i][j];
+                        if (tile == null)
+                            continue;
                         var row = i;
                         while (this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
+                            console.log("drop to", row);
                         }
                         if (row != i) {
+                            console.log("do drop");
                             this.slots[row][j] = tile;
                             this.slots[i][j] = null;
                             tile.position = this.toScreenPos(row, j);
@@ -1541,22 +1545,22 @@ var CircuitFreaks;
                     }
                 }
             }
-            for (var j = 0; j < this.columns; ++j) {
-                var numDrops = 0;
-                for (var i = 0; i < this.rows; ++i) {
-                    var tile = this.slots[i][j];
-                    if (tile == null) {
-                        numDrops++;
-                    }
-                    else if (numDrops > 0) {
-                        var goalRow = i - numDrops;
-                        this.slots[goalRow][j] = tile;
-                        this.slots[i][j] = null;
-                        tile.position = this.toScreenPos(goalRow, j);
-                        tile.drop(numDrops * this.tileWidth);
-                    }
-                }
-            }
+            // for(var j:number=0; j<this.columns; ++j) {
+            //     var numDrops = 0;
+            //     for(var i:number=0; i<this.rows; ++i) {
+            //         var tile = this.slots[i][j];
+            //         if(tile == null) {
+            //             numDrops++;
+            //         }
+            //         else if(numDrops > 0) {
+            //             var goalRow = i - numDrops;
+            //             this.slots[goalRow][j] = tile;
+            //             this.slots[i][j] = null;
+            //             tile.position = this.toScreenPos(goalRow, j);
+            //             tile.drop(numDrops * this.tileWidth);
+            //         }
+            //     }
+            // }
         };
         Board.prototype.toScreenPos = function (row, col) {
             var baseUnit = CircuitFreaks.hexWidthFactor * this.tileWidth;
@@ -1585,14 +1589,14 @@ var CircuitFreaks;
         Board.prototype.isDropTileSlot = function (row, column) {
             if (row < 0 || row >= this.rows || column < 0 || column >= this.columns)
                 return false;
-            var tile = this.slots[row][column];
-            if (tile == null)
-                return false;
             var dirs = [CircuitFreaks.Direction.UpLeft, CircuitFreaks.Direction.Up, CircuitFreaks.Direction.UpRight];
             for (var _i = 0, dirs_1 = dirs; _i < dirs_1.length; _i++) {
                 var d = dirs_1[_i];
                 var coord = new PIXI.Point(row, column);
                 this.stepCoord(coord, d);
+                //ignore left and right boundary:
+                if (coord.y < 0 || coord.y >= this.columns)
+                    continue;
                 if (!this.isEmptyTileAt(coord.x, coord.y))
                     return false;
             }
@@ -1666,7 +1670,6 @@ var CircuitFreaks;
             return this.slots[pt.x][pt.y] == null;
         };
         Board.prototype.pushTile = function (pos, set) {
-            console.clear();
             var descs = set.getTileDescriptions();
             if (this.state != BoardState.Idle)
                 return false;
@@ -1685,11 +1688,9 @@ var CircuitFreaks;
             var row = Math.floor((samplePos.y - this.boardHeight / 2.0) / slotHeight + this.rows / 2.0);
             var coord = new PIXI.Point(row, column);
             var placesAvailable = this.isCoordAvailable(coord);
-            console.log("base: ", coord, placesAvailable);
             for (var i = 0; i < descs.length - 1; ++i) {
                 this.stepCoord(coord, set.getDirection());
                 placesAvailable = placesAvailable && this.isCoordAvailable(coord);
-                console.log("test: ", i, coord, placesAvailable);
             }
             if (placesAvailable) {
                 this.createSnapshot(true);

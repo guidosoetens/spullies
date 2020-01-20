@@ -125,7 +125,6 @@ module CircuitFreaks
                     this.gridGraphics.lineStyle(this.tileWidth * 0.15, 0xffffff, 1);
                     drawHex(this.gridGraphics, pos, this.tileWidth);
                     this.gridGraphics.endFill();
-                    console.log(pos);
                 }
             }
 
@@ -416,10 +415,11 @@ module CircuitFreaks
                         var row = i;
                         while(this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
+                            console.log("drop to", row)
                         }
 
                         if(row != i) {
-                            let tile = this.slots[i][j];
+                            console.log("do drop");
                             this.slots[row][j] = tile;
                             this.slots[i][j] = null;
                             tile.position = this.toScreenPos(row, j);
@@ -496,13 +496,13 @@ module CircuitFreaks
         isDropTileSlot(row:number, column:number) {
             if(row < 0 || row >= this.rows || column < 0 || column >= this.columns)
                 return false;
-            var tile = this.slots[row][column];
-            if(tile == null)
-                return false;
             var dirs:Direction[] = [ Direction.UpLeft, Direction.Up, Direction.UpRight ];
             for(let d of dirs) {
                 let coord = new PIXI.Point(row, column);
                 this.stepCoord(coord, d);
+                //ignore left and right boundary:
+                if(coord.y < 0 || coord.y >= this.columns)
+                    continue;
                 if(!this.isEmptyTileAt(coord.x, coord.y))
                     return false;
             }
@@ -582,9 +582,6 @@ module CircuitFreaks
         }
 
         pushTile(pos:PIXI.Point, set:TileSet) : boolean {
-
-            console.clear();
-
             let descs = set.getTileDescriptions();
 
             if(this.state != BoardState.Idle)
@@ -609,11 +606,9 @@ module CircuitFreaks
 
             var coord = new PIXI.Point(row, column);
             var placesAvailable = this.isCoordAvailable(coord);
-            console.log("base: " , coord, placesAvailable);
             for(var i:number=0; i<descs.length - 1; ++i) {
                 this.stepCoord(coord, set.getDirection());
                 placesAvailable = placesAvailable && this.isCoordAvailable(coord);
-                console.log("test: ", i , coord, placesAvailable);
             }
 
 
