@@ -99,7 +99,7 @@ module CircuitFreaks
                 case TileType.Source:
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
-                case TileType.Trash:
+                // case TileType.Trash:
                     return true;
                 default:
                     return false;
@@ -205,18 +205,15 @@ module CircuitFreaks
 
                     var adjacentToCircuit = false;
 
-                    var di = 0;
-                    var dj = 1;
-                    for(var nIdx:number=0; nIdx<4 && !adjacentToCircuit; ++nIdx) {
-                        var neighbor = this.getTile(i + di, j + dj);
+                    for(var dir:number=0; dir<6 && !adjacentToCircuit; ++dir) {
+                        var coord = new PIXI.Point(i, j);
+                        this.stepCoord(coord, dir);
+
+                        var neighbor = this.getTile(coord.x, coord.y);
                         if(neighbor != null) {
-                            if(neighbor.hasCircuit() && neighbor.type != TileType.Trash)
+                            if(neighbor.hasCircuit() && neighbor.circuitEliminatesTile() && neighbor.type != TileType.Trash)
                                 adjacentToCircuit = true;
                         }
-
-                        var cpy = di;
-                        di = -dj;
-                        dj = cpy;
                     }
 
                     if(adjacentToCircuit) {

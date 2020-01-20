@@ -113,8 +113,6 @@ module CircuitFreaks
             this.type = desc.type;
             this.groupIndex = desc.groupIndex;
 
-            this.groupIndex = 0;
-
             this.paths = [];
             for(let pDesc of desc.paths) {
                 this.paths.push(new TilePath(pDesc.dir1, pDesc.dir2));
@@ -595,8 +593,8 @@ module CircuitFreaks
                 case TileType.Source:
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
-                case TileType.Trash:
                     return true;
+                case TileType.Trash:
                 case TileType.Blockade:
                     return false;
             }

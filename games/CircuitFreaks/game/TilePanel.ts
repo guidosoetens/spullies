@@ -165,7 +165,7 @@ module CircuitFreaks
                 for(let i in btmTypes) 
                     this.nextTypes.push([topTypes[i], btmTypes[i]]);
                     
-                this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
+                // this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
 
                 let tripleTile = new TileDescriptor(TileType.Path, 0);
                 this.nextTypes.push([tripleTile]);
@@ -184,6 +184,13 @@ module CircuitFreaks
                 this.nextTypes.push([doubleTile]);
                 for(var i:number=0; i<2; ++i) {
                     doubleTile.paths.push(new TilePathDescriptor(3 * i + 2, (3 * i + 4) % 6));
+                }
+
+                for(var i:number=0; i<3; ++i) {
+                    let baseTile = new TileDescriptor(TileType.Path, 0);
+                    this.nextTypes.push([baseTile]);
+                    let baseIdx = Math.floor(Math.random() * 6) % 6;
+                    baseTile.paths.push(new TilePathDescriptor(baseIdx, (baseIdx + 1 + i) % 6));
                 }
 
                 this.shuffle(this.nextTypes);

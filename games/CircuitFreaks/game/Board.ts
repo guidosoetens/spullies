@@ -230,49 +230,22 @@ module CircuitFreaks
 
             this.clearBoard();
 
-            var centerRow = Math.floor(this.rows / 2);
-            var centerColumn = Math.floor(this.columns / 2);
-
+            let types = [TileType.Trash, TileType.Source, TileType.DoubleSource, TileType.TripleSource ];
 
             //fill top few rows:
-            for(var i:number=0; i<3; ++i) {
+            for(var i:number=0; i<4; ++i) {
                 for(var j:number=0; j<5; ++j) {
 
-                    var type = TileType.Trash;
-                    var group = 0;
-                    if(i == 0) {
-                        if(j == 1) {
-                            type = TileType.Source;
-                            group = 1;
-                        }
-                        else if(j == 4) {
-                            type = TileType.DoubleSource;
-                            group = 1;
-                        }
-                    }
-                    else if(i == 1) {
-                        if(j == 2) {
-                            type = TileType.TripleSource;
-                            group = 0;
-                        }
-                        else if(j == 3) {
-                            type = TileType.Source;
-                            group = 0;
-                        }
-                    }
-                    else if(i == 2) {
-                        if(j == 0) {
-                            type = TileType.Source;
-                            group = 0;
-                        }
-                        else if(j == 5) {
-                            type = TileType.DoubleSource;
-                            group = 0;
-                        }
-                    }
+                    var typeIdx = Math.floor(Math.random() * 4);
+                    if(i == 3 && typeIdx == 0)
+                        typeIdx += 1 + Math.floor(Math.random() * 2);
 
-                    var row = i;//centerRow + i - 1;
-                    var column = j;//centerColumn + j - 2;
+                    let type = types[typeIdx];
+                    
+                    let group = Math.floor(Math.random() * 3);
+
+                    var row = i;
+                    var column = j;
 
                     // var type = Math.floor(Math.random() * TileType.Count);
                     var tile = new Tile(this.tileWidth, new TileDescriptor(type, group));
@@ -412,7 +385,7 @@ module CircuitFreaks
                         let tile = this.slots[i][j];
                         if(tile == null)
                             continue;
-                        var row = i;
+                        var row:number = i;
                         while(this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
                             console.log("drop to", row)
@@ -422,6 +395,7 @@ module CircuitFreaks
                             console.log("do drop");
                             this.slots[row][j] = tile;
                             this.slots[i][j] = null;
+                            console.log(row, j);
                             tile.position = this.toScreenPos(row, j);
                             tile.drop((i - row) * this.tileWidth);
                         }
