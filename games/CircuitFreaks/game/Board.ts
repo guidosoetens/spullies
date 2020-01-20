@@ -405,22 +405,64 @@ module CircuitFreaks
         }
 
         dropTiles() {
-            for(var j:number=0; j<this.columns; ++j) {
-                var numDrops = 0;
-                for(var i:number=0; i<this.rows; ++i) {
-                    var tile = this.slots[i][j];
-                    if(tile == null) {
-                        numDrops++;
-                    }
-                    else if(numDrops > 0) {
-                        var goalRow = i - numDrops;
-                        this.slots[goalRow][j] = tile;
-                        this.slots[i][j] = null;
-                        tile.position = this.toScreenPos(goalRow, j);
-                        tile.drop(numDrops * this.tileWidth);
+
+
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var oddIt=0; oddIt<2; ++oddIt) {
+                    for(var j=(1 - oddIt); j<this.columns; j+=2) {
+                        let tile = this.slots[i][j];
+                        if(tile == null)
+                            continue;
+                        var row = i;
+                        while(this.isDropTileSlot(row, j) && row > 0) {
+                            row = row - 1;
+                        }
+
+                        if(row != i) {
+                            let tile = this.slots[i][j];
+                            this.slots[row][j] = tile;
+                            this.slots[i][j] = null;
+                            tile.position = this.toScreenPos(row, j);
+                            tile.drop((i - row) * this.tileWidth);
+                        }
+
+                        // while(this.isDropTile(row, j)) {
+                        //     //drop tile:
+                        //     var goalRow = i - numDrops;
+                        //     this.slots[goalRow][j] = tile;
+                        //     this.slots[i][j] = null;
+                        //     tile.position = this.toScreenPos(goalRow, j);
+                        //     tile.drop(numDrops * this.tileWidth);
+                        // }
+                        // if(this.isDropTile(i, j)) {
+
+                        //     var 
+
+
+
+                        // }
                     }
                 }
             }
+
+
+
+            // for(var j:number=0; j<this.columns; ++j) {
+            //     var numDrops = 0;
+            //     for(var i:number=0; i<this.rows; ++i) {
+            //         var tile = this.slots[i][j];
+            //         if(tile == null) {
+            //             numDrops++;
+            //         }
+            //         else if(numDrops > 0) {
+            //             var goalRow = i - numDrops;
+            //             this.slots[goalRow][j] = tile;
+            //             this.slots[i][j] = null;
+            //             tile.position = this.toScreenPos(goalRow, j);
+            //             tile.drop(numDrops * this.tileWidth);
+            //         }
+            //     }
+            // }
         }
 
         toScreenPos(row:number, col:number) : PIXI.Point {
@@ -445,16 +487,45 @@ module CircuitFreaks
             return res;
         }
 
+        isEmptyTileAt(row:number, column:number) : boolean {
+            if(row < 0 || row >= this.rows || column < 0 || column >= this.columns)
+                return false;
+            return this.slots[row][column] == null;
+        }
+
+        isDropTileSlot(row:number, column:number) {
+            if(row < 0 || row >= this.rows || column < 0 || column >= this.columns)
+                return false;
+            var tile = this.slots[row][column];
+            if(tile == null)
+                return false;
+            var dirs:Direction[] = [ Direction.UpLeft, Direction.Up, Direction.UpRight ];
+            for(let d of dirs) {
+                let coord = new PIXI.Point(row, column);
+                this.stepCoord(coord, d);
+                if(!this.isEmptyTileAt(coord.x, coord.y))
+                    return false;
+            }
+
+            return true;
+        }
+
         hasDropTiles() : boolean {
-            for(var j:number=0; j<this.columns; ++j) {
-                var encounteredEmpty = false;
-                for(var i:number=0; i<this.rows; ++i) {
-                    if(this.slots[i][j] == null)
-                        encounteredEmpty = true;
-                    else if(encounteredEmpty)
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var j:number=0; j<this.columns; ++j) {
+                    if(this.isDropTileSlot(i, j) && this.slots[i][j] != null)
                         return true;
                 }
             }
+            // for(var j:number=0; j<this.columns; ++j) {
+            //     var encounteredEmpty = false;
+            //     for(var i:number=0; i<this.rows; ++i) {
+            //         if(this.slots[i][j] == null)
+            //             encounteredEmpty = true;
+            //         else if(encounteredEmpty)
+            //             return true;
+            //     }
+            // }
             return false;
         }
 

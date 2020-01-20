@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    };
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1514,6 +1514,33 @@ var CircuitFreaks;
             }
         };
         Board.prototype.dropTiles = function () {
+            for (var i = 0; i < this.rows; ++i) {
+                for (var oddIt = 0; oddIt < 2; ++oddIt) {
+                    for (var j = (1 - oddIt); j < this.columns; j += 2) {
+                        var row = i;
+                        while (this.isDropTileSlot(row, j) && row > 0) {
+                            row = row - 1;
+                        }
+                        if (row != i) {
+                            this.slots[row][j] = tile;
+                            this.slots[i][j] = null;
+                            tile.position = this.toScreenPos(row, j);
+                            tile.drop((i - row) * this.tileWidth);
+                        }
+                        // while(this.isDropTile(row, j)) {
+                        //     //drop tile:
+                        //     var goalRow = i - numDrops;
+                        //     this.slots[goalRow][j] = tile;
+                        //     this.slots[i][j] = null;
+                        //     tile.position = this.toScreenPos(goalRow, j);
+                        //     tile.drop(numDrops * this.tileWidth);
+                        // }
+                        // if(this.isDropTile(i, j)) {
+                        //     var 
+                        // }
+                    }
+                }
+            }
             for (var j = 0; j < this.columns; ++j) {
                 var numDrops = 0;
                 for (var i = 0; i < this.rows; ++i) {
@@ -1550,16 +1577,43 @@ var CircuitFreaks;
             }
             return res;
         };
+        Board.prototype.isEmptyTileAt = function (row, column) {
+            if (row < 0 || row >= this.rows || column < 0 || column >= this.columns)
+                return false;
+            return this.slots[row][column] == null;
+        };
+        Board.prototype.isDropTileSlot = function (row, column) {
+            if (row < 0 || row >= this.rows || column < 0 || column >= this.columns)
+                return false;
+            var tile = this.slots[row][column];
+            if (tile == null)
+                return false;
+            var dirs = [CircuitFreaks.Direction.UpLeft, CircuitFreaks.Direction.Up, CircuitFreaks.Direction.UpRight];
+            for (var _i = 0, dirs_1 = dirs; _i < dirs_1.length; _i++) {
+                var d = dirs_1[_i];
+                var coord = new PIXI.Point(row, column);
+                this.stepCoord(coord, d);
+                if (!this.isEmptyTileAt(coord.x, coord.y))
+                    return false;
+            }
+            return true;
+        };
         Board.prototype.hasDropTiles = function () {
-            for (var j = 0; j < this.columns; ++j) {
-                var encounteredEmpty = false;
-                for (var i = 0; i < this.rows; ++i) {
-                    if (this.slots[i][j] == null)
-                        encounteredEmpty = true;
-                    else if (encounteredEmpty)
+            for (var i = 0; i < this.rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
+                    if (this.isDropTileSlot(i, j) && this.slots[i][j] != null)
                         return true;
                 }
             }
+            // for(var j:number=0; j<this.columns; ++j) {
+            //     var encounteredEmpty = false;
+            //     for(var i:number=0; i<this.rows; ++i) {
+            //         if(this.slots[i][j] == null)
+            //             encounteredEmpty = true;
+            //         else if(encounteredEmpty)
+            //             return true;
+            //     }
+            // }
             return false;
         };
         Board.prototype.hasCircuit = function () {
