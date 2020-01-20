@@ -5,14 +5,14 @@ module CircuitFreaks
 {
     export class TileSet extends PIXI.Container {
 
-        types:TileDescriptor[];
+        types:TileType[];
         tiles:Tile[];
         tileWidth:number;
 
         rotateAnimParam:number;
-        cwRotations:number;
+        isHorizontal:boolean;
 
-        constructor(tileWidth:number, types:TileDescriptor[]) {
+        constructor(tileWidth:number, types:TileType[]) {
             super();
 
             this.types = types;
@@ -20,37 +20,16 @@ module CircuitFreaks
             this.tiles = [];
 
             this.rotateAnimParam = 1;
-            this.cwRotations = 0;
+            this.isHorizontal = true;
 
             this.setTypes(types);
-        }
-
-        getTileDescriptions() : TileDescriptor[] {
-            var res:TileDescriptor[] = [];
-
-            for(let tile of this.tiles) {
-                res.push(tile.getTileDescriptor());
-            }
-
-            return res;
-        }
-
-        getDirection() {
-            switch(this.cwRotations) {
-                case 0:
-                    return Direction.Down;
-                case 1:
-                    return Direction.DownLeft;
-                default:
-                    return Direction.UpLeft;
-            }
         }
 
         update(dt:number) {
 
             this.rotateAnimParam = Math.min(this.rotateAnimParam + dt / 0.2, 1.0);
             // this.rotation = (1 - easeOutElastic(this.rotateAnimParam)) * -0.5 * Math.PI;
-            this.rotation = -Math.PI / 3.0 * (1 - Math.sin(this.rotateAnimParam * .5 * Math.PI));
+            this.rotation = -.5 * Math.PI * (1 - Math.sin(this.rotateAnimParam * .5 * Math.PI));
 
             for(var i:number=0; i<this.tiles.length; ++i) {
                 this.tiles[i].update(dt);
@@ -61,25 +40,17 @@ module CircuitFreaks
 
             this.rotateAnimParam = 0;
 
-            var currTypes:TileDescriptor[] = [];
+            var currTypes:TileType[] = [];
             for(let tile of this.tiles)
-                currTypes.push(tile.getTileDescriptor());
+                currTypes.push(tile.type);
 
             for(var i:number=0; i<currTypes.length; ++i)
-                currTypes[i].rotateCW();// rotateTypeCW(currTypes[i]);
+                currTypes[i] = rotateTypeCW(currTypes[i]);
 
-            this.cwRotations = this.cwRotations + 1;
-            if(this.cwRotations > 2) {
-                this.cwRotations = 0;
+            this.isHorizontal = !this.isHorizontal;
+            if(this.isHorizontal)
                 currTypes.reverse();
-            }
-
             this.setTypes(currTypes);
-
-            // this.isHorizontal = !this.isHorizontal;
-            // if(this.isHorizontal)
-            //     currTypes.reverse();
-            // this.setTypes(currTypes);
 
 
             // this.rotation = (this.rotation + .5 * Math.PI) % (2 * Math.PI);
@@ -93,22 +64,22 @@ module CircuitFreaks
             return TileType.Trash;
         }
 
-        setTypes(types:TileDescriptor[]) {
+        setTypes(types:TileType[]) {
             while(this.tiles.length > 0) {
                 this.removeChild(this.tiles[0]);
                 this.tiles.splice(0,1);
             }
-
-            var offset = (types.length - 1) * .5 * this.tileWidth;
 
             for(var i:number=0; i<types.length; ++i) {
                 let tile = new Tile(this.tileWidth, types[i]);
                 this.addChild(tile);
                 this.tiles.push(tile);
 
-                var angle = (-.5 + this.cwRotations / 3.0 + i) * Math.PI;
-                tile.x = Math.cos(angle) * offset;
-                tile.y = Math.sin(angle) * offset;
+                var offset = (i - (types.length - 1) * 0.5) * this.tileWidth;
+                if(this.isHorizontal)
+                    tile.x = offset;
+                else
+                    tile.y = offset;
             }
         }
     }

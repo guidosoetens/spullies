@@ -26,7 +26,7 @@ function disableScroll() {
   if (window.addEventListener) // older FF
       window.addEventListener('DOMMouseScroll', preventDefault, false);
   window.onwheel = preventDefault; // modern standard
-  window.onmousewheel /*= document.onmousewheel*/ = preventDefault; // older browsers, IE
+  window.onmousewheel = document.onmousewheel = preventDefault; // older browsers, IE
   window.ontouchmove  = preventDefault; // mobile
   document.onkeydown  = preventDefaultForScrollKeys;
 }
@@ -34,7 +34,7 @@ function disableScroll() {
 function enableScroll() {
     if (window.removeEventListener)
         window.removeEventListener('DOMMouseScroll', preventDefault, false);
-    window.onmousewheel /*= document.onmousewheel*/ = null; 
+    window.onmousewheel = document.onmousewheel = null; 
     window.onwheel = null; 
     window.ontouchmove = null;  
     document.onkeydown = null;  

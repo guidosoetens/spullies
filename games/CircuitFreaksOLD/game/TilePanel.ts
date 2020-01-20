@@ -9,7 +9,7 @@ module CircuitFreaks
         prevSet:TileSet;
 
         nextSets:TileSet[];
-        nextTypes:TileDescriptor[][];
+        nextTypes:TileType[][];
 
         tileCount:number;
         tileWidth:number;
@@ -41,18 +41,18 @@ module CircuitFreaks
         }
 
         undo() {
-            // if(this.prevSet == null)
-            //     return;
+            if(this.prevSet == null)
+                return;
 
-            // var curr = this.nextSets[this.selectedIndex];
-            // if(curr != null) {
-            //     this.nextTypes.splice(0, 0, curr.types);
-            //     this.removeChild(curr);
-            // }
+            var curr = this.nextSets[this.selectedIndex];
+            if(curr != null) {
+                this.nextTypes.splice(0, 0, curr.types);
+                this.removeChild(curr);
+            }
 
-            // this.nextSets[this.selectedIndex] = this.prevSet;
-            // this.addChild(this.prevSet);
-            // this.prevSet = null;
+            this.nextSets[this.selectedIndex] = this.prevSet;
+            this.addChild(this.prevSet);
+            this.prevSet = null;
         }
 
         update(dt:number) {
@@ -110,83 +110,28 @@ module CircuitFreaks
             return this.nextSets[this.selectedIndex];
         }
 
-        getNextType() : TileDescriptor[] {
+        getNextType() : TileType[] {
 
             if(this.nextTypes.length == 0) {
 
-                // var topTypes = [ TileType.Curve_NE, TileType.Curve_NW, TileType.Curve_SE, TileType.Curve_SW, 
-                //                 TileType.Double_NW, TileType.Double_NE,
-                //                 TileType.Straight_H, TileType.Straight_V ];
-                var topTypes:TileDescriptor[] = [];//[ TileType.Path, TileType.Path, TileType.Path ];
-                var btmTypes:TileDescriptor[] = [];
-                for(var i:number=0; i<5; ++i) {
-                    for(var it:number=0; it<2; ++it) {
-                        let d1:Direction = it == 0 ? Direction.Down : Direction.Up;
-                        let d2:Direction = (d1 + 1 + i) % 6;
-                        let tile = new TileDescriptor(TileType.Path, 0);
-                        tile.paths.push(new TilePathDescriptor(d1, d2));
-                        if(it == 0)
-                            topTypes.push(tile);
-                        else
-                            btmTypes.push(tile);
-                    }
-                }
-
-
-                // var dirs = [ [ Direction.DownLeft, Direction.UpLeft], [Direction.Up, Direction.UpRight], [Direction.DownRight, Direction.Down]];
-                // for(let d of dirs) {
-                //     let desc = new TileDescriptor(TileType.Path, 0);
-                //     topTypes.push(new TileDescriptor(TileType.Path, 0));
-                // }
-                // if(Math.random() < .5) {
-                //     dirs = [ [ Direction.UpLeft, Direction.Up], [Direction.UpRight, Direction.DownRight], [Direction.Down, Direction.DownLeft]];
-                // }
-
-                // if(Math.random() < .1) {
-                //     dirs = [ [Direction.UpLeft, Direction.DownRight] ];
-                // }
-                // else if(Math.random() < .1) {
-                //     dirs = [ [Direction.UpLeft, Direction.UpRight] ];
-                // }
-
-                // let baseIdx = Math.floor(Math.random() * 3);
-                // let numReps = Math.random() < .2 ? dirs.length : 1;
-                
-                // for(var i:number=0; i<numReps; ++i) {
-                //     let idx = (i + baseIdx) % dirs.length;
-                //     this.paths[i] = new TilePath(dirs[idx][0], dirs[idx][1]);
-                // }
-
-
-
-                // var btmTypes =  [...topTypes];
+                var topTypes = [ TileType.Curve_NE, TileType.Curve_NW, TileType.Curve_SE, TileType.Curve_SW, 
+                                TileType.Double_NW, TileType.Double_NE,
+                                TileType.Straight_H, TileType.Straight_V ];
+                var btmTypes =  [...topTypes];
                 this.shuffle(btmTypes);
 
                 for(let i in btmTypes) 
                     this.nextTypes.push([topTypes[i], btmTypes[i]]);
-                    
-                this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
-
-                let tripleTile = new TileDescriptor(TileType.Path, 0);
-                this.nextTypes.push([tripleTile]);
-                for(var i:number=0; i<3; ++i) {
-                    tripleTile.paths.push(new TilePathDescriptor(2 * i, 2 * i + 1));
-                }
-
-                let straightTile = new TileDescriptor(TileType.Path, 0);
-                this.nextTypes.push([straightTile]);
-                straightTile.paths.push(new TilePathDescriptor(Direction.Up, Direction.Down));
-                for(var i:number=0; i<2; ++i) {
-                    straightTile.paths.push(new TilePathDescriptor(3 * i + 1, 3 * i + 2));
-                }
-
-                let doubleTile = new TileDescriptor(TileType.Path, 0);
-                this.nextTypes.push([doubleTile]);
-                for(var i:number=0; i<2; ++i) {
-                    doubleTile.paths.push(new TilePathDescriptor(3 * i + 2, (3 * i + 4) % 6));
-                }
-
+                // this.nextTypes.push([TileType.Double_NE]);
+                this.nextTypes.push([TileType.Trash]);
                 this.shuffle(this.nextTypes);
+
+                //create new 
+                // this.nextTypes = [ [TileType.Curve_NE], [TileType.Curve_NW], [TileType.Curve_SE], [TileType.Curve_SW], [TileType.Double_NE], [TileType.Double_NW]];
+                // for(var i:number=0; i<TileType.Source; ++i) {
+                //     this.nextTypes.push([i]);
+                // }
+                // this.shuffle(this.nextTypes);
             }
 
             var res = this.nextTypes[0];

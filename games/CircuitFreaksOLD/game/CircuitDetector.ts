@@ -25,32 +25,31 @@ module CircuitFreaks
             }
         }
 
-        // performFunctionOnBorderTiles(f:Function) {
-        //     var dirs:Direction[] = [Direction.Right, Direction.Down, Direction.Left, Direction.Up];
-        //     for(var sideIdx:number=0; sideIdx<4; ++sideIdx) {
-        //         let dir = dirs[sideIdx];
-        //         var row:number = sideIdx < 2 ? -1 : this.rows;
-        //         var col:number = sideIdx < 2 ? -1 : this.columns;
-        //         var travRow = sideIdx % 2 == 0;
-        //         var its = travRow ? this.rows : this.columns;
-        //         for(var i:number=0; i<its; ++i) {
-        //             if(travRow)
-        //                 row = i;
-        //             else col = i;
-        //             var n = new PIXI.Point(row, col);
-        //             this.stepCoord(n, dir);
-        //             var tile = this.slots[n.x][n.y];
-        //             if(tile != null) {
-        //                 if(this.connects(n.x, n.y, dir) && this.isPathType(tile.type))
-        //                     f(this, n.x, n.y, tile, dir);
-        //             }
-        //         }
-        //     }
-        // }
+        performFunctionOnBorderTiles(f:Function) {
+            var dirs:Direction[] = [Direction.Right, Direction.Down, Direction.Left, Direction.Up];
+            for(var sideIdx:number=0; sideIdx<4; ++sideIdx) {
+                let dir = dirs[sideIdx];
+                var row:number = sideIdx < 2 ? -1 : this.rows;
+                var col:number = sideIdx < 2 ? -1 : this.columns;
+                var travRow = sideIdx % 2 == 0;
+                var its = travRow ? this.rows : this.columns;
+                for(var i:number=0; i<its; ++i) {
+                    if(travRow)
+                        row = i;
+                    else col = i;
+                    var n = new PIXI.Point(row, col);
+                    this.stepCoord(n, dir);
+                    var tile = this.slots[n.x][n.y];
+                    if(tile != null) {
+                        if(this.connects(n.x, n.y, dir) && this.isPathType(tile.type))
+                            f(this, n.x, n.y, tile, dir);
+                    }
+                }
+            }
+        }
 
         stepCoord(coord:PIXI.Point, dir:Direction) {
             //NOTE: x is row, y is column!
-            let evenCol:boolean = coord.y % 2 == 0;
             switch(dir) {
                 case Direction.Up:
                     --coord.x;
@@ -58,25 +57,11 @@ module CircuitFreaks
                 case Direction.Down:
                     ++coord.x;
                     break;
-                case Direction.DownLeft:
+                case Direction.Left:
                     --coord.y;
-                    if(evenCol)
-                        ++coord.x;
                     break;
-                case Direction.DownRight:
+                case Direction. Right:
                     ++coord.y;
-                    if(evenCol)
-                        ++coord.x;
-                    break;
-                case Direction.UpLeft:
-                    --coord.y;
-                    if(!evenCol)
-                        --coord.x;
-                    break;
-                case Direction.UpRight:
-                    ++coord.y;
-                    if(!evenCol)
-                        --coord.x;
                     break;
             }
         }
@@ -107,7 +92,19 @@ module CircuitFreaks
         }
 
         isPathType(type:TileType) {
-            return type == TileType.Path;
+            switch(type) {
+                case TileType.Curve_NE:
+                case TileType.Curve_NW:
+                case TileType.Curve_SE:
+                case TileType.Curve_SW:
+                case TileType.Straight_H:
+                case TileType.Straight_V:
+                case TileType.Double_NE:
+                case TileType.Double_NW:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         sourcesConnect(t1:Tile, t2:Tile) : boolean {
@@ -136,7 +133,6 @@ module CircuitFreaks
             if(this.isSourceType(tile.type)) {
                 if(this.sourcesConnect(root, tile)) {
                     tile.setStateFromDirection(dir, CircuitState.Circuit);
-                    console.log("FOUND!", row, col);
                     return tile;
                 }
                 else
@@ -151,7 +147,6 @@ module CircuitFreaks
             if(this.connects(coord.x, coord.y, nextDir)) {
                 var goalTile = this.connectsToType(coord.x, coord.y, nextDir, root);
                 if(goalTile != null) {
-                    console.log("GO BACK", row, col);
                     tile.setStateFromDirection(dir, CircuitState.Circuit);
                     return goalTile;
                 }
@@ -238,12 +233,9 @@ module CircuitFreaks
 
         propagateCircuits() {
 
-            // console.clear();
-
             let clearPropState = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { tile.clearCircuitState(); }
             this.performFunctionOnTiles(clearPropState);
 
-            /*
             let pushBorderTiles = function(caller:CircuitDetector, i:number, j:number, tile:Tile, dir:Direction) : boolean {
 
                 var isCircuit = false;
@@ -275,12 +267,11 @@ module CircuitFreaks
                 return isCircuit;
             }
             this.performFunctionOnBorderTiles(pushBorderTiles);
-            */
 
             let pushSource = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { 
                 if(caller.isSourceType(tile.type)) {
                     var goalTiles:Tile[] = [];
-                    for(var dirIdx=0; dirIdx<6; ++dirIdx) {
+                    for(var dirIdx=0; dirIdx<4; ++dirIdx) {
                         var coord = new PIXI.Point(i, j);
                         caller.stepCoord(coord, dirIdx);
                         if(caller.connects(coord.x, coord.y, dirIdx)) {
@@ -290,10 +281,8 @@ module CircuitFreaks
 
                             var goalTile = caller.connectsToType(coord.x, coord.y, dirIdx, tile);
                             let hasTile = caller.hasElement(goalTiles, goalTile);
-                            if(goalTile != null && !hasTile) {
-                                console.log("GO BACK", i, j);
+                            if(goalTile != null && !hasTile)
                                 goalTiles.push(goalTile);
-                            }
                         }
                     }
 
@@ -394,6 +383,19 @@ module CircuitFreaks
             tile.degrade();
         }
 
+        getOppositeDir(dir:Direction) : Direction {
+            switch(dir) {
+                case Direction.Down:
+                    return Direction.Up;
+                case Direction.Up:
+                    return Direction.Down;
+                case Direction.Left:
+                    return Direction.Right;
+                case Direction.Right:
+                    return Direction.Left;
+            }
+        }
+
         findDeadlocks() {
 
             let clearPropState = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { tile.clearCircuitState(); }
@@ -430,7 +432,7 @@ module CircuitFreaks
                         caller.stepCoord(coord, seekDir);
 
                         if(caller.connectsToDeadlock(coord.x, coord.y, seekDir))
-                            tile.setStateFromDirection(getOppositeDir(dir), CircuitState.DeadLock);
+                            tile.setStateFromDirection(caller.getOppositeDir(dir), CircuitState.DeadLock);
                     }
                 }
             }
