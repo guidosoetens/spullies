@@ -1,6 +1,7 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="CircuitDetector.ts"/>
+///<reference path="TileDragLayer.ts"/>
 
 module CircuitFreaks
 {
@@ -16,6 +17,7 @@ module CircuitFreaks
     export class Board extends PIXI.Container {
 
         gridGraphics:PIXI.Graphics;
+        tilesLayer:PIXI.Container;
 
         rows:number;
         columns:number;
@@ -37,15 +39,14 @@ module CircuitFreaks
         stateChangedListener:any;
         onStateChanged:Function;
 
+        dragging:boolean;
+        dragLayer:TileDragLayer;
+
         constructor(w:number, h:number) {
             super();
 
             this.boardWidth = w;
             this.boardHeight = h;
-
-            // this.rows = 8;
-            // this.columns = 6;
-            // this.tileWidth = Math.min(w / this.columns, h / this.rows);// 60;
 
             this.discardTiles = [];
 
@@ -54,39 +55,15 @@ module CircuitFreaks
 
             this.tileWasPushedTMP = false;
 
-            // //create empty grid:
-            // this.slots = [];
-            // this.snapshot = [];
-            // for(var i:number=0; i<this.rows; ++i) {
-            //     this.slots[i] = [];
-            //     this.snapshot[i] = [];
-            //     for(var j:number=0; j<this.columns; ++j) {
-            //         this.slots[i][j] = null;
-            //         this.snapshot[i][j] = null;
-            //     }
-            // }
-
-            // this.circuitDetector = new CircuitDetector(this.slots, this.rows, this.columns);
-
-            // var center = new PIXI.Point(w / 2.0, h / 2.0);
-            // var size = new PIXI.Point(this.columns * this.tileWidth, this.rows * this.tileWidth);
-
             this.gridGraphics = new PIXI.Graphics();
-            // this.gridGraphics.beginFill(0x0, 0.3);
-            // this.gridGraphics.lineStyle(this.tileWidth * .05, 0xffffff, 1);
-            // this.gridGraphics.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
-            // this.gridGraphics.endFill();
-            // for(var i:number=1; i<this.rows; ++i) {
-            //     var y = center.y + (i / this.rows - .5) * size.y;
-            //     this.gridGraphics.moveTo(center.x - size.x / 2.0, y);
-            //     this.gridGraphics.lineTo(center.x + size.x / 2.0, y);
-            // }
-            // for(var i:number=1; i<this.columns; ++i) {
-            //     var x = center.x + (i / this.columns - .5) * size.x;
-            //     this.gridGraphics.moveTo(x, center.y - size.y / 2.0);
-            //     this.gridGraphics.lineTo(x, center.y + size.y / 2.0);
-            // }
             this.addChild(this.gridGraphics);
+
+            this.tilesLayer = new PIXI.Container();
+            this.addChild(this.tilesLayer);
+
+            this.dragging = false;
+            this.dragLayer = new TileDragLayer();
+            this.addChild(this.dragLayer);
 
             this.setBoardSize(8, 5);
 
@@ -127,19 +104,6 @@ module CircuitFreaks
                     this.gridGraphics.endFill();
                 }
             }
-
-            // this.gridGraphics.drawRoundedRect(center.x - size.x / 2.0, center.y - size.y / 2.0, size.x, size.y, .1 * this.tileWidth);
-            // this.gridGraphics.endFill();
-            // for(var i:number=1; i<this.rows; ++i) {
-            //     var y = center.y + (i / this.rows - .5) * size.y;
-            //     this.gridGraphics.moveTo(center.x - size.x / 2.0, y);
-            //     this.gridGraphics.lineTo(center.x + size.x / 2.0, y);
-            // }
-            // for(var i:number=1; i<this.columns; ++i) {
-            //     var x = center.x + (i / this.columns - .5) * size.x;
-            //     this.gridGraphics.moveTo(x, center.y - size.y / 2.0);
-            //     this.gridGraphics.lineTo(x, center.y + size.y / 2.0);
-            // }
         }
 
         createSnapshot(tilePushed:boolean) {
@@ -147,7 +111,7 @@ module CircuitFreaks
             for(var i:number=0; i<this.rows; ++i) {
                 for(var j:number=0; j<this.columns; ++j) {
                     let tile = this.slots[i][j];
-                    this.snapshot[i][j] = (tile == null) ? null : new TileDescriptor(tile.type, tile.groupIndex);
+                    this.snapshot[i][j] = (tile == null) ? null : tile.getTileDescriptor();
                 }
             }
         }
@@ -164,7 +128,7 @@ module CircuitFreaks
                         tile.position.x = res.x;
                         tile.position.y = res.y;
                         this.slots[i][j] = tile;
-                        this.addChild(tile);
+                        this.tilesLayer.addChild(tile);
                         tile.groupIndex = desc.groupIndex;
                         tile.redraw();
                     }
@@ -178,7 +142,7 @@ module CircuitFreaks
 
         clearBoard() {
             while(this.discardTiles.length > 0) {
-                this.removeChild(this.discardTiles[0]);
+                this.tilesLayer.removeChild(this.discardTiles[0]);
                 this.discardTiles.splice(0, 1);
             }
 
@@ -187,7 +151,7 @@ module CircuitFreaks
                 for(var j:number=0; j<this.columns; ++j) {
                     var tile = this.slots[i][j];
                     if(tile != null)
-                        this.removeChild(tile);
+                        this.tilesLayer.removeChild(tile);
                     this.slots[i][j] = null;
                 }
             }
@@ -195,9 +159,7 @@ module CircuitFreaks
 
         loadBoard(data:LevelData) {
             this.clearBoard();
-            /*
-            console.log("gaat ie");
-
+            
             this.setBoardSize(data.rows, data.columns);
 
             console.log(data);
@@ -216,14 +178,13 @@ module CircuitFreaks
                     tile.position.x = res.x;
                     tile.position.y = res.y;
                     this.slots[i][j] = tile;
-                    this.addChild(tile);
+                    this.tilesLayer.addChild(tile);
                     tile.groupIndex = 0;
                     tile.redraw();
                 }
             }
 
             this.setState(BoardState.Idle);
-            */
         }
 
         resetBoard() {
@@ -253,7 +214,7 @@ module CircuitFreaks
                     tile.position.x = res.x;
                     tile.position.y = res.y;
                     this.slots[row][column] = tile;
-                    this.addChild(tile);
+                    this.tilesLayer.addChild(tile);
                     tile.redraw();
                 }
             }
@@ -287,7 +248,7 @@ module CircuitFreaks
                 case BoardState.ProcessCircuits:
 
                     while(this.discardTiles.length > 0) {
-                        this.removeChild(this.discardTiles[0]);
+                        this.tilesLayer.removeChild(this.discardTiles[0]);
                         this.discardTiles.splice(0,1);
                     }
 
@@ -351,6 +312,90 @@ module CircuitFreaks
             }
         }
 
+        startDrag(p:PIXI.Point) {
+            let coord = this.pointToCoord(p.x, p.y);
+            if(coord.x >= 0 && coord.x < this.rows && coord.y >= 0 && coord.y < this.columns) {
+                var tile = this.slots[coord.x][coord.y];
+                if(tile != null) {
+                    this.dragging = true;
+                    this.dragLayer.dragSourceCoord.x = coord.x;
+                    this.dragLayer.dragSourceCoord.y = coord.y;
+                    this.dragLayer.dragSourePoint.x = p.x;
+                    this.dragLayer.dragSourePoint.y = p.y;
+                    this.dragLayer.dragDirection = undefined;
+                }
+            }
+        }
+
+        dragTo(p:PIXI.Point) {
+            if(!this.dragging)
+                return;
+
+            if(this.dragLayer.dragDirection == undefined) {
+                let toPos = new PIXI.Point(p.x - this.dragLayer.dragSourePoint.x, p.y - this.dragLayer.dragSourePoint.y);
+                var maxDist = 0;
+                var maxDir = 0;
+                for(var i:number=0; i<3; ++i) {
+                    let angle = -.5 * Math.PI + i * Math.PI / 3.0;
+                    let toX = Math.cos(angle);
+                    let toY = Math.sin(angle);
+
+                    let projection = toPos.x * toX + toPos.y * toY;
+                    if(Math.abs(projection) > Math.abs(maxDist)) {
+                        maxDist = projection;
+                        maxDir = i;
+                    }
+                }
+
+                if(Math.abs(maxDist) > 10.0) {
+                    this.dragLayer.dragDirection = maxDir;
+
+                    //add children in current sequence:
+                    var borderCoord:PIXI.Point = new PIXI.Point(this.dragLayer.dragSourceCoord.x, this.dragLayer.dragSourceCoord.y);
+                    //step back until coord is outside of board:
+                    let oppDir = getOppositeDir(this.dragLayer.dragDirection);
+                    while(this.isBoardCoord(borderCoord)) {
+                        this.stepCoord(borderCoord, oppDir);
+                    }
+
+                    var testCoord = new PIXI.Point(borderCoord.x, borderCoord.y);
+                    this.stepCoord(testCoord, this.dragLayer.dragDirection);
+                    var allPath = true;
+                    let dragTiles = [];
+                    while(this.isBoardCoord(testCoord) && allPath) {
+                        let tile = this.slots[testCoord.x][testCoord.y];
+                        if(tile == null)
+                            allPath = false;
+                        // else if(tile.type != TileType.Path)
+                        //     allPath = false;
+                        this.stepCoord(testCoord, this.dragLayer.dragDirection);
+                        dragTiles.push(tile);
+                    }
+
+                    if(!allPath) {
+                        this.dragging = false;
+                        return;
+                    }
+
+                    for(let tile of dragTiles)
+                        this.tilesLayer.removeChild(tile);
+                    this.dragLayer.startDrag(dragTiles, this.toScreenPos(borderCoord.x, borderCoord.y));
+                }
+            }
+            else if(this.dragging) {
+                this.dragLayer.updateDrag(p);
+            }
+        }
+
+        dragEnd(p:PIXI.Point) {
+            if(this.dragging) {
+                let tiles = this.dragLayer.endDrag(p);
+                for(let tile of tiles)
+                    this.tilesLayer.addChild(tile);
+            }
+            this.dragging = false;
+        }
+
 
         clearCircuitTiles() {
 
@@ -388,55 +433,18 @@ module CircuitFreaks
                         var row:number = i;
                         while(this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
-                            console.log("drop to", row)
                         }
 
                         if(row != i) {
-                            console.log("do drop");
                             this.slots[row][j] = tile;
                             this.slots[i][j] = null;
                             console.log(row, j);
                             tile.position = this.toScreenPos(row, j);
                             tile.drop((i - row) * this.tileWidth);
                         }
-
-                        // while(this.isDropTile(row, j)) {
-                        //     //drop tile:
-                        //     var goalRow = i - numDrops;
-                        //     this.slots[goalRow][j] = tile;
-                        //     this.slots[i][j] = null;
-                        //     tile.position = this.toScreenPos(goalRow, j);
-                        //     tile.drop(numDrops * this.tileWidth);
-                        // }
-                        // if(this.isDropTile(i, j)) {
-
-                        //     var 
-
-
-
-                        // }
                     }
                 }
             }
-
-
-
-            // for(var j:number=0; j<this.columns; ++j) {
-            //     var numDrops = 0;
-            //     for(var i:number=0; i<this.rows; ++i) {
-            //         var tile = this.slots[i][j];
-            //         if(tile == null) {
-            //             numDrops++;
-            //         }
-            //         else if(numDrops > 0) {
-            //             var goalRow = i - numDrops;
-            //             this.slots[goalRow][j] = tile;
-            //             this.slots[i][j] = null;
-            //             tile.position = this.toScreenPos(goalRow, j);
-            //             tile.drop(numDrops * this.tileWidth);
-            //         }
-            //     }
-            // }
         }
 
         toScreenPos(row:number, col:number) : PIXI.Point {
@@ -549,10 +557,26 @@ module CircuitFreaks
             }
         }
 
+        isBoardCoord(pt:PIXI.Point) {
+            return pt.x >= 0 && pt.x < this.rows && pt.y >= 0 && pt.y < this.columns;
+        }
+
         isCoordAvailable(pt:PIXI.Point) : boolean {
-            if(pt.x < 0 || pt.x >= this.rows || pt.y < 0 || pt.y >= this.columns)
+            if(!this.isBoardCoord(pt))
                 return false;
             return this.slots[pt.x][pt.y] == null;
+        }
+
+        pointToCoord(x:number, y:number) : PIXI.Point {
+            let slotHeight = this.tileWidth;
+            let slotWidth = hexWidthFactor * slotHeight;
+
+            let column = Math.floor((x - this.boardWidth / 2.0) / slotWidth + this.columns / 2.0);
+            if(column % 2 == 0)
+                y -= .5 * slotHeight;
+
+             let row = Math.floor((y - this.boardHeight / 2.0) / slotHeight + this.rows / 2.0);
+            return new PIXI.Point(row, column);
         }
 
         pushTile(pos:PIXI.Point, set:TileSet) : boolean {
@@ -572,118 +596,32 @@ module CircuitFreaks
                 samplePos.y += Math.sin(angle) * offset;
             }
 
-            var column = Math.floor((samplePos.x - this.boardWidth / 2.0) / slotWidth + this.columns / 2.0);
-            if(column % 2 == 0)
-                samplePos.y -= .5 * slotHeight;
-
-            var row = Math.floor((samplePos.y - this.boardHeight / 2.0) / slotHeight + this.rows / 2.0);
-
-            var coord = new PIXI.Point(row, column);
+            var coord = this.pointToCoord(samplePos.x, samplePos.y);
             var placesAvailable = this.isCoordAvailable(coord);
             for(var i:number=0; i<descs.length - 1; ++i) {
                 this.stepCoord(coord, set.getDirection());
                 placesAvailable = placesAvailable && this.isCoordAvailable(coord);
             }
 
-
-
             if(placesAvailable) {
                 this.createSnapshot(true);
     
-                coord = new PIXI.Point(row, column);
+                coord = this.pointToCoord(samplePos.x, samplePos.y);
                 for(var i:number=0; i<set.tiles.length; ++i) {
                     var tile = new Tile(this.tileWidth, descs[i]);
                     tile.position = this.toScreenPos(coord.x, coord.y);
                     tile.setState(TileState.Appearing);
                     this.slots[coord.x][coord.y] = tile;
-                    this.addChild(tile);
+                    this.tilesLayer.addChild(tile);
                     this.stepCoord(coord, set.getDirection());
                 }
 
-                // var tile = new Tile(this.tileWidth, type);
-                // tile.position = this.toScreenPos(row, column);
-                // this.slots[row][column] = tile;
-                // this.addChild(tile);
-
                 this.setState(BoardState.Place);
 
                 return true;
             }
 
-
-
-            /*
-            let isHor = false;
-
-            var stepRows = 1, stepCols = 1;
-            stepCols = set.tiles.length;
-            if(isHor)
-                stepCols = set.tiles.length;
-            else
-                stepRows = set.tiles.length;
-
-
-            var offset = -(set.tiles.length - 1) * .5 * this.tileWidth;
-
-            var slotsAvailable = true;
-            var column = Math.floor((pos.x - this.boardWidth / 2.0 + (isHor ? offset : 0)) / this.tileWidth + this.columns / 2.0);
-            if(column < 0 || column > this.columns - stepCols) 
-                slotsAvailable = false;
-
-            var row = Math.floor((pos.y - this.boardHeight / 2.0 + (isHor ? 0 : offset)) / this.tileWidth + this.rows / 2.0);
-            if(row < 0 || row > this.rows - stepRows) 
-                slotsAvailable = false;
-
-            //make sure slots are empty:
-            for(var i:number=0; i<set.tiles.length && slotsAvailable; ++i) {
-                var calcRow = row + (isHor ? 0 : i);
-                var calcCol = column + (isHor ? i : 0);
-                if(this.slots[calcRow][calcCol] != null)
-                    slotsAvailable = false;
-            }
-
-            if(slotsAvailable) {
-
-                this.createSnapshot(true);
-
-                for(var i:number=0; i<set.tiles.length; ++i) {
-                    var calcRow = row + (isHor ? 0 : i);
-                    var calcCol = column + (isHor ? i : 0);
-                    var tile = new Tile(this.tileWidth, descs[i]);
-                    tile.position = this.toScreenPos(calcRow, calcCol);
-                    tile.setState(TileState.Appearing);
-                    this.slots[calcRow][calcCol] = tile;
-                    this.addChild(tile);
-                }
-
-                // var tile = new Tile(this.tileWidth, type);
-                // tile.position = this.toScreenPos(row, column);
-                // this.slots[row][column] = tile;
-                // this.addChild(tile);
-
-                this.setState(BoardState.Place);
-
-                return true;
-            }
-            else {
-
-                //don't do anything deadlock-related for now...
-
-                // column = Math.floor((pos.x - this.boardWidth / 2.0) / this.tileWidth + this.columns / 2.0);
-                // if(column < 0 || column >= this.columns) 
-                //     return false;
-    
-                // row = Math.floor((pos.y - this.boardHeight / 2.0) / this.tileWidth + this.rows / 2.0);
-                // if(row < 0 || row >= this.rows) 
-                //     return false;
-
-                // if(this.slots[row][column] != null) {
-                //     this.createSnapshot(false);
-                //     this.circuitDetector.degradeDeadlock(row, column);
-                //     this.setState(BoardState.DegradeDeadlock);
-                // }
-            }
-            */
+            this.startDrag(pos);
 
             return false;
         }

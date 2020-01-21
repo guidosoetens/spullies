@@ -13,7 +13,7 @@ module CircuitFreaks
 
         rows:number;
         columns:number;
-        tiles:TileType[];
+        tiles:TileDescriptor[];
         
         constructor(rows:number, cols:number) {
             this.rows = rows;
@@ -25,33 +25,45 @@ module CircuitFreaks
                 this.tiles[i] = undefined;
         }
 
-        static deserializeTile(type:string) : TileType {
+        static deserializeTile(type:string) : TileDescriptor {
             switch(type) {
                 case 'y1':
-                    return TileType.Source;
+                    return new TileDescriptor(TileType.Source, 0);
                 case 'y2':
-                    return TileType.DoubleSource;
+                    return new TileDescriptor(TileType.DoubleSource, 0);
                 case 'y3':
-                    return TileType.TripleSource;
+                    return new TileDescriptor(TileType.TripleSource, 0);
+                case 'b1':
+                    return new TileDescriptor(TileType.Source, 1);
+                case 'b2':
+                    return new TileDescriptor(TileType.DoubleSource, 1);
+                case 'b3':
+                    return new TileDescriptor(TileType.TripleSource, 1);
+                case 'r1':
+                    return new TileDescriptor(TileType.Source, 2);
+                case 'r2':
+                    return new TileDescriptor(TileType.DoubleSource, 2);
+                case 'r3':
+                    return new TileDescriptor(TileType.TripleSource, 2);
                 case '##':
-                    return TileType.Trash;
+                    return new TileDescriptor(TileType.Trash, 0);
             }
             return undefined;
         }
 
-        static serializeTile(type:TileType) : string {
-            switch(type) {
-                case TileType.Source:
-                    return 'y1';
-                case TileType.DoubleSource:
-                    return 'y2';
-                case TileType.TripleSource:
-                    return 'y3';
-                case TileType.Trash:
-                    return '##';
-            }
-            return '--';
-        }
+        // static serializeTile(type:TileDescriptor) : string {
+        //     switch(type) {
+        //         case TileType.Source:
+        //             return 'y1';
+        //         case TileType.DoubleSource:
+        //             return 'y2';
+        //         case TileType.TripleSource:
+        //             return 'y3';
+        //         case TileType.Trash:
+        //             return '##';
+        //     }
+        //     return '--';
+        // }
 
         static deserialize(data:any) : LevelData {
             var result:LevelData = new LevelData(data.rows, data.columns);
@@ -63,22 +75,22 @@ module CircuitFreaks
             return result;
         }
 
-        serialize() : any {
-            var result:any = {};
+        // serialize() : any {
+        //     var result:any = {};
 
-            result.rows = this.rows;
-            result.columns = this.columns;
+        //     result.rows = this.rows;
+        //     result.columns = this.columns;
 
-            var tiles = [];
-            result.tiles = tiles;
+        //     var tiles = [];
+        //     result.tiles = tiles;
 
-            let n = this.rows * this.columns;
-            for(var i:number=0; i<n; ++i) {
-                tiles.push(LevelData.serializeTile(this.tiles[i]));
-            }
+        //     let n = this.rows * this.columns;
+        //     for(var i:number=0; i<n; ++i) {
+        //         tiles.push(LevelData.serializeTile(this.tiles[i]));
+        //     }
 
-            return result;
-        }
+        //     return result;
+        // }
     }
 
     export class LevelLoader {

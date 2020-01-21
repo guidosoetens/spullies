@@ -41,18 +41,18 @@ module CircuitFreaks
         }
 
         undo() {
-            // if(this.prevSet == null)
-            //     return;
+            if(this.prevSet == null)
+                return;
 
-            // var curr = this.nextSets[this.selectedIndex];
-            // if(curr != null) {
-            //     this.nextTypes.splice(0, 0, curr.types);
-            //     this.removeChild(curr);
-            // }
+            var curr = this.nextSets[this.selectedIndex];
+            if(curr != null) {
+                this.nextTypes.splice(0, 0, curr.types);
+                this.removeChild(curr);
+            }
 
-            // this.nextSets[this.selectedIndex] = this.prevSet;
-            // this.addChild(this.prevSet);
-            // this.prevSet = null;
+            this.nextSets[this.selectedIndex] = this.prevSet;
+            this.addChild(this.prevSet);
+            this.prevSet = null;
         }
 
         update(dt:number) {
@@ -119,10 +119,10 @@ module CircuitFreaks
                 //                 TileType.Straight_H, TileType.Straight_V ];
                 var topTypes:TileDescriptor[] = [];//[ TileType.Path, TileType.Path, TileType.Path ];
                 var btmTypes:TileDescriptor[] = [];
-                for(var i:number=0; i<5; ++i) {
+                for(var i:number=0; i<3; ++i) {
                     for(var it:number=0; it<2; ++it) {
                         let d1:Direction = it == 0 ? Direction.Down : Direction.Up;
-                        let d2:Direction = (d1 + 1 + i) % 6;
+                        let d2:Direction = (d1 + 2 + i) % 6;
                         let tile = new TileDescriptor(TileType.Path, 0);
                         tile.paths.push(new TilePathDescriptor(d1, d2));
                         if(it == 0)
@@ -160,6 +160,7 @@ module CircuitFreaks
 
 
                 // var btmTypes =  [...topTypes];
+                
                 this.shuffle(btmTypes);
 
                 for(let i in btmTypes) 

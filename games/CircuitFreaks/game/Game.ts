@@ -90,11 +90,6 @@ module CircuitFreaks
             if(this.levelSelector.isEnabled()) {
                 var res = this.levelSelector.touchDown(p);
                 if(res >= 0) {
-                    // if(res % 2 == 0)
-                    //     this.resetGame();
-                    // else
-                    //     this.loadDefault();
-
                     this.levelLoader.loadLevel(res);
                 }
                 return;
@@ -119,11 +114,13 @@ module CircuitFreaks
         }
 
         touchMove(p:PIXI.Point) {
-
+            let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+            this.board.dragTo(locPos);
         }
 
         touchUp(p:PIXI.Point) {
-
+            let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+            this.board.dragEnd(locPos);
         }
 
         left() {

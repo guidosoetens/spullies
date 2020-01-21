@@ -70,6 +70,7 @@ module CircuitFreaks
             else {
 
                 let radius = (cwRotationsTo(this.dir1, this.dir2) % 2 == 0) ? 1.5 * offset : .5 * offset;
+                radius *= 0.8;
 
                 gr.moveTo(p1.x, p1.y);
                 gr.arcTo(0, 0, p2.x, p2.y, radius);
@@ -90,7 +91,6 @@ module CircuitFreaks
     export class Tile extends PIXI.Container {
         
         graphics:PIXI.Graphics;
-        shadowGraphics:PIXI.Graphics;
         type:TileType;
 
         // private circuitState:CircuitState;
@@ -109,6 +109,29 @@ module CircuitFreaks
 
         constructor(width:number, desc:TileDescriptor) {
             super();
+
+            this.graphics = new PIXI.Graphics();
+            this.addChild(this.graphics);
+
+            this.reset(width, desc);
+            // this.tileWidth = width;
+            // this.type = desc.type;
+            // this.groupIndex = desc.groupIndex;
+
+            // this.paths = [];
+            // for(let pDesc of desc.paths) {
+            //     this.paths.push(new TilePath(pDesc.dir1, pDesc.dir2));
+            // }
+
+            // this.dropDistance = 0;
+            // this.setState(TileState.Idle);
+
+            // this.clearCircuitState();
+
+            // this.redraw();
+        }
+
+        reset(width:number, desc:TileDescriptor) {
             this.tileWidth = width;
             this.type = desc.type;
             this.groupIndex = desc.groupIndex;
@@ -118,21 +141,9 @@ module CircuitFreaks
                 this.paths.push(new TilePath(pDesc.dir1, pDesc.dir2));
             }
 
-            this.graphics = new PIXI.Graphics();
-            this.addChild(this.graphics);
-
-            this.shadowGraphics = new PIXI.Graphics();
-            this.addChild(this.shadowGraphics);
-            this.shadowGraphics.beginFill(0x0, 0.5);
-            this.shadowGraphics.drawRoundedRect(-width / 2,-width / 2, width, width, .1 * width);
-            this.shadowGraphics.endFill();
-            this.shadowGraphics.alpha = 0;
-
             this.dropDistance = 0;
             this.setState(TileState.Idle);
-
             this.clearCircuitState();
-
             this.redraw();
         }
 
@@ -360,7 +371,6 @@ module CircuitFreaks
                     this.graphics.position.y = 0;
                     this.graphics.scale.x = this.graphics.scale.y = 1;
                     this.graphics.rotation = 0;
-                    this.shadowGraphics.alpha = 0;
                     if(this.visualUpdatePending)
                         this.redraw();
                     break;
@@ -558,7 +568,6 @@ module CircuitFreaks
                         // var s = 1 - .3 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
                         // this.graphics.scale.x = s;
                         this.graphics.scale.y = t;
-                        this.shadowGraphics.alpha = 1 - t;
                         // this.graphics.scale.y = t;
 
                         if(this.stateParameter >= .5 && this.visualUpdatePending)
