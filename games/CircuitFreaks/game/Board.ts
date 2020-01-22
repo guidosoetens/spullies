@@ -366,13 +366,14 @@ module CircuitFreaks
                         let tile = this.slots[testCoord.x][testCoord.y];
                         if(tile == null)
                             allPath = false;
-                        // else if(tile.type != TileType.Path)
-                        //     allPath = false;
+                        else if(tile.type != TileType.Path)
+                            allPath = false;
                         this.stepCoord(testCoord, this.dragLayer.dragDirection);
                         dragTiles.push(tile);
                     }
 
                     if(!allPath) {
+                        this.dragLayer.dragDirection = undefined;
                         this.dragging = false;
                         return;
                     }
@@ -390,8 +391,24 @@ module CircuitFreaks
         dragEnd(p:PIXI.Point) {
             if(this.dragging) {
                 let tiles = this.dragLayer.endDrag(p);
-                for(let tile of tiles)
+
+                var coord:PIXI.Point = new PIXI.Point(this.dragLayer.dragSourceCoord.x, this.dragLayer.dragSourceCoord.y);
+                let oppDir = getOppositeDir(this.dragLayer.dragDirection);
+                while(this.isBoardCoord(coord)) {
+                    this.stepCoord(coord, oppDir);
+                }
+
+                for(var i:number=0; i<tiles.length; ++i) {
+                    this.stepCoord(coord, this.dragLayer.dragDirection);
+                    var tileIndex = (i - this.dragLayer.indexOffset) % tiles.length;
+                    if(tileIndex < 0)
+                        tileIndex += tiles.length;
+                    let tile = tiles[tileIndex];
+                    this.slots[coord.x][coord.y] = tile;
                     this.tilesLayer.addChild(tile);
+                }
+
+                this.setState(BoardState.ProcessCircuits);
             }
             this.dragging = false;
         }
@@ -580,10 +597,11 @@ module CircuitFreaks
         }
 
         pushTile(pos:PIXI.Point, set:TileSet) : boolean {
-            let descs = set.getTileDescriptions();
 
             if(this.state != BoardState.Idle)
                 return false;
+
+            let descs = set.getTileDescriptions();
 
             let slotHeight = this.tileWidth;
             let slotWidth = hexWidthFactor * slotHeight;

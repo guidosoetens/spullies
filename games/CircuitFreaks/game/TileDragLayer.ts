@@ -8,6 +8,7 @@ module CircuitFreaks
         dragSourceCoord:PIXI.Point;
         dragSourePoint:PIXI.Point;
         dragDirection:Direction;
+        indexOffset:number;
 
         private tiles:Tile[];
         private dummyTile:Tile;
@@ -20,9 +21,12 @@ module CircuitFreaks
             this.dragSourceCoord = new PIXI.Point(0,0);
             this.dragSourePoint = new PIXI.Point(0,0);
             this.dragDirection = undefined;
+            this.indexOffset = 0;
 
             this.dummyTile = new Tile(10, new TileDescriptor(TileType.Blockade, 0));
             this.addChild(this.dummyTile);
+
+            this.visible = false;
         }
 
         startDrag(tiles:Tile[], borderPos:PIXI.Point) {
@@ -55,6 +59,12 @@ module CircuitFreaks
                 fract_offset += 1.0;
 
             let n = this.tiles.length;
+            var lastIndex = (n - 1 - Math.floor(addSteps)) % n;
+            if(lastIndex < 0)
+                lastIndex += n;
+
+            this.indexOffset = (n - 1) - lastIndex;
+
             for(var i:number=0; i<n; ++i) {
                 var loopOffset = (i + addSteps) % n;
                 if(loopOffset < 0)
@@ -64,11 +74,14 @@ module CircuitFreaks
 
                 tile.position.x = this.borderPos.x + toX * steps * unitDistance;
                 tile.position.y = this.borderPos.y + toY * steps * unitDistance;
-                // tile.alpha = 1.0 - fract_offset;
+                if(i == lastIndex)
+                    tile.alpha = 1.0 - fract_offset;
+                else
+                    tile.alpha = 1.0;
             }
 
             this.dummyTile.alpha = fract_offset;
-            this.dummyTile.reset(this.tileWidth, this.tiles[0].getTileDescriptor());
+            this.dummyTile.reset(this.tileWidth, this.tiles[lastIndex].getTileDescriptor());
             this.dummyTile.position.x = this.borderPos.x + toX * fract_offset * unitDistance;
             this.dummyTile.position.y = this.borderPos.y + toY * fract_offset * unitDistance;
         }

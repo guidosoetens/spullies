@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    }
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1194,8 +1194,10 @@ var CircuitFreaks;
             _this.dragSourceCoord = new PIXI.Point(0, 0);
             _this.dragSourePoint = new PIXI.Point(0, 0);
             _this.dragDirection = undefined;
+            _this.indexOffset = 0;
             _this.dummyTile = new CircuitFreaks.Tile(10, new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Blockade, 0));
             _this.addChild(_this.dummyTile);
+            _this.visible = false;
             return _this;
         }
         TileDragLayer.prototype.startDrag = function (tiles, borderPos) {
@@ -1224,6 +1226,10 @@ var CircuitFreaks;
             if (fract_offset < 0)
                 fract_offset += 1.0;
             var n = this.tiles.length;
+            var lastIndex = (n - 1 - Math.floor(addSteps)) % n;
+            if (lastIndex < 0)
+                lastIndex += n;
+            this.indexOffset = (n - 1) - lastIndex;
             for (var i = 0; i < n; ++i) {
                 var loopOffset = (i + addSteps) % n;
                 if (loopOffset < 0)
@@ -1232,10 +1238,13 @@ var CircuitFreaks;
                 var steps = 1 + loopOffset;
                 tile.position.x = this.borderPos.x + toX * steps * unitDistance;
                 tile.position.y = this.borderPos.y + toY * steps * unitDistance;
-                // tile.alpha = 1.0 - fract_offset;
+                if (i == lastIndex)
+                    tile.alpha = 1.0 - fract_offset;
+                else
+                    tile.alpha = 1.0;
             }
             this.dummyTile.alpha = fract_offset;
-            this.dummyTile.reset(this.tileWidth, this.tiles[0].getTileDescriptor());
+            this.dummyTile.reset(this.tileWidth, this.tiles[lastIndex].getTileDescriptor());
             this.dummyTile.position.x = this.borderPos.x + toX * fract_offset * unitDistance;
             this.dummyTile.position.y = this.borderPos.y + toY * fract_offset * unitDistance;
         };
@@ -1543,12 +1552,13 @@ var CircuitFreaks;
                         var tile = this.slots[testCoord.x][testCoord.y];
                         if (tile == null)
                             allPath = false;
-                        // else if(tile.type != TileType.Path)
-                        //     allPath = false;
+                        else if (tile.type != CircuitFreaks.TileType.Path)
+                            allPath = false;
                         this.stepCoord(testCoord, this.dragLayer.dragDirection);
                         dragTiles.push(tile);
                     }
                     if (!allPath) {
+                        this.dragLayer.dragDirection = undefined;
                         this.dragging = false;
                         return;
                     }
@@ -1566,10 +1576,21 @@ var CircuitFreaks;
         Board.prototype.dragEnd = function (p) {
             if (this.dragging) {
                 var tiles = this.dragLayer.endDrag(p);
-                for (var _i = 0, tiles_2 = tiles; _i < tiles_2.length; _i++) {
-                    var tile = tiles_2[_i];
+                var coord = new PIXI.Point(this.dragLayer.dragSourceCoord.x, this.dragLayer.dragSourceCoord.y);
+                var oppDir = CircuitFreaks.getOppositeDir(this.dragLayer.dragDirection);
+                while (this.isBoardCoord(coord)) {
+                    this.stepCoord(coord, oppDir);
+                }
+                for (var i = 0; i < tiles.length; ++i) {
+                    this.stepCoord(coord, this.dragLayer.dragDirection);
+                    var tileIndex = (i - this.dragLayer.indexOffset) % tiles.length;
+                    if (tileIndex < 0)
+                        tileIndex += tiles.length;
+                    var tile = tiles[tileIndex];
+                    this.slots[coord.x][coord.y] = tile;
                     this.tilesLayer.addChild(tile);
                 }
+                this.setState(BoardState.ProcessCircuits);
             }
             this.dragging = false;
         };
@@ -1735,9 +1756,9 @@ var CircuitFreaks;
             return new PIXI.Point(row, column);
         };
         Board.prototype.pushTile = function (pos, set) {
-            var descs = set.getTileDescriptions();
             if (this.state != BoardState.Idle)
                 return false;
+            var descs = set.getTileDescriptions();
             var slotHeight = this.tileWidth;
             var slotWidth = CircuitFreaks.hexWidthFactor * slotHeight;
             var samplePos = new PIXI.Point(pos.x, pos.y);
