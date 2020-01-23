@@ -191,15 +191,16 @@ module CircuitFreaks
 
             this.clearBoard();
 
+
             let types = [TileType.Trash, TileType.Source, TileType.DoubleSource, TileType.TripleSource ];
 
             //fill top few rows:
             for(var i:number=0; i<4; ++i) {
                 for(var j:number=0; j<5; ++j) {
 
-                    var typeIdx = Math.floor(Math.random() * 4);
+                    var typeIdx = Math.floor(Math.random() * types.length);
                     if(i == 3 && typeIdx == 0)
-                        typeIdx += 1 + Math.floor(Math.random() * 2);
+                        typeIdx += 1 + Math.floor(Math.random() * (types.length - 1));
 
                     let type = types[typeIdx];
                     
@@ -447,6 +448,8 @@ module CircuitFreaks
                         let tile = this.slots[i][j];
                         if(tile == null)
                             continue;
+                        if(tile.type == TileType.Blockade)
+                            continue;
                         var row:number = i;
                         while(this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
@@ -512,8 +515,13 @@ module CircuitFreaks
         hasDropTiles() : boolean {
             for(var i:number=0; i<this.rows; ++i) {
                 for(var j:number=0; j<this.columns; ++j) {
-                    if(this.isDropTileSlot(i, j) && this.slots[i][j] != null)
-                        return true;
+                    if(this.isDropTileSlot(i, j)) {
+                        var tile = this.slots[i][j];
+                        if(tile != null) {
+                            if(tile.type != TileType.Blockade)
+                                return true;
+                        }
+                    }
                 }
             }
             // for(var j:number=0; j<this.columns; ++j) {
@@ -639,7 +647,7 @@ module CircuitFreaks
                 return true;
             }
 
-            this.startDrag(pos);
+            // this.startDrag(pos);
 
             return false;
         }

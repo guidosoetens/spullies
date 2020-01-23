@@ -99,6 +99,7 @@ module CircuitFreaks
                 case TileType.Source:
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
+                case TileType.Wildcard:
                 // case TileType.Trash:
                     return true;
                 default:
@@ -111,20 +112,11 @@ module CircuitFreaks
         }
 
         sourcesConnect(t1:Tile, t2:Tile) : boolean {
-
-            if(t1.groupIndex != t2.groupIndex)
+            if(!this.isSourceType(t1.type) || !this.isSourceType(t2.type))
                 return false;
-
-            switch(t1.type) {
-                case TileType.Source:
-                case TileType.DoubleSource:
-                case TileType.TripleSource:
-                    return t2.type == TileType.Source || t2.type == TileType.DoubleSource || t2.type == TileType.TripleSource;
-                case TileType.Blockade:
-                case TileType.Trash:
-                    return t1.type == t2.type;
-            }
-            return false;
+            if(t1.type == TileType.Wildcard || t2.type == TileType.Wildcard)
+                return true;
+            return t1.groupIndex == t2.groupIndex;
         }
 
         connectsToType(row:number, col:number, dir:Direction, root:Tile) : Tile {

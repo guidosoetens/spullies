@@ -9,6 +9,7 @@ module CircuitFreaks
         TripleSource,
         Blockade,
         Trash,
+        Wildcard,
         Count
     }
 

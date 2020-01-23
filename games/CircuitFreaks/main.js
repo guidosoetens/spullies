@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    };
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -22,7 +22,8 @@ var CircuitFreaks;
         TileType[TileType["TripleSource"] = 3] = "TripleSource";
         TileType[TileType["Blockade"] = 4] = "Blockade";
         TileType[TileType["Trash"] = 5] = "Trash";
-        TileType[TileType["Count"] = 6] = "Count";
+        TileType[TileType["Wildcard"] = 6] = "Wildcard";
+        TileType[TileType["Count"] = 7] = "Count";
     })(TileType = CircuitFreaks.TileType || (CircuitFreaks.TileType = {}));
     var TilePathDescriptor = /** @class */ (function () {
         function TilePathDescriptor(d1, d2) {
@@ -358,6 +359,10 @@ var CircuitFreaks;
                         break;
                 }
             }
+            else if (type == CircuitFreaks.TileType.Wildcard) {
+                baseColor = 0x66ffaa;
+                borderColor = 0x00aa66;
+            }
             this.graphics.clear();
             this.graphics.beginFill(borderColor, 1.0);
             // this.graphics.drawRoundedRect(-width / 2,-width / 2, width, width, .1 * width);
@@ -428,6 +433,12 @@ var CircuitFreaks;
                     this.graphics.drawCircle(0, 0, rad * .5);
                     this.graphics.drawCircle(0, 0, rad - lineWidth * .5);
                     this.graphics.drawCircle(0, 0, rad * .1);
+                    break;
+                case CircuitFreaks.TileType.Wildcard:
+                    this.graphics.drawStar(0, 0, 5, .7 * rad, .35 * rad, 0);
+                    this.graphics.closePath();
+                    this.graphics.drawStar(0, 0, 5, .1 * rad, .05 * rad, 0);
+                    this.graphics.closePath();
                     break;
                 case CircuitFreaks.TileType.Blockade:
                     break;
@@ -726,6 +737,7 @@ var CircuitFreaks;
                 case CircuitFreaks.TileType.Source:
                 case CircuitFreaks.TileType.DoubleSource:
                 case CircuitFreaks.TileType.TripleSource:
+                case CircuitFreaks.TileType.Wildcard:
                     return true;
                 case CircuitFreaks.TileType.Trash:
                 case CircuitFreaks.TileType.Blockade:
@@ -898,6 +910,7 @@ var CircuitFreaks;
                 case CircuitFreaks.TileType.Source:
                 case CircuitFreaks.TileType.DoubleSource:
                 case CircuitFreaks.TileType.TripleSource:
+                case CircuitFreaks.TileType.Wildcard:
                     // case TileType.Trash:
                     return true;
                 default:
@@ -908,18 +921,11 @@ var CircuitFreaks;
             return type == CircuitFreaks.TileType.Path;
         };
         CircuitDetector.prototype.sourcesConnect = function (t1, t2) {
-            if (t1.groupIndex != t2.groupIndex)
+            if (!this.isSourceType(t1.type) || !this.isSourceType(t2.type))
                 return false;
-            switch (t1.type) {
-                case CircuitFreaks.TileType.Source:
-                case CircuitFreaks.TileType.DoubleSource:
-                case CircuitFreaks.TileType.TripleSource:
-                    return t2.type == CircuitFreaks.TileType.Source || t2.type == CircuitFreaks.TileType.DoubleSource || t2.type == CircuitFreaks.TileType.TripleSource;
-                case CircuitFreaks.TileType.Blockade:
-                case CircuitFreaks.TileType.Trash:
-                    return t1.type == t2.type;
-            }
-            return false;
+            if (t1.type == CircuitFreaks.TileType.Wildcard || t2.type == CircuitFreaks.TileType.Wildcard)
+                return true;
+            return t1.groupIndex == t2.groupIndex;
         };
         CircuitDetector.prototype.connectsToType = function (row, col, dir, root) {
             var tile = this.getTile(row, col);
@@ -1405,9 +1411,9 @@ var CircuitFreaks;
             //fill top few rows:
             for (var i = 0; i < 4; ++i) {
                 for (var j = 0; j < 5; ++j) {
-                    var typeIdx = Math.floor(Math.random() * 4);
+                    var typeIdx = Math.floor(Math.random() * types.length);
                     if (i == 3 && typeIdx == 0)
-                        typeIdx += 1 + Math.floor(Math.random() * 2);
+                        typeIdx += 1 + Math.floor(Math.random() * (types.length - 1));
                     var type = types[typeIdx];
                     var group = Math.floor(Math.random() * 3);
                     var row = i;
@@ -1621,6 +1627,8 @@ var CircuitFreaks;
                         var tile = this.slots[i][j];
                         if (tile == null)
                             continue;
+                        if (tile.type == CircuitFreaks.TileType.Blockade)
+                            continue;
                         var row = i;
                         while (this.isDropTileSlot(row, j) && row > 0) {
                             row = row - 1;
@@ -1679,8 +1687,13 @@ var CircuitFreaks;
         Board.prototype.hasDropTiles = function () {
             for (var i = 0; i < this.rows; ++i) {
                 for (var j = 0; j < this.columns; ++j) {
-                    if (this.isDropTileSlot(i, j) && this.slots[i][j] != null)
-                        return true;
+                    if (this.isDropTileSlot(i, j)) {
+                        var tile = this.slots[i][j];
+                        if (tile != null) {
+                            if (tile.type != CircuitFreaks.TileType.Blockade)
+                                return true;
+                        }
+                    }
                 }
             }
             // for(var j:number=0; j<this.columns; ++j) {
@@ -1788,7 +1801,7 @@ var CircuitFreaks;
                 this.setState(BoardState.Place);
                 return true;
             }
-            this.startDrag(pos);
+            // this.startDrag(pos);
             return false;
         };
         return Board;
@@ -1893,7 +1906,7 @@ var CircuitFreaks;
         __extends(TilePanel, _super);
         function TilePanel() {
             var _this = _super.call(this) || this;
-            _this.tileCount = 1;
+            _this.tileCount = 3;
             _this.tileWidth = 50;
             _this.selectorWidth = 2.1 * _this.tileWidth;
             _this.selector = new PIXI.Graphics();
@@ -1969,10 +1982,10 @@ var CircuitFreaks;
                 //                 TileType.Straight_H, TileType.Straight_V ];
                 var topTypes = []; //[ TileType.Path, TileType.Path, TileType.Path ];
                 var btmTypes = [];
-                for (var i = 0; i < 3; ++i) {
+                for (var i = 0; i < 5; ++i) {
                     for (var it = 0; it < 2; ++it) {
                         var d1 = it == 0 ? CircuitFreaks.Direction.Down : CircuitFreaks.Direction.Up;
-                        var d2 = (d1 + 2 + i) % 6;
+                        var d2 = (d1 + 1 + i) % 6;
                         var tile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
                         tile.paths.push(new CircuitFreaks.TilePathDescriptor(d1, d2));
                         if (it == 0)
@@ -2005,6 +2018,7 @@ var CircuitFreaks;
                 this.shuffle(btmTypes);
                 for (var i_1 in btmTypes)
                     this.nextTypes.push([topTypes[i_1], btmTypes[i_1]]);
+                this.nextTypes.push([new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Wildcard, 0)]);
                 // this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
                 var tripleTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
                 this.nextTypes.push([tripleTile]);

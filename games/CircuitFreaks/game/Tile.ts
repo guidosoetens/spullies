@@ -206,6 +206,10 @@ module CircuitFreaks
                         break;
                 }
             }
+            else if(type == TileType.Wildcard) {
+                baseColor = 0x66ffaa;
+                borderColor = 0x00aa66;
+            }
 
             this.graphics.clear();
 
@@ -283,6 +287,12 @@ module CircuitFreaks
                     this.graphics.drawCircle(0,0,rad * .5);
                     this.graphics.drawCircle(0,0,rad - lineWidth * .5);
                     this.graphics.drawCircle(0,0,rad * .1);
+                    break;
+                case TileType.Wildcard:
+                    this.graphics.drawStar(0,0,5,.7 * rad, .35 * rad, 0);
+                    this.graphics.closePath();
+                    this.graphics.drawStar(0,0,5,.1 * rad, .05 * rad, 0);
+                    this.graphics.closePath();
                     break;
                 case TileType.Blockade:
                     break;
@@ -602,6 +612,7 @@ module CircuitFreaks
                 case TileType.Source:
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
+                case TileType.Wildcard:
                     return true;
                 case TileType.Trash:
                 case TileType.Blockade:

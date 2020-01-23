@@ -23,7 +23,7 @@ module CircuitFreaks
         constructor() {
             super();
 
-            this.tileCount = 1;
+            this.tileCount = 3;
             this.tileWidth = 50;
             this.selectorWidth = 2.1 * this.tileWidth;
 
@@ -119,10 +119,10 @@ module CircuitFreaks
                 //                 TileType.Straight_H, TileType.Straight_V ];
                 var topTypes:TileDescriptor[] = [];//[ TileType.Path, TileType.Path, TileType.Path ];
                 var btmTypes:TileDescriptor[] = [];
-                for(var i:number=0; i<3; ++i) {
+                for(var i:number=0; i<5; ++i) {
                     for(var it:number=0; it<2; ++it) {
                         let d1:Direction = it == 0 ? Direction.Down : Direction.Up;
-                        let d2:Direction = (d1 + 2 + i) % 6;
+                        let d2:Direction = (d1 + 1 + i) % 6;
                         let tile = new TileDescriptor(TileType.Path, 0);
                         tile.paths.push(new TilePathDescriptor(d1, d2));
                         if(it == 0)
@@ -165,6 +165,8 @@ module CircuitFreaks
 
                 for(let i in btmTypes) 
                     this.nextTypes.push([topTypes[i], btmTypes[i]]);
+
+                this.nextTypes.push([new TileDescriptor(TileType.Wildcard, 0)]);
                     
                 // this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
 
