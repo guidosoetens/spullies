@@ -1923,6 +1923,7 @@ var CircuitFreaks;
         TilePanel.prototype.undo = function () {
             if (this.prevSet == null)
                 return;
+            this.setSelectedIndex(this.prevSetIndex);
             var curr = this.nextSets[this.selectedIndex];
             if (curr != null) {
                 this.nextTypes.splice(0, 0, curr.types);
@@ -1945,6 +1946,7 @@ var CircuitFreaks;
         TilePanel.prototype.changeTile = function (index) {
             if (this.nextSets[index] != null) {
                 this.prevSet = this.nextSets[index];
+                this.prevSetIndex = index;
                 this.removeChild(this.prevSet);
             }
             var tileSet = new CircuitFreaks.TileSet(this.tileWidth, this.getNextType());

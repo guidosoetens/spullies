@@ -6,6 +6,7 @@ module CircuitFreaks
 {
     export class TilePanel extends PIXI.Container {
 
+        prevSetIndex:number;
         prevSet:TileSet;
 
         nextSets:TileSet[];
@@ -44,6 +45,8 @@ module CircuitFreaks
             if(this.prevSet == null)
                 return;
 
+            this.setSelectedIndex(this.prevSetIndex);
+
             var curr = this.nextSets[this.selectedIndex];
             if(curr != null) {
                 this.nextTypes.splice(0, 0, curr.types);
@@ -71,6 +74,7 @@ module CircuitFreaks
 
             if(this.nextSets[index] != null) {
                 this.prevSet = this.nextSets[index];
+                this.prevSetIndex = index;
                 this.removeChild(this.prevSet);
             }
 
