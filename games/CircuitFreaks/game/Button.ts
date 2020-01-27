@@ -8,17 +8,21 @@ module CircuitFreaks
         graphics:PIXI.Graphics;
         text:PIXI.Text;
         func:Function;
+        listener:any;
+        argument:number;
 
         visWidth:number;
         visHeight:number;
 
-        constructor(text:string, func:Function, radius:number = 20, base_width:number = 50, base_height:number = 1) {
+        constructor(text:string, func:Function, listener:any, argument:number=0, radius:number = 20, base_width:number = 50, base_height:number = 1) {
             super();
 
             base_width = Math.max(base_width, 1);
             base_height = Math.max(base_height, 1);
 
             this.func = func;
+            this.listener = listener;
+            this.argument = argument;
 
             var hw = base_width / 2.0;
 
@@ -49,9 +53,23 @@ module CircuitFreaks
             this.addChild(this.text);
         }
 
-        hitTestPt(p:PIXI.Point) : boolean {
+        hitTestPoint(p:PIXI.Point) : boolean {
             var toBtn = new PIXI.Point(p.x - this.position.x, p.y - this.position.y);
             return Math.abs(toBtn.x) < this.visWidth / 2 && Math.abs(toBtn.y) < this.visHeight / 2;
+        }
+
+        touchDown(p:InputPoint) {
+            //OK
+        }
+
+        touchMove(p:InputPoint) {
+            let toPos = new PIXI.Point(p.position.x - p.sourcePosition.x, p.position.y - p.sourcePosition.y);
+            if(toPos.x * toPos.x + toPos.y * toPos.y > 10)
+                p.cancelInput = true;
+        }
+
+        touchUp(p:InputPoint) {
+            this.func.call(this.listener, this.argument);
         }
     }
 }

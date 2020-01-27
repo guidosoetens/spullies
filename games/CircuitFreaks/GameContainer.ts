@@ -87,7 +87,6 @@ module CircuitFreaks
             this.stage.on("pointercancel", this.pointerUp, this);
             this.stage.on("pointerup", this.pointerUp, this);
             this.stage.on("pointerout", this.pointerUp, this);
-            console.log("input events are hooked");
 
             this.touchPoints = [];
 

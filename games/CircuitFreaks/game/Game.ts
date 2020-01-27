@@ -18,6 +18,11 @@ module CircuitFreaks
 
         text:PIXI.Text;
 
+        //input:
+        currentInputListener:InputListener;
+        inputPoint:InputPoint;
+        draggingTile:boolean;
+
         constructor(w:number, h:number) {
             super();
 
@@ -27,7 +32,7 @@ module CircuitFreaks
             background.endFill();
             this.addChild(background);
 
-            this.tilePanel = new TilePanel();
+            this.tilePanel = new TilePanel(this.startDragTileSet, this);
             this.tilePanel.x = w / 2.0;
             this.tilePanel.y = h * .9;
             this.addChild(this.tilePanel);
@@ -41,17 +46,19 @@ module CircuitFreaks
             let txts:string[] = ['♚', '♞', '↺'];
             let callbacks:Function[] = [ this.openLevelSelect, this.loadDefault, this.undo ];
             for(var i:number=0; i<txts.length; ++i) {
-                var btn = new Button(txts[i], callbacks[i]);
+                var btn = new Button(txts[i], callbacks[i], this, i);
                 btn.x = w * (i + 1) / 4.0;
                 btn.y = h * .05;
                 this.addChild(btn);
                 this.buttons.push(btn);
             }
 
-            this.levelSelector = new LevelSelector(w, h);
+            this.levelLoader = new LevelLoader(this.loadLevel, this);
+            this.levelSelector = new LevelSelector(w, h, LevelLoader.instance.loadLevel, LevelLoader.instance);
             this.addChild(this.levelSelector);
 
-            this.levelLoader = new LevelLoader(this.loadLevel, this);
+            this.draggingTile = false;
+            this.inputPoint = new InputPoint();
         }
 
         loadLevel(data:LevelData) {
@@ -83,44 +90,74 @@ module CircuitFreaks
         update(dt:number) {
             this.board.update(dt);
             this.tilePanel.update(dt);
+
+            if(this.currentInputListener != null)
+                this.inputPoint.aliveTime += dt;
+        }
+
+        getInputListenerAt(p:PIXI.Point) : InputListener {
+            if(this.levelSelector.isEnabled())
+                return this.levelSelector.getInputListener(p);
+
+            for(let btn of this.buttons) {
+                if(btn.hitTestPoint(p))
+                    return btn;
+            }
+
+            return this.tilePanel.getInputListener(p);
+
+            // var locPos = new PIXI.Point(p.x - this.tilePanel.position.x, p.y - this.tilePanel.position.y);
+            // if(this.tilePanel.select(locPos))
+            //     return;
+
+            // //push random tile to board:
+            // locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+            // if(this.board.pushTile(locPos, this.tilePanel.getCurrentTileSet())) {
+            //     this.tilePanel.changeCurrentTile();
+            // }
         }
 
         touchDown(p:PIXI.Point) {
-
-            if(this.levelSelector.isEnabled()) {
-                var res = this.levelSelector.touchDown(p);
-                if(res >= 0) {
-                    this.levelLoader.loadLevel(res);
-                }
-                return;
+            this.draggingTile = false;
+            this.currentInputListener = this.getInputListenerAt(p);
+            this.inputPoint.reset(p.x, p.y);
+            if(this.currentInputListener != null) {
+                this.inputPoint.reset(p.x, p.y);
+                this.currentInputListener.touchDown(this.inputPoint);
             }
 
-            for(let btn of this.buttons) {
-                if(btn.hitTestPt(p)) {
-                    btn.func.call(this);
-                    return;
-                }
-            }
-
-            var locPos = new PIXI.Point(p.x - this.tilePanel.position.x, p.y - this.tilePanel.position.y);
-            if(this.tilePanel.select(locPos))
-                return;
-
-            //push random tile to board:
-            locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
-            if(this.board.pushTile(locPos, this.tilePanel.getCurrentTileSet())) {
-                this.tilePanel.changeCurrentTile();
-            }
+            if(this.inputPoint.cancelInput)
+                this.currentInputListener = null;
         }
 
         touchMove(p:PIXI.Point) {
-            let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
-            this.board.dragTo(locPos);
+            if(this.currentInputListener != null) {
+                this.inputPoint.position.x = p.x;
+                this.inputPoint.position.y = p.y;
+                this.currentInputListener.touchMove(this.inputPoint);
+                if(this.inputPoint.cancelInput)
+                    this.currentInputListener = null;
+            }
+            // let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+            // this.board.dragTo(locPos);
         }
 
         touchUp(p:PIXI.Point) {
-            let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
-            this.board.dragEnd(locPos);
+            if(this.currentInputListener != null) {
+                this.inputPoint.position.x = p.x;
+                this.inputPoint.position.y = p.y;
+                this.currentInputListener.touchUp(this.inputPoint);
+                this.currentInputListener = null;
+            }
+            // let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+            // this.board.dragEnd(locPos);
+        }
+
+        startDragTileSet(set:TileSet) {
+            // this.currentInputListener = set;
+            this.draggingTile = true;
+            this.currentInputListener = null;
+            console.log("start drag tile");
         }
 
         left() {

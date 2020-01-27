@@ -128,7 +128,6 @@ module CircuitFreaks
             if(this.isSourceType(tile.type)) {
                 if(this.sourcesConnect(root, tile)) {
                     tile.setStateFromDirection(dir, CircuitState.Circuit);
-                    console.log("FOUND!", row, col);
                     return tile;
                 }
                 else
@@ -143,7 +142,6 @@ module CircuitFreaks
             if(this.connects(coord.x, coord.y, nextDir)) {
                 var goalTile = this.connectsToType(coord.x, coord.y, nextDir, root);
                 if(goalTile != null) {
-                    console.log("GO BACK", row, col);
                     tile.setStateFromDirection(dir, CircuitState.Circuit);
                     return goalTile;
                 }
@@ -227,8 +225,6 @@ module CircuitFreaks
 
         propagateCircuits() {
 
-            // console.clear();
-
             let clearPropState = function(caller:CircuitDetector, i:number, j:number, tile:Tile) { tile.clearCircuitState(); }
             this.performFunctionOnTiles(clearPropState);
 
@@ -280,7 +276,6 @@ module CircuitFreaks
                             var goalTile = caller.connectsToType(coord.x, coord.y, dirIdx, tile);
                             let hasTile = caller.hasElement(goalTiles, goalTile);
                             if(goalTile != null && !hasTile) {
-                                console.log("GO BACK", i, j);
                                 goalTiles.push(goalTile);
                             }
                         }

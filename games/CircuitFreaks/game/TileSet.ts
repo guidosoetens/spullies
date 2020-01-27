@@ -12,8 +12,14 @@ module CircuitFreaks
         rotateAnimParam:number;
         cwRotations:number;
 
-        constructor(tileWidth:number, types:TileDescriptor[]) {
+        startDragCallback:Function;
+        startDragListener:any;
+
+        constructor(tileWidth:number, types:TileDescriptor[], startDragCallback:Function, startDragListener:any) {
             super();
+
+            this.startDragCallback = startDragCallback;
+            this.startDragListener = startDragListener;
 
             this.types = types;
             this.tileWidth = tileWidth;
@@ -33,6 +39,27 @@ module CircuitFreaks
             }
 
             return res;
+        }
+
+        hitTestPoint(p:PIXI.Point) : boolean {
+            return true;
+        }
+
+        touchDown(p:InputPoint) {
+            //...
+        }
+
+        touchMove(p:InputPoint) {
+            //...
+            let toPos = new PIXI.Point(p.position.x - p.sourcePosition.x, p.position.y - p.sourcePosition.y);
+            if(toPos.x * toPos.x + toPos.y * toPos.y > 10) {
+                this.startDragCallback.call(this.startDragListener, this);
+            }
+        }
+
+        touchUp(p:InputPoint) {
+            if(p.aliveTime < 0.5)
+                this.rotateSet();
         }
 
         getDirection() {

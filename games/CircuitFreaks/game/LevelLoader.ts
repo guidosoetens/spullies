@@ -111,7 +111,6 @@ module CircuitFreaks
             this.isDone = false;
             this.filePath = "levels/level" + index + ".json";
             let currRes = PIXI.loader.resources[this.filePath];
-            console.log(currRes);
             if(currRes == undefined) {
                 PIXI.loader.add([this.filePath]);
                 PIXI.loader.load(LevelLoader.loadFinished);

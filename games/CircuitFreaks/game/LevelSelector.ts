@@ -1,6 +1,7 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Defs.ts"/>
 ///<reference path="Button.ts"/>
+///<reference path="InputListener.ts"/>
 
 module CircuitFreaks
 {
@@ -11,8 +12,14 @@ module CircuitFreaks
         closeBtn:Button;
         levelButtons:Button[];
 
-        constructor(w:number, h:number) {
+        loadLevelCallback:Function;
+        loadLevelListener:any;
+
+        constructor(w:number, h:number, loadLevelCallback:Function, loadLevelListener:any) {
             super();
+
+            this.loadLevelCallback = loadLevelCallback;
+            this.loadLevelListener = loadLevelListener;
 
             this.fadeBackground = new PIXI.Graphics();
             this.fadeBackground.beginFill(0x0, 0.5);
@@ -26,7 +33,7 @@ module CircuitFreaks
             this.addChild(this.background);
 
             //text:string, func:Function, base_width:number = 50
-            this.closeBtn = new Button('✕', this.close, 30, 0);
+            this.closeBtn = new Button('✕', this.close, this, 0, 30, 0);
             this.closeBtn.x = .9 * w - 50;
             this.closeBtn.y = .1 * h + 50;
             this.addChild(this.closeBtn);
@@ -47,7 +54,7 @@ module CircuitFreaks
 
                     var idx = i * cols + j + 1;
 
-                    var btn = new Button('' + idx, this.close, 10, tileWidth, tileWidth);
+                    var btn = new Button('' + idx, this.loadLevel, this, i, 10, tileWidth, tileWidth);
                     btn.x = x;
                     btn.y = y;
                     this.addChild(btn);
@@ -60,19 +67,38 @@ module CircuitFreaks
             this.hide();
         }
 
+        loadLevel(idx:number) {
+            this.loadLevelCallback.call(this.loadLevelListener, idx);
+            this.close();
+        }
+
         isEnabled() : boolean {
             return this.visible;
         }
 
+        getInputListener(p:PIXI.Point) : InputListener {
+
+            if(this.closeBtn.hitTestPoint(p))
+                return this.closeBtn;
+
+            for(let btn of this.levelButtons) {
+                if(btn.hitTestPoint(p)) {
+                    return btn;
+                }
+            }
+
+            return null;
+        }
+
         touchDown(p:PIXI.Point) : number {
-            if(this.closeBtn.hitTestPt(p)) {
+            if(this.closeBtn.hitTestPoint(p)) {
                 this.close();
                 return -1;
             }
 
             for(var i:number=0; i<this.levelButtons.length; ++i) {
                 let btn = this.levelButtons[i];
-                if(btn.hitTestPt(p)) {
+                if(btn.hitTestPoint(p)) {
                     this.close();
                     return i;
                 }

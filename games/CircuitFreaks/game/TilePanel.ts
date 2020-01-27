@@ -20,9 +20,15 @@ module CircuitFreaks
 
         selector:PIXI.Graphics;
 
+        startDragCallback:Function;
+        startDragListener:any;
 
-        constructor() {
+
+        constructor(startDragCallback:Function, startDragListener:any) {
             super();
+
+            this.startDragCallback = startDragCallback;
+            this.startDragListener = startDragListener;
 
             this.tileCount = 3;
             this.tileWidth = 50;
@@ -58,6 +64,18 @@ module CircuitFreaks
             this.prevSet = null;
         }
 
+        getInputListener(pos:PIXI.Point) : InputListener {
+
+            let locPos = new PIXI.Point(pos.x - this.position.x, pos.y - this.position.y);
+
+            var index = Math.floor(locPos.x / this.selectorWidth + this.tileCount / 2.0);
+            if(index < 0 || index >= this.tileCount || Math.abs(locPos.y) > this.selectorWidth / 2.0)
+                return null;
+
+            this.setSelectedIndex(index);
+            return this.nextSets[index];
+        }
+
         update(dt:number) {
             for(var i:number = 0; i<this.nextSets.length; ++i)
                 this.nextSets[i].update(dt);
@@ -78,7 +96,7 @@ module CircuitFreaks
                 this.removeChild(this.prevSet);
             }
 
-            var tileSet = new TileSet(this.tileWidth, this.getNextType());
+            var tileSet = new TileSet(this.tileWidth, this.getNextType(), this.startDragCallback, this.startDragListener);
             this.nextSets[index] = tileSet;
             this.addChild(tileSet);
             tileSet.position.x = (index - (this.tileCount - 1) / 2.0) * this.selectorWidth;
@@ -215,17 +233,17 @@ module CircuitFreaks
             this.selector.position.y = this.nextSets[index].y;
         }   
 
-        select(pos:PIXI.Point) : boolean {
-            var index = Math.floor(pos.x / this.selectorWidth + this.tileCount / 2.0);
-            if(index < 0 || index >= this.tileCount || Math.abs(pos.y) > this.selectorWidth / 2.0)
-                return false;
+        // select(pos:PIXI.Point) : boolean {
+        //     var index = Math.floor(pos.x / this.selectorWidth + this.tileCount / 2.0);
+        //     if(index < 0 || index >= this.tileCount || Math.abs(pos.y) > this.selectorWidth / 2.0)
+        //         return false;
 
-            if(this.selectedIndex == index)
-                this.nextSets[index].rotateSet();
-            else
-                this.setSelectedIndex(index);
+        //     if(this.selectedIndex == index)
+        //         this.nextSets[index].rotateSet();
+        //     else
+        //         this.setSelectedIndex(index);
 
-            return true;
-        }
+        //     return true;
+        // }
     }
 }

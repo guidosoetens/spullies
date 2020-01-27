@@ -162,16 +162,12 @@ module CircuitFreaks
             
             this.setBoardSize(data.rows, data.columns);
 
-            console.log(data);
-
             //fill top few rows:
             for(var i:number=0; i<data.rows; ++i) {
                 for(var j:number=0; j<data.columns; ++j) {
                     var idx = i * data.columns + j;
                     if(data.tiles[idx] == undefined)
                         continue;
-
-                    console.log("ok");
 
                     var tile = new Tile(this.tileWidth, data.tiles[idx]);
                     var res =  this.toScreenPos(i, j);
@@ -458,7 +454,6 @@ module CircuitFreaks
                         if(row != i) {
                             this.slots[row][j] = tile;
                             this.slots[i][j] = null;
-                            console.log(row, j);
                             tile.position = this.toScreenPos(row, j);
                             tile.drop((i - row) * this.tileWidth);
                         }
@@ -604,35 +599,46 @@ module CircuitFreaks
             return new PIXI.Point(row, column);
         }
 
+        getOpenSourcePos(pos:PIXI.Point, set:TileSet, resultCoord:PIXI.Point) : boolean {
+
+            let n = set.tiles.length;
+
+            let slotHeight = this.tileWidth;
+            // let slotWidth = hexWidthFactor * slotHeight;
+
+            // let samplePos = new PIXI.Point(pos.x, pos.y);
+            resultCoord.x = pos.x;
+            resultCoord.y = pos.y;
+            if(n > 0) {
+                let angle = (-.5 + set.cwRotations / 3.0) * Math.PI;
+                let offset = (n - 1) * .5 * slotHeight;
+                resultCoord.x += Math.cos(angle) * offset;
+                resultCoord.y += Math.sin(angle) * offset;
+            }
+
+            var coord = this.pointToCoord(resultCoord.x, resultCoord.y);
+            var placesAvailable = this.isCoordAvailable(coord);
+            for(var i:number=0; i<n - 1; ++i) {
+                this.stepCoord(coord, set.getDirection());
+                placesAvailable = placesAvailable && this.isCoordAvailable(coord);
+            }
+
+            return placesAvailable;
+        }
+
         pushTile(pos:PIXI.Point, set:TileSet) : boolean {
 
             if(this.state != BoardState.Idle)
                 return false;
 
-            let descs = set.getTileDescriptions();
-
-            let slotHeight = this.tileWidth;
-            let slotWidth = hexWidthFactor * slotHeight;
-
-            let samplePos = new PIXI.Point(pos.x, pos.y);
-            if(descs.length) {
-                let angle = (-.5 + set.cwRotations / 3.0) * Math.PI;
-                let offset = (descs.length - 1) * .5 * slotHeight;
-                samplePos.x += Math.cos(angle) * offset;
-                samplePos.y += Math.sin(angle) * offset;
-            }
-
-            var coord = this.pointToCoord(samplePos.x, samplePos.y);
-            var placesAvailable = this.isCoordAvailable(coord);
-            for(var i:number=0; i<descs.length - 1; ++i) {
-                this.stepCoord(coord, set.getDirection());
-                placesAvailable = placesAvailable && this.isCoordAvailable(coord);
-            }
+            let samplePos = new PIXI.Point(0,0);
+            let placesAvailable = this.getOpenSourcePos(pos, set, samplePos);
 
             if(placesAvailable) {
                 this.createSnapshot(true);
-    
-                coord = this.pointToCoord(samplePos.x, samplePos.y);
+
+                let descs = set.getTileDescriptions();
+                var coord = this.pointToCoord(samplePos.x, samplePos.y);
                 for(var i:number=0; i<set.tiles.length; ++i) {
                     var tile = new Tile(this.tileWidth, descs[i]);
                     tile.position = this.toScreenPos(coord.x, coord.y);
