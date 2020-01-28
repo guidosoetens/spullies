@@ -599,7 +599,7 @@ module CircuitFreaks
             return new PIXI.Point(row, column);
         }
 
-        getOpenSourcePos(pos:PIXI.Point, set:TileSet, resultCoord:PIXI.Point) : boolean {
+        getOpenSetCoord(pos:PIXI.Point, set:TileSet, resultCoord:PIXI.Point) : boolean {
 
             let n = set.tiles.length;
 
@@ -607,16 +607,18 @@ module CircuitFreaks
             // let slotWidth = hexWidthFactor * slotHeight;
 
             // let samplePos = new PIXI.Point(pos.x, pos.y);
-            resultCoord.x = pos.x;
-            resultCoord.y = pos.y;
+            var resultPosition = new PIXI.Point(pos.x, pos.y);
             if(n > 0) {
                 let angle = (-.5 + set.cwRotations / 3.0) * Math.PI;
                 let offset = (n - 1) * .5 * slotHeight;
-                resultCoord.x += Math.cos(angle) * offset;
-                resultCoord.y += Math.sin(angle) * offset;
+                resultPosition.x += Math.cos(angle) * offset;
+                resultPosition.y += Math.sin(angle) * offset;
             }
 
-            var coord = this.pointToCoord(resultCoord.x, resultCoord.y);
+            var coord = this.pointToCoord(resultPosition.x, resultPosition.y);
+            resultCoord.x = coord.x;
+            resultCoord.y = coord.y;
+
             var placesAvailable = this.isCoordAvailable(coord);
             for(var i:number=0; i<n - 1; ++i) {
                 this.stepCoord(coord, set.getDirection());
@@ -631,14 +633,13 @@ module CircuitFreaks
             if(this.state != BoardState.Idle)
                 return false;
 
-            let samplePos = new PIXI.Point(0,0);
-            let placesAvailable = this.getOpenSourcePos(pos, set, samplePos);
+            var coord = new PIXI.Point(0,0);
+            let placesAvailable = this.getOpenSetCoord(pos, set, coord);
 
             if(placesAvailable) {
                 this.createSnapshot(true);
 
                 let descs = set.getTileDescriptions();
-                var coord = this.pointToCoord(samplePos.x, samplePos.y);
                 for(var i:number=0; i<set.tiles.length; ++i) {
                     var tile = new Tile(this.tileWidth, descs[i]);
                     tile.position = this.toScreenPos(coord.x, coord.y);

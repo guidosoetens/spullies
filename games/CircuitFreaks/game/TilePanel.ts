@@ -1,6 +1,7 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="TileSet.ts"/>
+///<reference path="InputListener.ts"/>
 
 module CircuitFreaks
 {
@@ -37,6 +38,7 @@ module CircuitFreaks
             this.selector = new PIXI.Graphics();
             this.selector.lineStyle(5, 0xffffff, 1);
             this.selector.drawRoundedRect(-this.selectorWidth / 2.0, -this.selectorWidth / 2.0, this.selectorWidth, this.selectorWidth, .2 * this.selectorWidth);
+            this.selector.visible = false;
             this.addChild(this.selector);
 
             this.nextTypes = [];
@@ -84,11 +86,20 @@ module CircuitFreaks
         resetPanel() {
             this.nextTypes = [];
             for(var i:number = 0; i<this.tileCount; ++i)
-                this.changeTile(i);
+                this.changeTileIndex(i);
             this.prevSet = null;
         }
 
-        changeTile(index:number) {
+        changeTile(ts:TileSet) {
+            for(var i:number=0; i<this.nextSets.length; ++i) {
+                if(this.nextSets[i] == ts) {
+                    this.changeTileIndex(i);
+                    break;
+                }
+            }
+        }
+
+        changeTileIndex(index:number) {
 
             if(this.nextSets[index] != null) {
                 this.prevSet = this.nextSets[index];
@@ -125,7 +136,7 @@ module CircuitFreaks
         }
 
         changeCurrentTile() {
-            this.changeTile(this.selectedIndex);
+            this.changeTileIndex(this.selectedIndex);
         }
 
         getCurrentTileSet() : TileSet {

@@ -5,6 +5,7 @@
 ///<reference path="Button.ts"/>
 ///<reference path="LevelSelector.ts"/>
 ///<reference path="LevelLoader.ts"/>
+///<reference path="TileHoverLayer.ts"/>
 
 module CircuitFreaks
 {
@@ -21,7 +22,7 @@ module CircuitFreaks
         //input:
         currentInputListener:InputListener;
         inputPoint:InputPoint;
-        draggingTile:boolean;
+        tileHoverLayer:TileHoverLayer;
 
         constructor(w:number, h:number) {
             super();
@@ -57,7 +58,8 @@ module CircuitFreaks
             this.levelSelector = new LevelSelector(w, h, LevelLoader.instance.loadLevel, LevelLoader.instance);
             this.addChild(this.levelSelector);
 
-            this.draggingTile = false;
+            this.tileHoverLayer = new TileHoverLayer();
+            this.addChild(this.tileHoverLayer);
             this.inputPoint = new InputPoint();
         }
 
@@ -118,7 +120,6 @@ module CircuitFreaks
         }
 
         touchDown(p:PIXI.Point) {
-            this.draggingTile = false;
             this.currentInputListener = this.getInputListenerAt(p);
             this.inputPoint.reset(p.x, p.y);
             if(this.currentInputListener != null) {
@@ -154,10 +155,8 @@ module CircuitFreaks
         }
 
         startDragTileSet(set:TileSet) {
-            // this.currentInputListener = set;
-            this.draggingTile = true;
-            this.currentInputListener = null;
-            console.log("start drag tile");
+            this.tileHoverLayer.startDragging(set, this.board, this.tilePanel);
+            this.currentInputListener = this.tileHoverLayer;
         }
 
         left() {

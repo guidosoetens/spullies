@@ -1761,28 +1761,36 @@ var CircuitFreaks;
             var row = Math.floor((y - this.boardHeight / 2.0) / slotHeight + this.rows / 2.0);
             return new PIXI.Point(row, column);
         };
-        Board.prototype.pushTile = function (pos, set) {
-            if (this.state != BoardState.Idle)
-                return false;
-            var descs = set.getTileDescriptions();
+        Board.prototype.getOpenSetCoord = function (pos, set, resultCoord) {
+            var n = set.tiles.length;
             var slotHeight = this.tileWidth;
-            var slotWidth = CircuitFreaks.hexWidthFactor * slotHeight;
-            var samplePos = new PIXI.Point(pos.x, pos.y);
-            if (descs.length) {
+            // let slotWidth = hexWidthFactor * slotHeight;
+            // let samplePos = new PIXI.Point(pos.x, pos.y);
+            var resultPosition = new PIXI.Point(pos.x, pos.y);
+            if (n > 0) {
                 var angle = (-.5 + set.cwRotations / 3.0) * Math.PI;
-                var offset = (descs.length - 1) * .5 * slotHeight;
-                samplePos.x += Math.cos(angle) * offset;
-                samplePos.y += Math.sin(angle) * offset;
+                var offset = (n - 1) * .5 * slotHeight;
+                resultPosition.x += Math.cos(angle) * offset;
+                resultPosition.y += Math.sin(angle) * offset;
             }
-            var coord = this.pointToCoord(samplePos.x, samplePos.y);
+            var coord = this.pointToCoord(resultPosition.x, resultPosition.y);
+            resultCoord.x = coord.x;
+            resultCoord.y = coord.y;
             var placesAvailable = this.isCoordAvailable(coord);
-            for (var i = 0; i < descs.length - 1; ++i) {
+            for (var i = 0; i < n - 1; ++i) {
                 this.stepCoord(coord, set.getDirection());
                 placesAvailable = placesAvailable && this.isCoordAvailable(coord);
             }
+            return placesAvailable;
+        };
+        Board.prototype.pushTile = function (pos, set) {
+            if (this.state != BoardState.Idle)
+                return false;
+            var coord = new PIXI.Point(0, 0);
+            var placesAvailable = this.getOpenSetCoord(pos, set, coord);
             if (placesAvailable) {
                 this.createSnapshot(true);
-                coord = this.pointToCoord(samplePos.x, samplePos.y);
+                var descs = set.getTileDescriptions();
                 for (var i = 0; i < set.tiles.length; ++i) {
                     var tile = new CircuitFreaks.Tile(this.tileWidth, descs[i]);
                     tile.position = this.toScreenPos(coord.x, coord.y);
@@ -1905,13 +1913,48 @@ var CircuitFreaks;
                 tile.y = Math.sin(angle) * offset;
             }
         };
+        TileSet.prototype.drawContourToTarget = function (gr, tileWidth) {
+            var n = this.tiles.length;
+            // var offset = (n - 1) * .5 * tileWidth;
+            var angle = (.5 + this.cwRotations / 3.0) * Math.PI;
+            for (var i = 0; i < n; ++i) {
+                var currOffset = i * tileWidth;
+                var pos = new PIXI.Point(Math.cos(angle) * currOffset, Math.sin(angle) * currOffset);
+                gr.beginFill(0xffffff);
+                CircuitFreaks.drawHex(gr, pos, tileWidth);
+                gr.endFill();
+            }
+        };
         return TileSet;
     }(PIXI.Container));
     CircuitFreaks.TileSet = TileSet;
 })(CircuitFreaks || (CircuitFreaks = {}));
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
+var CircuitFreaks;
+(function (CircuitFreaks) {
+    var InputPoint = /** @class */ (function () {
+        function InputPoint() {
+            this.sourcePosition = new PIXI.Point(0, 0);
+            this.position = new PIXI.Point(0, 0);
+            this.aliveTime = 0;
+            this.cancelInput = false;
+        }
+        InputPoint.prototype.reset = function (x, y) {
+            this.sourcePosition.x = x;
+            this.sourcePosition.y = y;
+            this.position.x = x;
+            this.position.y = y;
+            this.aliveTime = 0;
+            this.cancelInput = false;
+        };
+        return InputPoint;
+    }());
+    CircuitFreaks.InputPoint = InputPoint;
+})(CircuitFreaks || (CircuitFreaks = {}));
+///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="TileSet.ts"/>
+///<reference path="InputListener.ts"/>
 var CircuitFreaks;
 (function (CircuitFreaks) {
     var TilePanel = /** @class */ (function (_super) {
@@ -1926,6 +1969,7 @@ var CircuitFreaks;
             _this.selector = new PIXI.Graphics();
             _this.selector.lineStyle(5, 0xffffff, 1);
             _this.selector.drawRoundedRect(-_this.selectorWidth / 2.0, -_this.selectorWidth / 2.0, _this.selectorWidth, _this.selectorWidth, .2 * _this.selectorWidth);
+            _this.selector.visible = false;
             _this.addChild(_this.selector);
             _this.nextTypes = [];
             _this.nextSets = [];
@@ -1962,10 +2006,18 @@ var CircuitFreaks;
         TilePanel.prototype.resetPanel = function () {
             this.nextTypes = [];
             for (var i = 0; i < this.tileCount; ++i)
-                this.changeTile(i);
+                this.changeTileIndex(i);
             this.prevSet = null;
         };
-        TilePanel.prototype.changeTile = function (index) {
+        TilePanel.prototype.changeTile = function (ts) {
+            for (var i = 0; i < this.nextSets.length; ++i) {
+                if (this.nextSets[i] == ts) {
+                    this.changeTileIndex(i);
+                    break;
+                }
+            }
+        };
+        TilePanel.prototype.changeTileIndex = function (index) {
             if (this.nextSets[index] != null) {
                 this.prevSet = this.nextSets[index];
                 this.prevSetIndex = index;
@@ -1994,7 +2046,7 @@ var CircuitFreaks;
             return array;
         };
         TilePanel.prototype.changeCurrentTile = function () {
-            this.changeTile(this.selectedIndex);
+            this.changeTileIndex(this.selectedIndex);
         };
         TilePanel.prototype.getCurrentTileSet = function () {
             return this.nextSets[this.selectedIndex];
@@ -2141,28 +2193,6 @@ var CircuitFreaks;
         return Button;
     }(PIXI.Container));
     CircuitFreaks.Button = Button;
-})(CircuitFreaks || (CircuitFreaks = {}));
-///<reference path="../../../pixi/pixi.js.d.ts"/>
-var CircuitFreaks;
-(function (CircuitFreaks) {
-    var InputPoint = /** @class */ (function () {
-        function InputPoint() {
-            this.sourcePosition = new PIXI.Point(0, 0);
-            this.position = new PIXI.Point(0, 0);
-            this.aliveTime = 0;
-            this.cancelInput = false;
-        }
-        InputPoint.prototype.reset = function (x, y) {
-            this.sourcePosition.x = x;
-            this.sourcePosition.y = y;
-            this.position.x = x;
-            this.position.y = y;
-            this.aliveTime = 0;
-            this.cancelInput = false;
-        };
-        return InputPoint;
-    }());
-    CircuitFreaks.InputPoint = InputPoint;
 })(CircuitFreaks || (CircuitFreaks = {}));
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Defs.ts"/>
@@ -2357,12 +2387,83 @@ var CircuitFreaks;
     CircuitFreaks.LevelLoader = LevelLoader;
 })(CircuitFreaks || (CircuitFreaks = {}));
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
+///<reference path="Tile.ts"/>
+///<reference path="Board.ts"/>
+var CircuitFreaks;
+(function (CircuitFreaks) {
+    var TileHoverLayer = /** @class */ (function (_super) {
+        __extends(TileHoverLayer, _super);
+        function TileHoverLayer() {
+            var _this = _super.call(this) || this;
+            _this.tileSet = null;
+            _this.projectionGraphics = new PIXI.Graphics();
+            _this.projectionGraphics.alpha = 0.5;
+            _this.addChild(_this.projectionGraphics);
+            return _this;
+        }
+        TileHoverLayer.prototype.startDragging = function (ts, board, tilePanel) {
+            if (this.tileSet == null) {
+                this.tileSet = new CircuitFreaks.TileSet(board.tileWidth, ts.getTileDescriptions(), null, null);
+                this.tileSet.alpha = 0.5;
+                this.addChild(this.tileSet);
+            }
+            this.tileSet.cwRotations = ts.cwRotations;
+            this.tileSet.setTypes(ts.getTileDescriptions());
+            this.projectionGraphics.clear();
+            ts.drawContourToTarget(this.projectionGraphics, board.tileWidth);
+            this.board = board;
+            this.tilePanel = tilePanel;
+            this.callTile = ts;
+            this.tileSet.visible = false;
+            this.projectionGraphics.visible = false;
+            this.visible = true;
+        };
+        TileHoverLayer.prototype.hitTestPoint = function (p) {
+            return true;
+        };
+        TileHoverLayer.prototype.getDropLoc = function (p) {
+            if (this.board == null)
+                return p;
+            return new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
+        };
+        TileHoverLayer.prototype.touchDown = function (p) {
+            //...
+        };
+        TileHoverLayer.prototype.touchMove = function (p) {
+            //...
+            this.tileSet.position.x = p.position.x;
+            this.tileSet.position.y = p.position.y;
+            this.tileSet.visible = true;
+            var dropLoc = this.getDropLoc(p.position);
+            var resultCoord = new PIXI.Point(0, 0);
+            if (this.board.getOpenSetCoord(dropLoc, this.tileSet, resultCoord)) {
+                var pos = this.board.toScreenPos(resultCoord.x, resultCoord.y);
+                this.projectionGraphics.x = pos.x + this.board.position.x;
+                this.projectionGraphics.y = pos.y + this.board.position.y;
+                this.projectionGraphics.visible = true;
+            }
+            else {
+                this.projectionGraphics.visible = false;
+            }
+        };
+        TileHoverLayer.prototype.touchUp = function (p) {
+            if (this.board.pushTile(this.getDropLoc(p.position), this.tileSet)) {
+                this.tilePanel.changeTile(this.callTile);
+            }
+            this.visible = false;
+        };
+        return TileHoverLayer;
+    }(PIXI.Container));
+    CircuitFreaks.TileHoverLayer = TileHoverLayer;
+})(CircuitFreaks || (CircuitFreaks = {}));
+///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Board.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="TilePanel.ts"/>
 ///<reference path="Button.ts"/>
 ///<reference path="LevelSelector.ts"/>
 ///<reference path="LevelLoader.ts"/>
+///<reference path="TileHoverLayer.ts"/>
 var CircuitFreaks;
 (function (CircuitFreaks) {
     var Game = /** @class */ (function (_super) {
@@ -2395,7 +2496,8 @@ var CircuitFreaks;
             _this.levelLoader = new CircuitFreaks.LevelLoader(_this.loadLevel, _this);
             _this.levelSelector = new CircuitFreaks.LevelSelector(w, h, CircuitFreaks.LevelLoader.instance.loadLevel, CircuitFreaks.LevelLoader.instance);
             _this.addChild(_this.levelSelector);
-            _this.draggingTile = false;
+            _this.tileHoverLayer = new CircuitFreaks.TileHoverLayer();
+            _this.addChild(_this.tileHoverLayer);
             _this.inputPoint = new CircuitFreaks.InputPoint();
             return _this;
         }
@@ -2445,7 +2547,6 @@ var CircuitFreaks;
             // }
         };
         Game.prototype.touchDown = function (p) {
-            this.draggingTile = false;
             this.currentInputListener = this.getInputListenerAt(p);
             this.inputPoint.reset(p.x, p.y);
             if (this.currentInputListener != null) {
@@ -2477,10 +2578,8 @@ var CircuitFreaks;
             // this.board.dragEnd(locPos);
         };
         Game.prototype.startDragTileSet = function (set) {
-            // this.currentInputListener = set;
-            this.draggingTile = true;
-            this.currentInputListener = null;
-            console.log("start drag tile");
+            this.tileHoverLayer.startDragging(set, this.board, this.tilePanel);
+            this.currentInputListener = this.tileHoverLayer;
         };
         Game.prototype.left = function () {
         };

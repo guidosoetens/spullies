@@ -138,5 +138,18 @@ module CircuitFreaks
                 tile.y = Math.sin(angle) * offset;
             }
         }
+
+        drawContourToTarget(gr:PIXI.Graphics, tileWidth:number) {
+            let n = this.tiles.length;
+            // var offset = (n - 1) * .5 * tileWidth;
+            var angle = (.5 + this.cwRotations / 3.0) * Math.PI;
+            for(var i:number=0; i<n; ++i) {
+                let currOffset = i * tileWidth; 
+                let pos = new PIXI.Point(Math.cos(angle) * currOffset, Math.sin(angle) * currOffset);
+                gr.beginFill(0xffffff);
+                drawHex(gr, pos, tileWidth);
+                gr.endFill();
+            }
+        }
     }
 }
