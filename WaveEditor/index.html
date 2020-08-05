@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" content="width=device-width, initial-scale=1"/>
+    <title>Wave Editor</title>
+    <script src="jszip.min.js"></script>
+    <script src="FileSaver.js"></script>
+    <script src="main.js"></script>
+</head>
+<body style="margin:0px;"> 
+
+    <table style="width:100%; margin-top: 10px;">
+            <tr>
+                <th>
+                    <div id="controllerPanel" style="background: white;"></div>
+                </th>
+                <th>
+                    <div id="canvasContainer" style="background: white; width: 800px; height: 600px;">
+                        <img id="bgImage" style="position: absolute; width: 800px; height: 600px; object-fit:cover;"></img>
+                        <canvas id="canvas" style="width: 800px; height: 600px; position: relative;" width="800" height="600"></canvas>
+                    </div>
+                </th>
+                <br/>
+            </tr>
+    </table>
+</body>
+</html>
