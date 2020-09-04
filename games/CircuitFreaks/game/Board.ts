@@ -8,6 +8,7 @@ module CircuitFreaks
     export enum BoardState {
         Idle,
         RemoveCircuits,
+        Explode,
         Drop,
         Place,
         DegradeDeadlock,
@@ -188,13 +189,14 @@ module CircuitFreaks
             this.clearBoard();
 
 
-            let types = [TileType.Trash, TileType.Source, TileType.DoubleSource, TileType.TripleSource ];
+            let types = [TileType.Trash, TileType.Source, TileType.DoubleSource, TileType.TripleSource, TileType.BombSource ];
 
             //fill top few rows:
             for(var i:number=0; i<4; ++i) {
                 for(var j:number=0; j<5; ++j) {
 
                     var typeIdx = Math.floor(Math.random() * types.length);
+                    //only add source tiles in last row:
                     if(i == 3 && typeIdx == 0)
                         typeIdx += 1 + Math.floor(Math.random() * (types.length - 1));
 
@@ -236,6 +238,9 @@ module CircuitFreaks
                 case BoardState.RemoveCircuits:
                     this.clearCircuitTiles();
                     break;
+                case BoardState.Explode:
+                    this.explodeTiles();
+                    break;
                 case BoardState.Drop:
                     this.dropTiles();
                     break;
@@ -250,14 +255,14 @@ module CircuitFreaks
                     }
 
                     //switch to some other state:
-                    if(this.hasDropTiles()) {
-                        //drop tiles...
+                    if(this.hasDropTiles()) 
                         this.setState(BoardState.Drop);
-                    }
                     else {
                         this.circuitDetector.propagateCircuits();
                         if(this.hasCircuit())
                             this.setState(BoardState.RemoveCircuits);
+                        else if(this.hasBombTiles()) 
+                            this.setState(BoardState.Explode);
                         else
                             this.setState(BoardState.Idle);
                     }
@@ -285,6 +290,9 @@ module CircuitFreaks
                 case BoardState.RemoveCircuits:
                     this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
                     break;
+                case BoardState.Explode:
+                    this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
+                    break;  
                 case BoardState.Drop:
                     this.updateCurrentState(dt, 0.66, BoardState.ProcessCircuits);
                     break;
@@ -435,9 +443,46 @@ module CircuitFreaks
             }
         }
 
+        explodeTiles() {
+
+            var explodeLocs = [];
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var j:number=0; j<this.columns; ++j) {
+                    let tile = this.slots[i][j];
+                    if(tile != null) {
+                        if(tile.type == TileType.EnabledBomb) {
+                            explodeLocs.push({x: i, y: j});
+                            this.discardTiles.push(tile);
+                            tile.setState(TileState.Exploding);
+                            this.slots[i][j] = null;
+                        }
+                    }
+                }
+            }
+
+            for(var i:number=0; i<explodeLocs.length; ++i) {
+                var pt = explodeLocs[i];
+                for(var dirIdx=0; dirIdx<6; ++dirIdx) {
+                    var coord = new PIXI.Point(pt.x, pt.y);
+                    this.stepCoord(coord, Direction.Up + dirIdx);
+                    if(this.isBoardCoord(coord)) {
+                        let tile = this.slots[coord.x][coord.y];
+                        if(tile != null) {
+                            if(tile.circuitEliminatesTile()) {
+                                this.discardTiles.push(tile);
+                                tile.setState(TileState.Disappearing);
+                                this.slots[coord.x][coord.y] = null;
+                            }
+                            else {
+                                tile.filterCircuitFromTile(true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         dropTiles() {
-
-
             for(var i:number=0; i<this.rows; ++i) {
                 for(var oddIt=0; oddIt<2; ++oddIt) {
                     for(var j=(1 - oddIt); j<this.columns; j+=2) {
@@ -505,6 +550,19 @@ module CircuitFreaks
             }
 
             return true;
+        }
+
+        hasBombTiles() : boolean {
+            for(var i:number=0; i<this.rows; ++i) {
+                for(var j:number=0; j<this.columns; ++j) {
+                    let tile = this.slots[i][j];
+                    if(tile != null) {
+                        if(tile.type == TileType.EnabledBomb)
+                            return true;
+                    }
+                }
+            }
+            return false;
         }
 
         hasDropTiles() : boolean {

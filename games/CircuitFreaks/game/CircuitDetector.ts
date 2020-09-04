@@ -100,6 +100,7 @@ module CircuitFreaks
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
                 case TileType.Wildcard:
+                case TileType.BombSource:
                 // case TileType.Trash:
                     return true;
                 default:

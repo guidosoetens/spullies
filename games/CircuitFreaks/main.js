@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    }
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -20,10 +20,12 @@ var CircuitFreaks;
         TileType[TileType["Source"] = 1] = "Source";
         TileType[TileType["DoubleSource"] = 2] = "DoubleSource";
         TileType[TileType["TripleSource"] = 3] = "TripleSource";
-        TileType[TileType["Blockade"] = 4] = "Blockade";
-        TileType[TileType["Trash"] = 5] = "Trash";
-        TileType[TileType["Wildcard"] = 6] = "Wildcard";
-        TileType[TileType["Count"] = 7] = "Count";
+        TileType[TileType["BombSource"] = 4] = "BombSource";
+        TileType[TileType["EnabledBomb"] = 5] = "EnabledBomb";
+        TileType[TileType["Blockade"] = 6] = "Blockade";
+        TileType[TileType["Trash"] = 7] = "Trash";
+        TileType[TileType["Wildcard"] = 8] = "Wildcard";
+        TileType[TileType["Count"] = 9] = "Count";
     })(TileType = CircuitFreaks.TileType || (CircuitFreaks.TileType = {}));
     var TilePathDescriptor = /** @class */ (function () {
         function TilePathDescriptor(d1, d2) {
@@ -208,6 +210,7 @@ var CircuitFreaks;
         TileState[TileState["Degrading"] = 4] = "Degrading";
         TileState[TileState["Gone"] = 5] = "Gone";
         TileState[TileState["Flipping"] = 6] = "Flipping";
+        TileState[TileState["Exploding"] = 7] = "Exploding";
     })(TileState = CircuitFreaks.TileState || (CircuitFreaks.TileState = {}));
     var CircuitState;
     (function (CircuitState) {
@@ -273,10 +276,11 @@ var CircuitFreaks;
         __extends(Tile, _super);
         function Tile(width, desc) {
             var _this = _super.call(this) || this;
+            _this.visualContainer = new PIXI.Container();
+            _this.addChild(_this.visualContainer);
             _this.graphics = new PIXI.Graphics();
-            _this.addChild(_this.graphics);
+            _this.visualContainer.addChild(_this.graphics);
             _this.reset(width, desc);
-            return _this;
             // this.tileWidth = width;
             // this.type = desc.type;
             // this.groupIndex = desc.groupIndex;
@@ -288,6 +292,20 @@ var CircuitFreaks;
             // this.setState(TileState.Idle);
             // this.clearCircuitState();
             // this.redraw();
+            _this.text = new PIXI.Text("");
+            _this.text.style.fontFamily = "groboldregular";
+            _this.text.style.fontSize = 40;
+            _this.text.style.stroke = 0xffffff;
+            _this.text.style.fill = 0xffffff;
+            _this.text.anchor.set(0.5, 0.5);
+            _this.text.style.dropShadow = true;
+            _this.text.style.dropShadowAlpha = .5;
+            _this.text.x = 0;
+            _this.text.y = 0;
+            _this.text.scale.x = .75;
+            _this.text.scale.y = .75;
+            _this.visualContainer.addChild(_this.text);
+            return _this;
         }
         Tile.prototype.reset = function (width, desc) {
             this.tileWidth = width;
@@ -342,7 +360,7 @@ var CircuitFreaks;
                 borderColor = 0xaacccc;
                 // subWidth *= .8;
             }
-            else if (type == CircuitFreaks.TileType.Source || type == CircuitFreaks.TileType.DoubleSource || type == CircuitFreaks.TileType.TripleSource) {
+            else if (type == CircuitFreaks.TileType.Source || type == CircuitFreaks.TileType.DoubleSource || type == CircuitFreaks.TileType.TripleSource || type == CircuitFreaks.TileType.BombSource) {
                 switch (this.groupIndex) {
                     case 1:
                         baseColor = 0xff00aa;
@@ -358,6 +376,10 @@ var CircuitFreaks;
                         borderColor = 0xaa6600;
                         break;
                 }
+            }
+            else if (type == CircuitFreaks.TileType.EnabledBomb) {
+                baseColor = 0x777777;
+                borderColor = 0x222222;
             }
             else if (type == CircuitFreaks.TileType.Wildcard) {
                 baseColor = 0x66ffaa;
@@ -382,46 +404,6 @@ var CircuitFreaks;
             this.setCircuitLineStyle(CircuitState.None, lineWidth);
             var ang = .5 * Math.PI;
             switch (this.type) {
-                /*
-                case TileType.Curve_NE:
-                    this.graphics.moveTo(rad, 0);
-                    this.graphics.arc(rad, -rad, rad, ang, 2 * ang); // cx, cy, radius, startAngle, endAngle
-                    break;
-                case TileType.Curve_NW:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.arc(-rad, -rad, rad, 0, ang);
-                    break;
-                case TileType.Curve_SE:
-                    this.graphics.moveTo(0, rad);
-                    this.graphics.arc(rad, rad, rad, 2 * ang, 3 * ang);
-                    break;
-                case TileType.Curve_SW:
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.arc(-rad, rad, rad, -ang, 0);
-                    break;
-                case TileType.Straight_H:
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.lineTo(rad, 0);
-                    break;
-                case TileType.Straight_V:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.lineTo(0, rad);
-                    break;
-                case TileType.Double_NE:
-                    this.graphics.moveTo(rad, 0);
-                    this.graphics.arc(rad, -rad, rad, ang, 2 * ang);
-                    this.setCircuitLineStyle(CircuitState.None, lineWidth);
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.arc(-rad, rad, rad, -ang, 0);
-                    break;
-                case TileType.Double_NW:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.arc(-rad, -rad, rad, 0, ang);
-                    this.setCircuitLineStyle(CircuitState.None, lineWidth);
-                    this.graphics.moveTo(0, rad);
-                    this.graphics.arc(rad, rad, rad, 2 * ang, 3 * ang);
-                    break;
-                */
                 case CircuitFreaks.TileType.Source:
                     this.graphics.drawCircle(0, 0, rad - lineWidth * .5);
                     break;
@@ -433,6 +415,16 @@ var CircuitFreaks;
                     this.graphics.drawCircle(0, 0, rad * .5);
                     this.graphics.drawCircle(0, 0, rad - lineWidth * .5);
                     this.graphics.drawCircle(0, 0, rad * .1);
+                    break;
+                case CircuitFreaks.TileType.EnabledBomb:
+                case CircuitFreaks.TileType.BombSource:
+                    this.graphics.drawCircle(0, 0, rad - lineWidth * .5);
+                    // this.graphics.beginFill(0xffffff, 1);
+                    // this.graphics.drawCircle(0,0, rad * .5);
+                    // this.graphics.drawRoundedRect(.7 * rad,-.7 * rad,.2 * rad,.2 * rad, .05 * rad);
+                    // this.graphics.endFill();
+                    if (this.text)
+                        this.text.text = "💣";
                     break;
                 case CircuitFreaks.TileType.Wildcard:
                     this.graphics.drawStar(0, 0, 5, .7 * rad, .35 * rad, 0);
@@ -516,13 +508,15 @@ var CircuitFreaks;
                 case TileState.Appearing:
                     break;
                 case TileState.Idle:
-                    this.graphics.position.y = 0;
-                    this.graphics.scale.x = this.graphics.scale.y = 1;
-                    this.graphics.rotation = 0;
+                    this.visualContainer.position.y = 0;
+                    this.visualContainer.scale.x = this.visualContainer.scale.y = 1;
+                    this.visualContainer.rotation = 0;
                     if (this.visualUpdatePending)
                         this.redraw();
                     break;
                 case TileState.Disappearing:
+                    break;
+                case TileState.Exploding:
                     break;
                 case TileState.Dropping:
                     break;
@@ -578,9 +572,11 @@ var CircuitFreaks;
             return this.circuitState == CircuitState.DeadLock;
         };
         Tile.prototype.circuitEliminatesTile = function () {
-            if (!this.hasCircuit())
-                return false;
             switch (this.type) {
+                case CircuitFreaks.TileType.EnabledBomb:
+                    return false;
+                case CircuitFreaks.TileType.BombSource:
+                    return false;
                 case CircuitFreaks.TileType.DoubleSource:
                     return this.sourceHitCount >= 2;
                 case CircuitFreaks.TileType.TripleSource:
@@ -627,15 +623,19 @@ var CircuitFreaks;
             }
             return false;
         };
-        Tile.prototype.filterCircuitFromTile = function () {
+        Tile.prototype.filterCircuitFromTile = function (forceSingleSource) {
+            if (forceSingleSource === void 0) { forceSingleSource = false; }
             var newType = this.type;
             switch (this.type) {
+                case CircuitFreaks.TileType.BombSource:
+                    newType = CircuitFreaks.TileType.EnabledBomb;
+                    break;
                 case CircuitFreaks.TileType.DoubleSource:
-                    if (this.sourceHitCount == 1)
+                    if (this.sourceHitCount == 1 || forceSingleSource)
                         newType = CircuitFreaks.TileType.Source;
                     break;
                 case CircuitFreaks.TileType.TripleSource:
-                    if (this.sourceHitCount == 1)
+                    if (this.sourceHitCount == 1 || forceSingleSource)
                         newType = CircuitFreaks.TileType.DoubleSource;
                     else if (this.sourceHitCount == 2)
                         newType = CircuitFreaks.TileType.Source;
@@ -660,7 +660,7 @@ var CircuitFreaks;
         Tile.prototype.updateState = function (dt) {
             switch (this.state) {
                 case TileState.Appearing:
-                    this.graphics.scale.x = this.graphics.scale.y = CircuitFreaks.easeOutElastic(this.stateParameter);
+                    this.visualContainer.scale.x = this.visualContainer.scale.y = CircuitFreaks.easeOutElastic(this.stateParameter);
                     this.updateCurrentState(dt, 0.5, TileState.Idle);
                     break;
                 case TileState.Idle:
@@ -668,8 +668,15 @@ var CircuitFreaks;
                     break;
                 case TileState.Disappearing:
                     {
-                        this.graphics.alpha = 1 - this.stateParameter;
+                        this.visualContainer.alpha = 1 - this.stateParameter;
                         this.updateCurrentState(dt, 0.5, TileState.Gone);
+                    }
+                    break;
+                case TileState.Exploding:
+                    {
+                        this.visualContainer.alpha = 1 - this.stateParameter;
+                        this.visualContainer.scale.x = this.visualContainer.scale.y = 1 + .75 * Math.pow(this.stateParameter, 0.2);
+                        this.updateCurrentState(dt, 0.2, TileState.Gone);
                     }
                     break;
                 case TileState.Dropping:
@@ -678,23 +685,26 @@ var CircuitFreaks;
                         var dropFrac = 0.5;
                         if (t < dropFrac) {
                             var tt = t / dropFrac;
-                            this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
+                            this.visualContainer.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
                         }
                         else {
                             var tt = (t - dropFrac) / (1 - dropFrac);
-                            this.graphics.position.y = 0;
-                            this.graphics.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
-                            this.graphics.scale.y = 2 - this.graphics.scale.x;
+                            this.visualContainer.position.y = 0;
+                            this.visualContainer.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
+                            this.visualContainer.scale.y = 2 - this.visualContainer.scale.x;
                         }
-                        // this.graphics.position.y = t * this.dropDistance;
+                        // this.visualContainer.position.y = t * this.dropDistance;
                         this.updateCurrentState(dt, 0.66, TileState.Idle);
                     }
                     break;
                 case TileState.Degrading:
                     {
                         var t = .2 * Math.sin(this.stateParameter * 10) * (1 - this.stateParameter);
-                        // this.graphics.rotation = t;
-                        this.graphics.scale.x = this.graphics.scale.y = 1 + .1 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
+                        // this.visualContainer.rotation = t;
+                        this.visualContainer.scale.x = this.visualContainer.scale.y = 1 + .1 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
+                        if (this.type == CircuitFreaks.TileType.EnabledBomb) {
+                            this.text.scale.x = this.text.scale.y = 1 - .25 * Math.cos(this.stateParameter * 15) * (1 - this.stateParameter);
+                        }
                         this.updateCurrentState(dt, 0.5, TileState.Idle);
                     }
                     break;
@@ -705,9 +715,9 @@ var CircuitFreaks;
                     {
                         var t = .5 + .5 * Math.cos(this.stateParameter * 2 * Math.PI);
                         // var s = 1 - .3 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
-                        // this.graphics.scale.x = s;
-                        this.graphics.scale.y = t;
-                        // this.graphics.scale.y = t;
+                        // this.visualContainer.scale.x = s;
+                        this.visualContainer.scale.y = t;
+                        // this.visualContainer.scale.y = t;
                         if (this.stateParameter >= .5 && this.visualUpdatePending)
                             this.redraw();
                         this.updateCurrentState(dt, 0.3, TileState.Idle);
@@ -738,9 +748,11 @@ var CircuitFreaks;
                 case CircuitFreaks.TileType.DoubleSource:
                 case CircuitFreaks.TileType.TripleSource:
                 case CircuitFreaks.TileType.Wildcard:
+                case CircuitFreaks.TileType.BombSource:
                     return true;
                 case CircuitFreaks.TileType.Trash:
                 case CircuitFreaks.TileType.Blockade:
+                case CircuitFreaks.TileType.EnabledBomb:
                     return false;
             }
             return false;
@@ -911,6 +923,7 @@ var CircuitFreaks;
                 case CircuitFreaks.TileType.DoubleSource:
                 case CircuitFreaks.TileType.TripleSource:
                 case CircuitFreaks.TileType.Wildcard:
+                case CircuitFreaks.TileType.BombSource:
                     // case TileType.Trash:
                     return true;
                 default:
@@ -1278,10 +1291,11 @@ var CircuitFreaks;
     (function (BoardState) {
         BoardState[BoardState["Idle"] = 0] = "Idle";
         BoardState[BoardState["RemoveCircuits"] = 1] = "RemoveCircuits";
-        BoardState[BoardState["Drop"] = 2] = "Drop";
-        BoardState[BoardState["Place"] = 3] = "Place";
-        BoardState[BoardState["DegradeDeadlock"] = 4] = "DegradeDeadlock";
-        BoardState[BoardState["ProcessCircuits"] = 5] = "ProcessCircuits";
+        BoardState[BoardState["Explode"] = 2] = "Explode";
+        BoardState[BoardState["Drop"] = 3] = "Drop";
+        BoardState[BoardState["Place"] = 4] = "Place";
+        BoardState[BoardState["DegradeDeadlock"] = 5] = "DegradeDeadlock";
+        BoardState[BoardState["ProcessCircuits"] = 6] = "ProcessCircuits";
     })(BoardState = CircuitFreaks.BoardState || (CircuitFreaks.BoardState = {}));
     var Board = /** @class */ (function (_super) {
         __extends(Board, _super);
@@ -1401,11 +1415,12 @@ var CircuitFreaks;
         };
         Board.prototype.resetBoard = function () {
             this.clearBoard();
-            var types = [CircuitFreaks.TileType.Trash, CircuitFreaks.TileType.Source, CircuitFreaks.TileType.DoubleSource, CircuitFreaks.TileType.TripleSource];
+            var types = [CircuitFreaks.TileType.Trash, CircuitFreaks.TileType.Source, CircuitFreaks.TileType.DoubleSource, CircuitFreaks.TileType.TripleSource, CircuitFreaks.TileType.BombSource];
             //fill top few rows:
             for (var i = 0; i < 4; ++i) {
                 for (var j = 0; j < 5; ++j) {
                     var typeIdx = Math.floor(Math.random() * types.length);
+                    //only add source tiles in last row:
                     if (i == 3 && typeIdx == 0)
                         typeIdx += 1 + Math.floor(Math.random() * (types.length - 1));
                     var type = types[typeIdx];
@@ -1439,6 +1454,9 @@ var CircuitFreaks;
                 case BoardState.RemoveCircuits:
                     this.clearCircuitTiles();
                     break;
+                case BoardState.Explode:
+                    this.explodeTiles();
+                    break;
                 case BoardState.Drop:
                     this.dropTiles();
                     break;
@@ -1451,14 +1469,14 @@ var CircuitFreaks;
                         this.discardTiles.splice(0, 1);
                     }
                     //switch to some other state:
-                    if (this.hasDropTiles()) {
-                        //drop tiles...
+                    if (this.hasDropTiles())
                         this.setState(BoardState.Drop);
-                    }
                     else {
                         this.circuitDetector.propagateCircuits();
                         if (this.hasCircuit())
                             this.setState(BoardState.RemoveCircuits);
+                        else if (this.hasBombTiles())
+                            this.setState(BoardState.Explode);
                         else
                             this.setState(BoardState.Idle);
                     }
@@ -1482,6 +1500,9 @@ var CircuitFreaks;
                     this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
                     break;
                 case BoardState.RemoveCircuits:
+                    this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
+                    break;
+                case BoardState.Explode:
                     this.updateCurrentState(dt, 0.5, BoardState.ProcessCircuits);
                     break;
                 case BoardState.Drop:
@@ -1614,6 +1635,42 @@ var CircuitFreaks;
                 }
             }
         };
+        Board.prototype.explodeTiles = function () {
+            var explodeLocs = [];
+            for (var i = 0; i < this.rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
+                    var tile = this.slots[i][j];
+                    if (tile != null) {
+                        if (tile.type == CircuitFreaks.TileType.EnabledBomb) {
+                            explodeLocs.push({ x: i, y: j });
+                            this.discardTiles.push(tile);
+                            tile.setState(CircuitFreaks.TileState.Exploding);
+                            this.slots[i][j] = null;
+                        }
+                    }
+                }
+            }
+            for (var i = 0; i < explodeLocs.length; ++i) {
+                var pt = explodeLocs[i];
+                for (var dirIdx = 0; dirIdx < 6; ++dirIdx) {
+                    var coord = new PIXI.Point(pt.x, pt.y);
+                    this.stepCoord(coord, CircuitFreaks.Direction.Up + dirIdx);
+                    if (this.isBoardCoord(coord)) {
+                        var tile = this.slots[coord.x][coord.y];
+                        if (tile != null) {
+                            if (tile.circuitEliminatesTile()) {
+                                this.discardTiles.push(tile);
+                                tile.setState(CircuitFreaks.TileState.Disappearing);
+                                this.slots[coord.x][coord.y] = null;
+                            }
+                            else {
+                                tile.filterCircuitFromTile(true);
+                            }
+                        }
+                    }
+                }
+            }
+        };
         Board.prototype.dropTiles = function () {
             for (var i = 0; i < this.rows; ++i) {
                 for (var oddIt = 0; oddIt < 2; ++oddIt) {
@@ -1676,6 +1733,18 @@ var CircuitFreaks;
                     return false;
             }
             return true;
+        };
+        Board.prototype.hasBombTiles = function () {
+            for (var i = 0; i < this.rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
+                    var tile = this.slots[i][j];
+                    if (tile != null) {
+                        if (tile.type == CircuitFreaks.TileType.EnabledBomb)
+                            return true;
+                    }
+                }
+            }
+            return false;
         };
         Board.prototype.hasDropTiles = function () {
             for (var i = 0; i < this.rows; ++i) {
@@ -2328,6 +2397,12 @@ var CircuitFreaks;
                     return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.DoubleSource, 2);
                 case 'r3':
                     return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.TripleSource, 2);
+                case 'yb':
+                    return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.BombSource, 0);
+                case 'bb':
+                    return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.BombSource, 1);
+                case 'rb':
+                    return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.BombSource, 2);
                 case '##':
                     return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Trash, 0);
             }

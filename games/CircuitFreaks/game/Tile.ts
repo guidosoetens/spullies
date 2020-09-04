@@ -10,7 +10,8 @@ module CircuitFreaks
         Dropping,
         Degrading,
         Gone,
-        Flipping
+        Flipping,
+        Exploding
     }
 
     export enum CircuitState {
@@ -90,8 +91,10 @@ module CircuitFreaks
 
     export class Tile extends PIXI.Container {
         
+        visualContainer:PIXI.Container;
         graphics:PIXI.Graphics;
         type:TileType;
+        text:PIXI.Text;
 
         // private circuitState:CircuitState;
         // private altCircuitState:CircuitState;
@@ -110,8 +113,11 @@ module CircuitFreaks
         constructor(width:number, desc:TileDescriptor) {
             super();
 
+            this.visualContainer = new PIXI.Container();
+            this.addChild(this.visualContainer);
+
             this.graphics = new PIXI.Graphics();
-            this.addChild(this.graphics);
+            this.visualContainer.addChild(this.graphics);
 
             this.reset(width, desc);
             // this.tileWidth = width;
@@ -129,6 +135,20 @@ module CircuitFreaks
             // this.clearCircuitState();
 
             // this.redraw();
+
+            this.text = new PIXI.Text("");
+            this.text.style.fontFamily = "groboldregular";
+            this.text.style.fontSize = 40;
+            this.text.style.stroke = 0xffffff;
+            this.text.style.fill = 0xffffff;
+            this.text.anchor.set(0.5, 0.5);
+            this.text.style.dropShadow = true;
+            this.text.style.dropShadowAlpha = .5;
+            this.text.x = 0;
+            this.text.y = 0;
+            this.text.scale.x = .75;
+            this.text.scale.y = .75;
+            this.visualContainer.addChild(this.text);
         }
 
         reset(width:number, desc:TileDescriptor) {
@@ -189,7 +209,7 @@ module CircuitFreaks
                 borderColor = 0xaacccc;
                 // subWidth *= .8;
             }
-            else if(type == TileType.Source || type == TileType.DoubleSource || type == TileType.TripleSource) {
+            else if(type == TileType.Source || type == TileType.DoubleSource || type == TileType.TripleSource || type == TileType.BombSource) {
                 switch(this.groupIndex) {
                     case 1:
                         baseColor = 0xff00aa;
@@ -205,6 +225,10 @@ module CircuitFreaks
                         borderColor = 0xaa6600;
                         break;
                 }
+            }
+            else if(type == TileType.EnabledBomb) {
+                baseColor = 0x777777;
+                borderColor = 0x222222;
             }
             else if(type == TileType.Wildcard) {
                 baseColor = 0x66ffaa;
@@ -236,46 +260,6 @@ module CircuitFreaks
 
             let ang = .5 * Math.PI;
             switch(this.type) {
-                /*
-                case TileType.Curve_NE:
-                    this.graphics.moveTo(rad, 0);
-                    this.graphics.arc(rad, -rad, rad, ang, 2 * ang); // cx, cy, radius, startAngle, endAngle
-                    break;
-                case TileType.Curve_NW:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.arc(-rad, -rad, rad, 0, ang);
-                    break;
-                case TileType.Curve_SE:
-                    this.graphics.moveTo(0, rad);
-                    this.graphics.arc(rad, rad, rad, 2 * ang, 3 * ang);
-                    break;
-                case TileType.Curve_SW:
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.arc(-rad, rad, rad, -ang, 0);
-                    break;
-                case TileType.Straight_H:
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.lineTo(rad, 0);
-                    break;
-                case TileType.Straight_V:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.lineTo(0, rad);
-                    break;
-                case TileType.Double_NE:
-                    this.graphics.moveTo(rad, 0);
-                    this.graphics.arc(rad, -rad, rad, ang, 2 * ang);
-                    this.setCircuitLineStyle(CircuitState.None, lineWidth);
-                    this.graphics.moveTo(-rad, 0);
-                    this.graphics.arc(-rad, rad, rad, -ang, 0);
-                    break;
-                case TileType.Double_NW:
-                    this.graphics.moveTo(0, -rad);
-                    this.graphics.arc(-rad, -rad, rad, 0, ang);
-                    this.setCircuitLineStyle(CircuitState.None, lineWidth);
-                    this.graphics.moveTo(0, rad);
-                    this.graphics.arc(rad, rad, rad, 2 * ang, 3 * ang);
-                    break;
-                */
                 case TileType.Source:
                     this.graphics.drawCircle(0,0,rad - lineWidth * .5);
                     break;
@@ -287,6 +271,16 @@ module CircuitFreaks
                     this.graphics.drawCircle(0,0,rad * .5);
                     this.graphics.drawCircle(0,0,rad - lineWidth * .5);
                     this.graphics.drawCircle(0,0,rad * .1);
+                    break;
+                case TileType.EnabledBomb:
+                case TileType.BombSource:
+                    this.graphics.drawCircle(0,0,rad - lineWidth * .5);
+                    // this.graphics.beginFill(0xffffff, 1);
+                    // this.graphics.drawCircle(0,0, rad * .5);
+                    // this.graphics.drawRoundedRect(.7 * rad,-.7 * rad,.2 * rad,.2 * rad, .05 * rad);
+                    // this.graphics.endFill();
+                    if(this.text)
+                        this.text.text = "💣";
                     break;
                 case TileType.Wildcard:
                     this.graphics.drawStar(0,0,5,.7 * rad, .35 * rad, 0);
@@ -378,13 +372,15 @@ module CircuitFreaks
                 case TileState.Appearing:
                     break;
                 case TileState.Idle:
-                    this.graphics.position.y = 0;
-                    this.graphics.scale.x = this.graphics.scale.y = 1;
-                    this.graphics.rotation = 0;
+                    this.visualContainer.position.y = 0;
+                    this.visualContainer.scale.x = this.visualContainer.scale.y = 1;
+                    this.visualContainer.rotation = 0;
                     if(this.visualUpdatePending)
                         this.redraw();
                     break;
                 case TileState.Disappearing:
+                    break;
+                case TileState.Exploding:
                     break;
                 case TileState.Dropping:
                     break;
@@ -442,10 +438,11 @@ module CircuitFreaks
         }
 
         circuitEliminatesTile() {
-            if(!this.hasCircuit())
-                return false;
-
             switch(this.type) {
+                case TileType.EnabledBomb:
+                    return false;
+                case TileType.BombSource:
+                    return false;
                 case TileType.DoubleSource:
                     return this.sourceHitCount >= 2;
                 case TileType.TripleSource:
@@ -494,16 +491,19 @@ module CircuitFreaks
             return false;
         }
 
-        filterCircuitFromTile() {
+        filterCircuitFromTile(forceSingleSource:boolean = false) {
             var newType = this.type;
 
             switch(this.type) {
+                case TileType.BombSource:
+                    newType = TileType.EnabledBomb;
+                    break;
                 case TileType.DoubleSource:
-                    if(this.sourceHitCount == 1)
+                    if(this.sourceHitCount == 1 || forceSingleSource)
                         newType = TileType.Source;
                     break;
                 case TileType.TripleSource:
-                    if(this.sourceHitCount == 1)
+                    if(this.sourceHitCount == 1 || forceSingleSource)
                         newType = TileType.DoubleSource;
                     else if(this.sourceHitCount == 2)
                         newType = TileType.Source;
@@ -531,7 +531,7 @@ module CircuitFreaks
         updateState(dt:number) {
             switch(this.state) {
                 case TileState.Appearing:
-                    this.graphics.scale.x = this.graphics.scale.y = easeOutElastic(this.stateParameter);
+                    this.visualContainer.scale.x = this.visualContainer.scale.y = easeOutElastic(this.stateParameter);
                     this.updateCurrentState(dt, 0.5, TileState.Idle);
                     break;
                 case TileState.Idle:
@@ -539,8 +539,15 @@ module CircuitFreaks
                     break;
                 case TileState.Disappearing:
                     {
-                        this.graphics.alpha = 1 - this.stateParameter;
+                        this.visualContainer.alpha = 1 - this.stateParameter;
                         this.updateCurrentState(dt, 0.5, TileState.Gone);
+                    }
+                    break;
+                case TileState.Exploding:
+                    {
+                        this.visualContainer.alpha = 1 - this.stateParameter;
+                        this.visualContainer.scale.x = this.visualContainer.scale.y = 1 + .75 * Math.pow(this.stateParameter, 0.2);
+                        this.updateCurrentState(dt, 0.2, TileState.Gone);
                     }
                     break;
                 case TileState.Dropping:
@@ -549,23 +556,27 @@ module CircuitFreaks
                         let dropFrac = 0.5;
                         if(t < dropFrac) {
                             let tt = t / dropFrac;
-                            this.graphics.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
+                            this.visualContainer.position.y = Math.cos(tt * .5 * Math.PI) * this.dropDistance;
                         }
                         else {
                             let tt = (t - dropFrac) / (1 - dropFrac);
-                            this.graphics.position.y = 0;
-                            this.graphics.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
-                            this.graphics.scale.y = 2 - this.graphics.scale.x;
+                            this.visualContainer.position.y = 0;
+                            this.visualContainer.scale.x = 1 + 0.1 * Math.sin(tt * 6) * (1 - tt);
+                            this.visualContainer.scale.y = 2 - this.visualContainer.scale.x;
                         }
-                        // this.graphics.position.y = t * this.dropDistance;
+                        // this.visualContainer.position.y = t * this.dropDistance;
                         this.updateCurrentState(dt, 0.66, TileState.Idle);
                     }
                     break;
                 case TileState.Degrading:
                     {
                         var t = .2 * Math.sin(this.stateParameter * 10) * (1 - this.stateParameter);
-                        // this.graphics.rotation = t;
-                        this.graphics.scale.x = this.graphics.scale.y = 1 + .1 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
+                        // this.visualContainer.rotation = t;
+                        this.visualContainer.scale.x = this.visualContainer.scale.y = 1 + .1 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
+                        if(this.type == TileType.EnabledBomb) {
+                            this.text.scale.x = this.text.scale.y = 1 - .25 * Math.cos(this.stateParameter * 15) * (1 - this.stateParameter);
+                        }
+                        
                         this.updateCurrentState(dt, 0.5, TileState.Idle);
                     }
                     break;
@@ -576,9 +587,9 @@ module CircuitFreaks
                     {
                         var t = .5 + .5 * Math.cos(this.stateParameter * 2 * Math.PI);
                         // var s = 1 - .3 * Math.sin(this.stateParameter * 15) * (1 - this.stateParameter);
-                        // this.graphics.scale.x = s;
-                        this.graphics.scale.y = t;
-                        // this.graphics.scale.y = t;
+                        // this.visualContainer.scale.x = s;
+                        this.visualContainer.scale.y = t;
+                        // this.visualContainer.scale.y = t;
 
                         if(this.stateParameter >= .5 && this.visualUpdatePending)
                             this.redraw();
@@ -613,9 +624,11 @@ module CircuitFreaks
                 case TileType.DoubleSource:
                 case TileType.TripleSource:
                 case TileType.Wildcard:
+                case TileType.BombSource:
                     return true;
                 case TileType.Trash:
                 case TileType.Blockade:
+                case TileType.EnabledBomb:
                     return false;
             }
 

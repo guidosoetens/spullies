@@ -7,6 +7,8 @@ module CircuitFreaks
         Source,
         DoubleSource,
         TripleSource,
+        BombSource,
+        EnabledBomb,
         Blockade,
         Trash,
         Wildcard,

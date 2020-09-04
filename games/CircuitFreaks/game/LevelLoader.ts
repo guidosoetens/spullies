@@ -45,6 +45,12 @@ module CircuitFreaks
                     return new TileDescriptor(TileType.DoubleSource, 2);
                 case 'r3':
                     return new TileDescriptor(TileType.TripleSource, 2);
+                case 'yb':
+                    return new TileDescriptor(TileType.BombSource, 0);
+                case 'bb':
+                    return new TileDescriptor(TileType.BombSource, 1);
+                case 'rb':
+                        return new TileDescriptor(TileType.BombSource, 2);
                 case '##':
                     return new TileDescriptor(TileType.Trash, 0);
             }
