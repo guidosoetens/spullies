@@ -1,21 +1,28 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Point.ts"/>
 ///<reference path="Level.ts"/>
+///<reference path="LevelLoader.ts"/>
+///<reference path="menu/Menu.ts"/>
+///<reference path="editor/EditorGrid.ts"/>
+///<reference path="Defs.ts"/>
 
 module Magneon
 {
     export class Game extends PIXI.Container {
 
-        level:Level;
+        level:Level = null;
+        editor:EditorGrid;
+        menu:Menu;
 
         btnGraphics:PIXI.Graphics;
-        debugText:PIXI.Text;
+        buttonText:PIXI.Text;
+
+        size:PIXI.Point;
 
         constructor(w:number, h:number) {
             super();
 
-            this.level = new Level(w, h);
-            this.addChild(this.level);
+            this.size = new PIXI.Point(w, h);
 
             this.btnGraphics = new PIXI.Graphics();
             this.btnGraphics.x = w - 30;
@@ -23,17 +30,40 @@ module Magneon
             this.btnGraphics.alpha = .8;
             this.addChild(this.btnGraphics);
 
-            this.debugText = new PIXI.Text(' ');
-            this.debugText.style.fontFamily = "courier";
-            this.debugText.style.fill = 0xffffff;
-            this.debugText.style.fontSize = 32;
-            this.addChild(this.debugText);
+            this.buttonText = new PIXI.Text(' ');
+            this.buttonText.style.fontFamily = "courier";
+            this.buttonText.style.fill = 0xffffff;
+            this.buttonText.style.fontSize = 32;
+            this.addChild(this.buttonText);
+
+            this.menu = new Menu(w, h);
+            this.menu.onOpenLevel = (data) => { this.loadLevel(data); };
+            this.menu.onOpenEditor = () => { this.loadLevel(this.level.data); this.editor.open(this.level); this.buttonText.text = '▶'; };
+            this.addChild(this.menu);
 
             this.updateButtonLayout();
+
+            this.editor = new EditorGrid();
+            this.addChild(this.editor);
+            this.editor.close();
+
+            GLOBAL_SCENE = this;
+        }
+
+        loadLevel(data:any) {
+            if(this.level)
+                this.removeChild(this.level);
+            this.level = new Level(this.size.x, this.size.y, data);
+            this.addChildAt(this.level, 0);
         }
 
         update(dt:number) {
-            this.level.update(dt);
+            if(this.menu.visible)
+                this.menu.update(dt);
+            else if(this.editor.visible)
+                this.editor.update(dt);
+            else if(this.level)
+                this.level.update(dt);
         }
 
         updateButtonLayout() {
@@ -43,26 +73,52 @@ module Magneon
             this.btnGraphics.drawCircle(0,0,20);
             this.btnGraphics.endFill();
 
-            this.debugText.text = DEBUG_MODE ? '✓' : '•';
-            this.debugText.x = this.btnGraphics.x - this.debugText.width / 2;
-            this.debugText.y = this.btnGraphics.y - this.debugText.height / 2;
+            this.buttonText.text = '⚙';
+            this.buttonText.x = this.btnGraphics.x - this.buttonText.width / 2;
+            this.buttonText.y = this.btnGraphics.y - this.buttonText.height / 2;
         }
 
         touchDown(p:Point) {
-            let btnLoc = new Point(this.btnGraphics.x, this.btnGraphics.y);
-            if(btnLoc.subtract(p).length() < 20) {
-                DEBUG_MODE = !DEBUG_MODE;
-                this.updateButtonLayout();
-            }
-            this.level.touchDown(p);
+            if(this.menu.visible) 
+                this.menu.touchDown(p);
+            else if(this.editor.visible)
+                this.editor.touchDown(p);
+            else if(this.level)
+                this.level.touchDown(p);
         }
 
         touchMove(p:Point) {
-            this.level.touchMove(p);
+            if(this.menu.visible) 
+                this.menu.touchMove(p);
+            else if(this.editor.visible)
+                this.editor.touchMove(p);
+            else if(this.level)
+                this.level.touchMove(p);
         }
 
         touchUp(p:Point) {
-            this.level.touchUp(p);
+            if(this.menu.visible) 
+                this.menu.touchUp(p);
+            else {
+
+                if(this.editor.visible)
+                    this.editor.touchUp(p);
+                else if(this.level) 
+                    this.level.touchUp(p);
+
+                let btnLoc = new Point(this.btnGraphics.x, this.btnGraphics.y);
+                if(btnLoc.subtract(p).length() < 20) {
+                    if(this.editor.visible)
+                        this.editor.close();
+                    else
+                        this.menu.open();
+                    this.buttonText.text = this.editor.visible ? '▶' : '⚙';
+                }
+            } 
+        }
+
+        levelMade(obj:any) {
+            //levelMade
         }
 
         left() {

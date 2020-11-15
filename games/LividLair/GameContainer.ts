@@ -1,8 +1,6 @@
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="game/Game.ts"/>
 ///<reference path="game/Defs.ts"/>
-///<reference path="game/editor/ElementsPanel.ts"/>
-///<reference path="game/editor/PropertiesPanel.ts"/>
 
 module Magneon
 {
@@ -37,18 +35,12 @@ module Magneon
 
         app_scale:number = 0.85;
 
-        elemsPanel:ElementsPanel;
-        propsPanel:PropertiesPanel;
-
         constructor() {
             super(APP_WIDTH, APP_HEIGHT, { antialias: true, backgroundColor : 0x000000, transparent : false });
 
             this.backgroundTexture = PIXI.Texture.fromImage('assets/background.jpg');
             this.backgroundImage = new PIXI.Sprite(this.backgroundTexture);
             this.stage.addChild(this.backgroundImage);
-
-            this.elemsPanel = new ElementsPanel();
-            this.propsPanel = new PropertiesPanel();
 
             this.game = new Game(APP_WIDTH, APP_HEIGHT);
             this.stage.addChild(this.game);
@@ -77,10 +69,6 @@ module Magneon
             }
             this.stage.addChild(this.componentBoundary);
             this.componentBoundary.pivot.x = this.game.pivot.x = .5 * APP_WIDTH;
-
-
-            this.stage.addChild(this.elemsPanel);
-            this.stage.addChild(this.propsPanel);
         }
 
         setup() {
@@ -105,8 +93,6 @@ module Magneon
 
             this.debugGraphics = new PIXI.Graphics();
             this.game.addChild(this.debugGraphics);
-
-            this.game.loadLevel(PIXI.loader.resources['defaultLevel'].data);
         }
 
         keyUp(key:number) {
@@ -151,8 +137,6 @@ module Magneon
                     --i;
                 }
             }
-
-            EditorGrid.rightClick = event.data.button == 2;
 
             var pos = event.data.getLocalPosition(this.game);
 
@@ -236,11 +220,6 @@ module Magneon
 
             this.componentBoundary.scale.x = this.game.scale.x = this.app_scale;
             this.componentBoundary.scale.y = this.game.scale.y = this.app_scale;
-
-            this.elemsPanel.x = this.game.x - this.app_scale * APP_WIDTH * .5 - 70;
-            this.elemsPanel.y = this.game.y;
-            this.propsPanel.x = this.game.x + this.app_scale * APP_WIDTH * .5 + 10;
-            this.propsPanel.y = this.game.y;
         }
 
         update() {

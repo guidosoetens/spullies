@@ -43,17 +43,6 @@ module Magneon
             return this.p1.clone().add(this.dir.clone().multiply(proj));
         }
 
-        draw(gr:PIXI.Graphics, clr:number) {
-            gr.lineStyle(6, clr, 1);
-            gr.moveTo(this.p1.x, this.p1.y);
-            gr.lineTo(this.p2.x, this.p2.y);
-            gr.lineStyle(0);
-            gr.beginFill(clr, 1);
-            gr.drawCircle(this.p1.x, this.p1.y, 3);
-            gr.drawCircle(this.p2.x, this.p2.y, 3);
-            gr.endFill();
-        }
-
         projectMovingBallToLineSegment(ballPos:Point, ballEndPos:Point, ballRadius:number) : Point {
             var cpy = this.clone();
             var toPt = ballPos.clone().subtract(this.p1);

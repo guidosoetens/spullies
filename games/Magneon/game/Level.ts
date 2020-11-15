@@ -10,8 +10,11 @@ module Magneon
 
     export class Level extends PIXI.Container {
 
+        data:any;
+
         borders:Border[];
         ball:Ball;
+        levelElementsContainer:PIXI.Container;
 
         //input:
         hasInput:boolean;
@@ -31,7 +34,7 @@ module Magneon
         showDir:boolean = false;
         showDirTimeBuffer:number = 0.0;
 
-        constructor(w:number, h:number) {
+        constructor(w:number, h:number, data:any) {
             super();
 
             // this.filters = [new PIXI.filters.BlurFilter(1)];
@@ -54,59 +57,47 @@ module Magneon
             this.graphics = new PIXI.Graphics();
             this.addChild(this.graphics);
 
-            this.resetLevel();
+            this.levelElementsContainer = new PIXI.Container();
+            this.addChild(this.levelElementsContainer);
 
             this.addChild(this.ball);
+
+            this.loadLevel(data);
         }
 
-        resetLevel() {
+        loadLevel(data:any) {
 
-            this.ball.position.x = this.width * .5;
-            this.ball.position.y = this.height * .33;
+            this.data = data;
+
+            //clear previous level:
             this.ball.velocity = new Point(0,0);
-
-            let m:number = 2 * BALL_RADIUS;
-            let tl:Point = new Point(m, m);
-            let br:Point = new Point(this.width - m, this.height - m);
-            var circleCenterY:number = m + 100 + BALL_RADIUS;
-            var bottomCircleY:number = this.height - m - 100;
-
             this.borders = [];
+            this.magnetAnchors = [];
+            this.levelElementsContainer.removeChildren();
+            
+            this.ball.position = Point.parseFromData(data["start"]).toPixi();
 
-            //walls (top, left, right):
-            this.borders.push(Border.asLine(m + 340 + BALL_RADIUS, tl.y, br.x - 7, tl.y, true));
-            this.borders.push(Border.asLine(tl.x, circleCenterY, tl.x, bottomCircleY - 10, true));
-            this.borders.push(Border.asLine(br.x, tl.y + 7, br.x, br.y, false));
-
-            //floor:
-            this.borders.push(Border.asLine(m + 100, br.y, br.x - 160, br.y, false));
-            this.borders.push(Border.asLine(br.x - 150, br.y, br.x - 60, br.y, false));
-            this.borders.push(Border.asLine(br.x - 50, br.y, br.x, br.y, false));
-            this.borders[this.borders.length - 2].spring = true;
-
-            //slope and curves:
-            this.borders.push(Border.asLine(m + 100, .5 * this.height, .6 * this.width, .8 * this.height, false));
-            this.borders.push(Border.asCurve(new Point(.4 * this.width, .33 * this.height), 0, .5 * Math.PI, 100, true));
-            this.borders.push(Border.asCurve(new Point(m + 100, circleCenterY), Math.PI, 2 * Math.PI, 100, true));
-            this.borders.push(Border.asCurve(new Point(m + 220, circleCenterY), 0, Math.PI, 20, true));
-            this.borders.push(Border.asCurve(new Point(m + 340 + BALL_RADIUS, circleCenterY),  Math.PI, 1.5 * Math.PI, 100 + BALL_RADIUS, true));
-            this.borders.push(Border.asCurve(new Point(m + 100, bottomCircleY),  .5 * Math.PI, 1.0 * Math.PI, 100, false));
-
-            this.borders.push(Border.asCurve(new Point(this.width - m - 100, this.height / 2),  0.7 * Math.PI, 2.3 * Math.PI, 50, true));
-            this.borders[this.borders.length - 1].animate = true;
-
-            for(let b of this.borders) {
-                this.addChild(b);
-                b.draw();
+            let bs = data["borders"];
+            if(bs) {
+                for(let b of bs) {
+                    this.borders.push(Border.fromData(b));
+                }
             }
 
-            let sa = new MagnetAnchor();
-            sa.x = m + 100;
-            sa.y = circleCenterY;
-            this.addChild(sa);
-            this.magnetAnchors.push(sa);
+            for(let b of this.borders) {
+                this.levelElementsContainer.addChild(b);
+                b.drawWithOffsetFromOthers(this.borders);
+            }
 
-            this.draw();
+            let ans = data["anchors"];
+            if(ans) {
+                for(let a of ans) {
+                    let sa = new MagnetAnchor();
+                    sa.position = Point.parseFromData(a).toPixi();
+                    this.levelElementsContainer.addChild(sa);
+                    this.magnetAnchors.push(sa);
+                }
+            }
         }
 
         update(dt:number) {
@@ -219,7 +210,7 @@ module Magneon
             }
 
             var magnet_effect = 0.0;
-            if(closestDistance < max_magnet_dist && this.hasInput) {
+            if(closestPoint && closestDistance < max_magnet_dist && this.hasInput) {
                 var toPt = closestPoint.clone().subtract(ballCenter);
                 magnet_effect = 1.0;//.25 + .75 * Math.pow(clamp(1 - toPt.length() / max_magnet_dist), .5);
                 this.ball.velocity.add(toPt.normalize(dt * 8000 * magnet_effect));
@@ -245,7 +236,10 @@ module Magneon
             if(toPt.length() > touchRad)
                 toPt.normalize(touchRad);
             toPt.multiply(1.0 / touchRad);
-            this.ball.forceStick(closestPoint, forceStickMagnet, toPt);
+            if(closestPoint)
+                this.ball.forceStick(closestPoint, forceStickMagnet, toPt);
+            else
+                this.ball.forceStick(ballCenter, 0, toPt);
 
 
             /*
@@ -282,34 +276,6 @@ module Magneon
             }
         }
 
-        pts:Point[] = [];
-
-        draw() {
-            /*
-            if(this.pts.length > 0) {
-                var srcPt = this.pts[0];
-
-                this.graphics.moveTo(this.width/2, 100);
-                for(var i:number=1; i<this.pts.length; ++i) {
-
-                    if(i > 1) {
-                        let prevVec = this.pts[i-1].clone().subtract(this.pts[i-2]);
-                        let currVec = this.pts[i].clone().subtract(this.pts[i-1]);
-                        if(currVec.cross(prevVec) > 0)
-                            this.graphics.lineStyle(1,0xff0000);
-                        else
-                            this.graphics.lineStyle(1,0x00ff00);
-                    }   
-                    else
-                        this.graphics.lineStyle(1, 0xffffff);
-
-                    let p = this.pts[i].clone().subtract(srcPt).multiply(2.0);
-                    this.graphics.lineTo(this.width/2 + p.x, 100 + p.y);
-                }
-            }*/
-        }
-
-
         touchDown(p:Point) {
             this.hasInput = true;
             this.inputTime = 0;
@@ -322,9 +288,6 @@ module Magneon
             let inputDir = p.clone().subtract(this.inputLocation);
             let distanceFactor = clamp(inputDir.length() / 15.0);
             inputDir.normalize();
-            this.pts.push(p.clone());
-            if(this.pts.length > 100)
-                this.pts.splice(0, 1);
             this.inputLocation = p.clone();
 
             let currInputDir = this.inputDirection.clone();
@@ -346,7 +309,6 @@ module Magneon
         touchUp(p:Point) {
             this.hasInput = false;
             this.bouncePending = true;
-            this.pts = [];
 
             this.rotationAngle = 0;
             this.railBuffer = [];

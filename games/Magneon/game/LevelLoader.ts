@@ -3,55 +3,66 @@
 
 module Magneon
 {
-    export class LevelData {
-
-        constructor() {
-            //...
-        }
-
-        static deserialize(data:any) : LevelData {
-            var result:LevelData = new LevelData();
-            // let n = result.rows * result.columns;
-            // for(var i:number=0; i<n; ++i) {
-            //     result.tiles[i] = LevelData.deserializeTile(data.tiles[i]);
-            // }
-            return result;
-        }
-    }
-
     export class LevelLoader {
 
-        filePath:string;
-        static instance:LevelLoader;
-        isDone:boolean;
-        callback:Function;
-        listener:any;
-
-        constructor(cb:Function, listener:any) {
-            this.callback = cb;
-            this.listener = listener;
-            LevelLoader.instance = this;
+        private constructor() {
         }
 
-        loadLevel(index:number) {
-            this.isDone = false;
-            this.filePath = "levels/level" + index + ".json";
-            let currRes = PIXI.loader.resources[this.filePath];
-            if(currRes == undefined) {
-                PIXI.loader.add([this.filePath]);
-                PIXI.loader.load(LevelLoader.loadFinished);
+        static loadLevel(index:number, cb:Function) {
+
+            let filePath = "levels/custom/level" + index + ".json";
+            
+            let callback = () => {
+                var data = PIXI.loader.resources[filePath].data;
+                if(!data)
+                    data = PIXI.loader.resources['defaultLevel'].data;
+                cb(data);
             }
-            else {
-                let levelData = LevelData.deserialize(currRes.data);
-                this.callback.call(this.listener, levelData);
-            }
+
+            let ress = PIXI.loader.resources;
+            ress[filePath] = undefined;
+            PIXI.loader.add([filePath]);
+            PIXI.loader.load(callback);
         }
 
-        static loadFinished() {
-            let loader = LevelLoader.instance;
-            let data = PIXI.loader.resources[loader.filePath].data;
-            let levelData = LevelData.deserialize(data);
-            loader.callback.call(loader.listener, levelData);
+        static listLevels(cb:Function) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("GET", "scripts/getLevelList.php");
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var obj = JSON.parse(this.response);
+                    cb(obj);
+                }
+            };
+            xmlhttp.send();
+        }
+
+        static storeLevel(levelIndex:number, data:any, cb:Function, listener:any) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("GET", "scripts/getLevelList.php");
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var obj = JSON.parse(this.response);
+                    cb.call(listener, obj);
+                }
+            };
+        
+            var formData = new FormData();
+            formData.append("data", JSON.stringify(data));
+            formData.append("id", '' + levelIndex);
+            xmlhttp.send(formData);
+        }
+
+        static makeNewLevel(cb:Function) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("GET", "scripts/createLevel.php");
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log('RESP:', this.response);
+                    cb(this.response);
+                }
+            };
+            xmlhttp.send();
         }
     }
 }
