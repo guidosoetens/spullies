@@ -254,6 +254,10 @@ module LividLair {
             p.clampedPosition.y = p.position.y = row * GRID_UNIT_SIZE;
         }
 
+        getAllElements() : GameObject[] {
+            return this.blocks.concat(this.platforms).concat(this.ladders).concat(this.pushBlocks).concat(this.rubees);
+        }
+
         fixCamera(smooth: boolean) {
             let takeFrac = smooth ? .2 : 1.0;
             this.levelContainer.x = (1.0 - takeFrac) * this.levelContainer.x + takeFrac * (-this.wizard.x + this.screenSize.x / 2);
@@ -261,6 +265,15 @@ module LividLair {
 
             this.levelContainer.x = Math.min(0, Math.max(this.levelContainer.x, this.screenSize.x - (this.columns - 1) * GRID_UNIT_SIZE));
             this.levelContainer.y = Math.min(0, Math.max(this.levelContainer.y, this.screenSize.y - (this.rows - 1) * GRID_UNIT_SIZE));
+
+
+            //hide everything outside of camera bounds:
+            let center = new Point(this.levelContainer.x, this.levelContainer.y).multiply(-1).add(this.screenSize.clone().multiply(0.5));
+            let cam_box = new AABB(center, this.screenSize.x, this.screenSize.y);
+            for(let e of this.getAllElements()) {
+                let aabb = e.getBoundingBox();
+                e.visible = aabb.intersects(cam_box);
+            }
         }
 
         sign(n: number): number {
