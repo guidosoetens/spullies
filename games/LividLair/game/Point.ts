@@ -1,6 +1,6 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 
-module Magneon
+module LividLair
 {
     export class Point {
         x:number;

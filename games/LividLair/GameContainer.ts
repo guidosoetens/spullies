@@ -2,41 +2,40 @@
 ///<reference path="game/Game.ts"/>
 ///<reference path="game/Defs.ts"/>
 
-module Magneon
-{
+module LividLair {
     export class touchElement {
-        id:number;
-        currentX:number;
-        currentY:number;
-        originX:number;
-        originY:number;
-        timeAlive:number;
+        id: number;
+        currentX: number;
+        currentY: number;
+        originX: number;
+        originY: number;
+        timeAlive: number;
     }
 
     export class GameContainer extends PIXI.Application {
 
         //input tracking:
-        touchPoints:touchElement[];
+        touchPoints: touchElement[];
 
         //debug:
-        debugText:PIXI.Text;
-        debugGraphics:PIXI.Graphics;
+        debugText: PIXI.Text;
+        debugGraphics: PIXI.Graphics;
 
         //game components:
-        backgroundTexture:PIXI.Texture;
-        backgroundImage:PIXI.Sprite;
+        backgroundTexture: PIXI.Texture;
+        backgroundImage: PIXI.Sprite;
 
         // touchContainerGraphics:PIXI.Graphics;
-        componentMask:PIXI.Graphics;
-        game:Game;
-        componentBoundary:PIXI.Graphics;
+        componentMask: PIXI.Graphics;
+        game: Game;
+        componentBoundary: PIXI.Graphics;
 
-        hasFocusTouch:boolean;
+        hasFocusTouch: boolean;
 
-        app_scale:number = 0.85;
+        app_scale: number = 0.85;
 
         constructor() {
-            super(APP_WIDTH, APP_HEIGHT, { antialias: true, backgroundColor : 0x000000, transparent : false });
+            super(APP_WIDTH, APP_HEIGHT, { antialias: true, backgroundColor: 0x000000, transparent: false });
 
             this.backgroundTexture = PIXI.Texture.fromImage('assets/background.jpg');
             this.backgroundImage = new PIXI.Sprite(this.backgroundTexture);
@@ -53,16 +52,16 @@ module Magneon
 
             this.game.pivot.x = .5 * APP_WIDTH;
             // this.game.position.x = APP_WIDTH;
-            
+
 
             this.hasFocusTouch = false;
 
             this.componentBoundary = new PIXI.Graphics();
             this.componentBoundary.clear();
-            var thickness:number[] = [4, 3];
-            var offset:number[] = [0, 0];
-            var colors:number[] = [0xaaaaaa, 0xffffff];
-            for(var i:number=0; i<2; ++i) {
+            var thickness: number[] = [4, 3];
+            var offset: number[] = [0, 0];
+            var colors: number[] = [0xaaaaaa, 0xffffff];
+            for (var i: number = 0; i < 2; ++i) {
                 var t = offset[i];
                 this.componentBoundary.lineStyle(thickness[i], colors[i]);
                 this.componentBoundary.drawRoundedRect(-t, -t, APP_WIDTH + 2 * t, APP_HEIGHT + 2 * t, 5 + t);
@@ -73,7 +72,7 @@ module Magneon
 
         setup() {
             this.ticker.add(this.update, this);
-            
+
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
@@ -93,11 +92,12 @@ module Magneon
 
             this.debugGraphics = new PIXI.Graphics();
             this.game.addChild(this.debugGraphics);
+            this.game.setup();
         }
 
-        keyUp(key:number) {
+        keyUp(key: number) {
             console.log(key);
-            switch(key) {
+            switch (key) {
                 case 17: //ctrl
                     CTRL_PRESSED = false;
                     break;
@@ -106,33 +106,33 @@ module Magneon
         }
 
 
-        keyDown(key:number) {
+        keyDown(key: number) {
             console.log(key);
-            switch(key) {
-                case 37: //left
-                    this.game.left();
-                    break;
-                case 38: //up
-                    this.game.up();
-                    break;
-                case 39: //right
-                    this.game.right();
-                    break;
-                case 40: //down
-                    this.game.down();
-                    break;
-                case 32: //space
-                    this.game.rotate();
-                    break;
+            switch (key) {
+                // case 37: //left
+                //     this.game.left();
+                //     break;
+                // case 38: //up
+                //     this.game.up();
+                //     break;
+                // case 39: //right
+                //     this.game.right();
+                //     break;
+                // case 40: //down
+                //     this.game.down();
+                //     break;
+                // case 32: //space
+                //     this.game.rotate();
+                //     break;
                 case 17: //ctrl:
                     CTRL_PRESSED = true;
                     break;
             }
         }
 
-        pointerDown(event:PIXI.interaction.InteractionEvent) {
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+        pointerDown(event: PIXI.interaction.InteractionEvent) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
                     this.touchPoints.splice(i, 1);
                     --i;
                 }
@@ -140,7 +140,7 @@ module Magneon
 
             var pos = event.data.getLocalPosition(this.game);
 
-            var touch:touchElement = new touchElement();
+            var touch: touchElement = new touchElement();
             touch.id = event.data.identifier;
             touch.currentX = pos.x;
             touch.currentY = pos.y;
@@ -150,39 +150,39 @@ module Magneon
 
             this.touchPoints.push(touch);
 
-            if(this.touchPoints.length == 1) {
+            if (this.touchPoints.length == 1) {
                 this.hasFocusTouch = true;
-                this.game.touchDown(new Point(pos.x, pos.y));
+                // this.game.touchDown(new Point(pos.x, pos.y));
             }
         }
 
-        pointerMove(event:PIXI.interaction.InteractionEvent) {
+        pointerMove(event: PIXI.interaction.InteractionEvent) {
             var pos = event.data.getLocalPosition(this.game);
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
                     this.touchPoints[i].currentX = pos.x;
                     this.touchPoints[i].currentY = pos.y;
                 }
             }
 
-            if(this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
-                this.game.touchMove(new Point(pos.x, pos.y));
+            // if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
+            //     this.game.touchMove(new Point(pos.x, pos.y));
         }
 
-        pointerUp(event:PIXI.interaction.InteractionEvent) {
+        pointerUp(event: PIXI.interaction.InteractionEvent) {
 
-            if(this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier) {
+            if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier) {
                 this.hasFocusTouch = false;
                 var pos = event.data.getLocalPosition(this.game);
-                this.game.touchUp(new Point(pos.x, pos.y));
+                // this.game.touchUp(new Point(pos.x, pos.y));
             }
 
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
 
-                    if(this.touchPoints[i].timeAlive < .3) {
+                    if (this.touchPoints[i].timeAlive < .3) {
                         var dy = event.data.getLocalPosition(this.game).y - this.touchPoints[i].originY;
-                        if(dy < -5) {
+                        if (dy < -5) {
                             // var double = this.touchPoints.length > 1;
                             // this.player.jump(double);
                         }
@@ -194,7 +194,7 @@ module Magneon
             }
         }
 
-        resize(w:number, h:number) {
+        resize(w: number, h: number) {
             var bgScale = Math.max(w / 1280, h / 853);
             this.backgroundImage.scale.x = bgScale;
             this.backgroundImage.scale.y = bgScale;
@@ -213,7 +213,7 @@ module Magneon
 
             this.componentMask.clear();
             this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRect(this.game.x - APP_WIDTH / 2, this.game.y, APP_WIDTH, APP_HEIGHT);
+            this.componentMask.drawRect(this.game.x - this.app_scale * APP_WIDTH / 2, this.game.y, this.app_scale * APP_WIDTH, this.app_scale * APP_HEIGHT);
             this.componentMask.endFill();
 
             this.renderer.resize(w, h);
@@ -224,8 +224,9 @@ module Magneon
 
         update() {
             var dt = this.ticker.elapsedMS * .001;
-            dt = Math.min(.033, dt);
             this.debugText.text = "FPS: " + Math.round(1.0 / dt);
+
+            dt = 1.0 / 60.0;
             this.game.update(dt);
         }
     }
