@@ -1873,7 +1873,11 @@ var LividLair;
             p.clampedPosition.x = p.position.x = (column + 0.5) * LividLair.GRID_UNIT_SIZE;
             p.clampedPosition.y = p.position.y = (row + 0.5) * LividLair.GRID_UNIT_SIZE;
         };
+        Game.prototype.getAllElements = function () {
+            return this.blocks.concat(this.platforms).concat(this.ladders).concat(this.pushBlocks).concat(this.rubees);
+        };
         Game.prototype.fixCamera = function (smooth) {
+<<<<<<< HEAD
             var takeFrac = smooth ? .05 : 1.0;
             var divisionWidth = (LividLair.GRID_INCLUDE_DIVISION ? 1 : 0);
             var room_col = Math.floor((this.wizard.x / LividLair.GRID_UNIT_SIZE - LividLair.OUTER_BORDER_TILE_COUNT + divisionWidth * 0.5) / (LividLair.ROOM_TILE_COLUMNS + divisionWidth));
@@ -1918,6 +1922,21 @@ var LividLair;
                 ob.visible = ob.getBoundingBox().intersects(cam_box);
             }
             this.updateWall();
+=======
+            var takeFrac = smooth ? .2 : 1.0;
+            this.levelContainer.x = (1.0 - takeFrac) * this.levelContainer.x + takeFrac * (-this.wizard.x + this.screenSize.x / 2);
+            this.levelContainer.y = (1.0 - takeFrac) * this.levelContainer.y + takeFrac * (-this.wizard.y + this.screenSize.y / 2);
+            this.levelContainer.x = Math.min(0, Math.max(this.levelContainer.x, this.screenSize.x - (this.columns - 1) * LividLair.GRID_UNIT_SIZE));
+            this.levelContainer.y = Math.min(0, Math.max(this.levelContainer.y, this.screenSize.y - (this.rows - 1) * LividLair.GRID_UNIT_SIZE));
+            //hide everything outside of camera bounds:
+            var center = new LividLair.Point(this.levelContainer.x, this.levelContainer.y).multiply(-1).add(this.screenSize.clone().multiply(0.5));
+            var cam_box = new LividLair.AABB(center, this.screenSize.x, this.screenSize.y);
+            for (var _i = 0, _a = this.getAllElements(); _i < _a.length; _i++) {
+                var e = _a[_i];
+                var aabb = e.getBoundingBox();
+                e.visible = aabb.intersects(cam_box);
+            }
+>>>>>>> 8776af54b879c65c4a6b86968a704a2f8ebaef2e
         };
         Game.prototype.sign = function (n) {
             if (n < 0)
