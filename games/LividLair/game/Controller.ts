@@ -15,6 +15,15 @@ module LividLair {
 
     export class Controller {
 
+        static keyboard: any = {};
+        static keyDown(key: number) { this.keyboard[key] = true; }
+        static keyUp(key: number) { this.keyboard[key] = false; }
+        static isKeyDown(key: number) {
+            if (Controller.keyboard[key] !== undefined)
+                return Controller.keyboard[key];
+            return false;
+        }
+
         pressed: boolean[];
         justPressed: boolean[];
         leftAxis: Point;
@@ -45,11 +54,21 @@ module LividLair {
                 result.x = -1;
             else if (this.pressed[ControllerButton.Right])
                 result.x = 1;
-            if (this.pressed[ControllerButton.Up])
+            else if (this.pressed[ControllerButton.Up])
                 result.y = -1;
             else if (this.pressed[ControllerButton.Down])
                 result.y = 1;
             // result = result.normalize();
+
+            if (Math.abs(result.x) < .4) {
+                result.x = 0;
+            }
+
+            // if (Math.abs(result.x) > Math.abs(result.y))
+            //     result.y = 0
+            // else
+            //     result.x = 0;
+
             return result;
         }
 
@@ -67,7 +86,7 @@ module LividLair {
             this.setAxis(this.rightAxis, gp.axes[2], gp.axes[3]);
 
             for (var i: number = 0; i < ControllerButton.Count; ++i) {
-                let p = gp.buttons[i].pressed;
+                let p = gp.buttons[i] ? gp.buttons[i].pressed : false;
                 this.justPressed[i] = p && !this.pressed[i];
                 this.pressed[i] = p;
             }

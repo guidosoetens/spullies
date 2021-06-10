@@ -1,6 +1,8 @@
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="game/Game.ts"/>
 ///<reference path="game/Defs.ts"/>
+///<reference path="game/Controller.ts"/>
+///<reference path="editor/Editor.ts"/>
 
 module LividLair {
     export class touchElement {
@@ -14,74 +16,28 @@ module LividLair {
 
     export class GameContainer extends PIXI.Application {
 
-        //input tracking:
-        touchPoints: touchElement[];
-
         //debug:
         debugText: PIXI.Text;
         debugGraphics: PIXI.Graphics;
 
-        //game components:
-        backgroundTexture: PIXI.Texture;
-        backgroundImage: PIXI.Sprite;
-
-        // touchContainerGraphics:PIXI.Graphics;
-        componentMask: PIXI.Graphics;
         game: Game;
-        componentBoundary: PIXI.Graphics;
+        editor: Editor;
 
         hasFocusTouch: boolean;
-
-        app_scale: number = 0.85;
+        touchPoints: touchElement[];
 
         constructor() {
             super(APP_WIDTH, APP_HEIGHT, { antialias: true, backgroundColor: 0x000000, transparent: false });
 
-            this.backgroundTexture = PIXI.Texture.fromImage('assets/background.jpg');
-            this.backgroundImage = new PIXI.Sprite(this.backgroundTexture);
-            this.stage.addChild(this.backgroundImage);
-
             this.game = new Game(APP_WIDTH, APP_HEIGHT);
             this.stage.addChild(this.game);
-            this.componentMask = new PIXI.Graphics();
-            this.componentMask.beginFill(0xFFFFFF);
-            this.componentMask.drawRect(0, 0, APP_WIDTH, APP_HEIGHT);
-            this.componentMask.endFill();
-            this.componentMask.isMask = true;
-            this.game.mask = this.componentMask;
 
-            this.game.pivot.x = .5 * APP_WIDTH;
-            // this.game.position.x = APP_WIDTH;
-
-
-            this.hasFocusTouch = false;
-
-            this.componentBoundary = new PIXI.Graphics();
-            this.componentBoundary.clear();
-            var thickness: number[] = [4, 3];
-            var offset: number[] = [0, 0];
-            var colors: number[] = [0xaaaaaa, 0xffffff];
-            for (var i: number = 0; i < 2; ++i) {
-                var t = offset[i];
-                this.componentBoundary.lineStyle(thickness[i], colors[i]);
-                this.componentBoundary.drawRoundedRect(-t, -t, APP_WIDTH + 2 * t, APP_HEIGHT + 2 * t, 5 + t);
-            }
-            this.stage.addChild(this.componentBoundary);
-            this.componentBoundary.pivot.x = this.game.pivot.x = .5 * APP_WIDTH;
+            this.editor = new Editor();
+            this.stage.addChild(this.editor);
         }
 
         setup() {
             this.ticker.add(this.update, this);
-
-            this.stage.interactive = true;
-            this.stage.on("pointerdown", this.pointerDown, this);
-            this.stage.on("pointermove", this.pointerMove, this);
-            this.stage.on("pointerupoutside", this.pointerUp, this);
-            this.stage.on("pointercancel", this.pointerUp, this);
-            this.stage.on("pointerup", this.pointerUp, this);
-            this.stage.on("pointerout", this.pointerUp, this);
-
-            this.touchPoints = [];
 
             this.debugText = new PIXI.Text('');
             this.debugText.x = 20;
@@ -93,41 +49,38 @@ module LividLair {
             this.debugGraphics = new PIXI.Graphics();
             this.game.addChild(this.debugGraphics);
             this.game.setup();
+
+            this.editor.setup();
+
+            this.stage.interactive = true;
+            this.stage.on("pointerdown", this.pointerDown, this);
+            this.stage.on("pointermove", this.pointerMove, this);
+            this.stage.on("pointerupoutside", this.pointerUp, this);
+            this.stage.on("pointercancel", this.pointerUp, this);
+            this.stage.on("pointerup", this.pointerUp, this);
+            this.stage.on("pointerout", this.pointerUp, this);
+
+            this.hasFocusTouch = false;
+            this.touchPoints = [];
         }
 
         keyUp(key: number) {
-            console.log(key);
-            switch (key) {
-                case 17: //ctrl
-                    CTRL_PRESSED = false;
-                    break;
-            }
-
+            if (key == 127)
+                this.editor.visible = !this.editor.visible;
+            Controller.keyUp(key);
         }
 
 
         keyDown(key: number) {
-            console.log(key);
-            switch (key) {
-                // case 37: //left
-                //     this.game.left();
-                //     break;
-                // case 38: //up
-                //     this.game.up();
-                //     break;
-                // case 39: //right
-                //     this.game.right();
-                //     break;
-                // case 40: //down
-                //     this.game.down();
-                //     break;
-                // case 32: //space
-                //     this.game.rotate();
-                //     break;
-                case 17: //ctrl:
-                    CTRL_PRESSED = true;
-                    break;
-            }
+            Controller.keyDown(key);
+        }
+
+        update() {
+            var dt = this.ticker.elapsedMS * .001;
+            this.debugText.text = "FPS: " + Math.round(1.0 / dt);
+
+            dt = 1.0 / 60.0;
+            this.game.update(dt);
         }
 
         pointerDown(event: PIXI.interaction.InteractionEvent) {
@@ -137,6 +90,8 @@ module LividLair {
                     --i;
                 }
             }
+
+            this.editor.rightClick = event.data.button == 2;
 
             var pos = event.data.getLocalPosition(this.game);
 
@@ -152,7 +107,7 @@ module LividLair {
 
             if (this.touchPoints.length == 1) {
                 this.hasFocusTouch = true;
-                // this.game.touchDown(new Point(pos.x, pos.y));
+                this.editor.touchDown(new Point(pos.x, pos.y));
             }
         }
 
@@ -165,8 +120,8 @@ module LividLair {
                 }
             }
 
-            // if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
-            //     this.game.touchMove(new Point(pos.x, pos.y));
+            if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
+                this.editor.touchMove(new Point(pos.x, pos.y));
         }
 
         pointerUp(event: PIXI.interaction.InteractionEvent) {
@@ -174,7 +129,7 @@ module LividLair {
             if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier) {
                 this.hasFocusTouch = false;
                 var pos = event.data.getLocalPosition(this.game);
-                // this.game.touchUp(new Point(pos.x, pos.y));
+                this.editor.touchUp(new Point(pos.x, pos.y));
             }
 
             for (var i: number = 0; i < this.touchPoints.length; ++i) {
@@ -192,42 +147,6 @@ module LividLair {
                     --i;
                 }
             }
-        }
-
-        resize(w: number, h: number) {
-            var bgScale = Math.max(w / 1280, h / 853);
-            this.backgroundImage.scale.x = bgScale;
-            this.backgroundImage.scale.y = bgScale;
-            var resWidth = bgScale * 1280;
-            var resHeight = bgScale * 853;
-            this.backgroundImage.x = (w - resWidth) / 2;
-            this.backgroundImage.y = (h - resHeight) / 2;
-
-            this.game.x = (w - APP_WIDTH) / 2 + APP_WIDTH / 2;
-            this.game.y = (h - APP_HEIGHT) / 2;
-
-            // this.componentBoundary.x = w / 2;
-            // this.componentBoundary.y = h / 2;
-            this.componentBoundary.x = this.game.x;
-            this.componentBoundary.y = this.game.y;
-
-            this.componentMask.clear();
-            this.componentMask.beginFill(0xffffff);
-            this.componentMask.drawRect(this.game.x - this.app_scale * APP_WIDTH / 2, this.game.y, this.app_scale * APP_WIDTH, this.app_scale * APP_HEIGHT);
-            this.componentMask.endFill();
-
-            this.renderer.resize(w, h);
-
-            this.componentBoundary.scale.x = this.game.scale.x = this.app_scale;
-            this.componentBoundary.scale.y = this.game.scale.y = this.app_scale;
-        }
-
-        update() {
-            var dt = this.ticker.elapsedMS * .001;
-            this.debugText.text = "FPS: " + Math.round(1.0 / dt);
-
-            dt = 1.0 / 60.0;
-            this.game.update(dt);
         }
     }
 }

@@ -1,20 +1,19 @@
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Defs.ts"/>
 
-module CircuitFreaks
-{
+module CircuitFreaks {
     export class Button extends PIXI.Container {
-        
-        graphics:PIXI.Graphics;
-        text:PIXI.Text;
-        func:Function;
-        listener:any;
-        argument:number;
 
-        visWidth:number;
-        visHeight:number;
+        graphics: PIXI.Graphics;
+        text: PIXI.Text;
+        func: Function;
+        listener: any;
+        argument: number;
 
-        constructor(text:string, func:Function, listener:any, argument:number=0, radius:number = 20, base_width:number = 50, base_height:number = 1) {
+        visWidth: number;
+        visHeight: number;
+
+        constructor(text: string, func: Function, listener: any, argument: number = 0, radius: number = 20, base_width: number = 50, base_height: number = 1) {
             super();
 
             base_width = Math.max(base_width, 1);
@@ -31,7 +30,7 @@ module CircuitFreaks
             this.graphics.lineStyle(5, 0xffffff, 1);
             this.visWidth = base_width + 2 * radius;
             this.visHeight = base_height + 2 * radius;
-            this.graphics.drawRoundedRect(-this.visWidth/2, -this.visHeight/2, this.visWidth, this.visHeight, radius);
+            this.graphics.drawRoundedRect(-this.visWidth / 2, -this.visHeight / 2, this.visWidth, this.visHeight, radius);
 
             this.graphics.beginFill(0xffffff, 0.5);
             this.graphics.lineStyle(0);
@@ -53,22 +52,22 @@ module CircuitFreaks
             this.addChild(this.text);
         }
 
-        hitTestPoint(p:PIXI.Point) : boolean {
+        hitTestPoint(p: PIXI.Point): boolean {
             var toBtn = new PIXI.Point(p.x - this.position.x, p.y - this.position.y);
-            return Math.abs(toBtn.x) < this.visWidth / 2 && Math.abs(toBtn.y) < this.visHeight / 2;
+            return Math.abs(toBtn.x) < this.visWidth / 2 * this.scale.x && Math.abs(toBtn.y) < this.visHeight / 2 * this.scale.y;
         }
 
-        touchDown(p:InputPoint) {
+        touchDown(p: InputPoint) {
             //OK
         }
 
-        touchMove(p:InputPoint) {
+        touchMove(p: InputPoint) {
             let toPos = new PIXI.Point(p.position.x - p.sourcePosition.x, p.position.y - p.sourcePosition.y);
-            if(toPos.x * toPos.x + toPos.y * toPos.y > 10)
+            if (toPos.x * toPos.x + toPos.y * toPos.y > 10)
                 p.cancelInput = true;
         }
 
-        touchUp(p:InputPoint) {
+        touchUp(p: InputPoint) {
             this.func.call(this.listener, this.argument);
         }
     }

@@ -1,6 +1,7 @@
 ///<reference path="../../pixi/pixi.js.d.ts"/>
 ///<reference path="GameContainer.ts"/>
 ///<reference path="game/Defs.ts"/>
+///<reference path="editor/Editor.ts"/>
 
 // left: 37, up: 38, right: 39, down: 40,
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
@@ -62,16 +63,17 @@ function fitApp(app: LividLair.GameContainer) {
         containerHeight = containerWidth / p_ratio;
 
     var scale = p_width / containerWidth;
-    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", 0, 0)";
+    let dx = (p_width - LividLair.APP_WIDTH * scale) / 2;
+    let dy = (p_height - LividLair.APP_HEIGHT * scale) / 2;
+    app.view.style.webkitTransform = app.view.style.transform = "matrix(" + scale + ", 0, 0, " + scale + ", " + dx + ", " + dy + ")";
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
-    app.resize(containerWidth, containerHeight);
 }
 
-document.addEventListener('contextmenu', event => { if (event.clientY < (window.innerHeight * .9)) { event.preventDefault(); } });
+document.addEventListener('contextmenu', event => { if (LividLair.Editor.instance.visible) { event.preventDefault(); } });
 
 window.onload = () => {
 
-    disableScroll();
+    // disableScroll();
 
     var app = new LividLair.GameContainer();
     app.view.style.position = "absolute";
@@ -79,18 +81,16 @@ window.onload = () => {
     var contentDiv = document.getElementById("content");
     contentDiv.appendChild(app.view);
 
-    PIXI.loader.add('bricks', 'assets/bricks.jpg');
-    PIXI.loader.add('roomDebug', 'rooms/roomDebug.txt');
-    for (let i: number = 0; i < LividLair.ROOM_COUNT; ++i)
-        PIXI.loader.add('room' + i, 'rooms/room' + i + '.txt');
-    PIXI.loader.add('mechFont', 'assets/fonts/Ausweis.ttf');
-
-    // PIXI.loader.add('oceanShader', 'assets/oceanShader.frag')
-    //         .add('skyShader', 'assets/skyShader.frag')
-    //         .add('ripples', 'assets/ripples.png');
-    PIXI.loader.load((loader, resources) => {
-        app.setup();
-    });
+    let roomsLoaded = (data) => {
+        LividLair.LairData.instance.parse(data);
+        PIXI.loader.add('bricks', 'assets/bricks.png');
+        PIXI.loader.add('cracks', 'assets/cracks.png');
+        PIXI.loader.add('mechFont', 'assets/fonts/Ausweis.ttf');
+        PIXI.loader.add('vertexShader', 'assets/shader.vert');
+        PIXI.loader.add('wallShader', 'assets/wallShader.frag');
+        PIXI.loader.load(() => { app.setup(); });
+    };
+    LividLair.LairLoader.loadLair(roomsLoaded);
 
     fitApp(app);
     document.onresize = () => {

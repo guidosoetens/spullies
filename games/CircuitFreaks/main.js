@@ -2,7 +2,7 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
@@ -50,6 +50,9 @@ var CircuitFreaks;
                 var p = _a[_i];
                 p.rotateCW();
             }
+        };
+        TileDescriptor.prototype.equals = function (other) {
+            return this.type == other.type && this.groupIndex == other.groupIndex;
         };
         return TileDescriptor;
     }());
@@ -1320,20 +1323,36 @@ var CircuitFreaks;
             return _this;
         }
         Board.prototype.setBoardSize = function (rows, cols) {
+            // this.clearBoard();
+            if (!this.slots)
+                this.slots = [];
+            this.tilesLayer.removeChildren();
             this.rows = rows;
             this.columns = cols;
             this.tileWidth = Math.min(this.boardWidth / this.columns, this.boardHeight / (this.rows + 1));
             //create empty grid:
-            this.slots = [];
+            // this.slots = [];
+            var newSlots = [];
             this.snapshot = [];
             for (var i = 0; i < this.rows; ++i) {
-                this.slots[i] = [];
+                newSlots[i] = [];
                 this.snapshot[i] = [];
                 for (var j = 0; j < this.columns; ++j) {
-                    this.slots[i][j] = null;
+                    var tile = null;
+                    if (i < this.slots.length) {
+                        if (j < this.slots[i].length)
+                            tile = this.slots[i][j];
+                    }
+                    if (tile) {
+                        tile = new CircuitFreaks.Tile(this.tileWidth, tile.getTileDescriptor());
+                        tile.position = this.toScreenPos(i, j);
+                        this.tilesLayer.addChild(tile);
+                    }
+                    newSlots[i][j] = tile;
                     this.snapshot[i][j] = null;
                 }
             }
+            this.slots = newSlots;
             this.circuitDetector = new CircuitFreaks.CircuitDetector(this.slots, this.rows, this.columns);
             var center = new PIXI.Point(this.boardWidth / 2.0, this.boardHeight / 2.0);
             var size = new PIXI.Point(this.columns * this.tileWidth, this.rows * this.tileWidth);
@@ -1391,6 +1410,18 @@ var CircuitFreaks;
                     this.slots[i][j] = null;
                 }
             }
+            this.tilesLayer.removeChildren();
+        };
+        Board.prototype.serializeBoard = function () {
+            var data = new CircuitFreaks.LevelData(this.rows, this.columns);
+            for (var i = 0; i < data.rows; ++i) {
+                for (var j = 0; j < data.columns; ++j) {
+                    var idx = i * data.columns + j;
+                    var tile = this.slots[i][j];
+                    data.tiles[idx] = tile ? tile.getTileDescriptor() : undefined;
+                }
+            }
+            return data.serialize();
         };
         Board.prototype.loadBoard = function (data) {
             this.clearBoard();
@@ -1399,15 +1430,16 @@ var CircuitFreaks;
             for (var i = 0; i < data.rows; ++i) {
                 for (var j = 0; j < data.columns; ++j) {
                     var idx = i * data.columns + j;
-                    if (data.tiles[idx] == undefined)
+                    var tileData = data.tiles[idx];
+                    if (tileData == undefined)
                         continue;
-                    var tile = new CircuitFreaks.Tile(this.tileWidth, data.tiles[idx]);
+                    var tile = new CircuitFreaks.Tile(this.tileWidth, tileData);
                     var res = this.toScreenPos(i, j);
                     tile.position.x = res.x;
                     tile.position.y = res.y;
                     this.slots[i][j] = tile;
                     this.tilesLayer.addChild(tile);
-                    tile.groupIndex = 0;
+                    tile.groupIndex = tileData.groupIndex;
                     tile.redraw();
                 }
             }
@@ -1417,11 +1449,12 @@ var CircuitFreaks;
             this.clearBoard();
             var types = [CircuitFreaks.TileType.Trash, CircuitFreaks.TileType.Source, CircuitFreaks.TileType.DoubleSource, CircuitFreaks.TileType.TripleSource, CircuitFreaks.TileType.BombSource];
             //fill top few rows:
-            for (var i = 0; i < 4; ++i) {
-                for (var j = 0; j < 5; ++j) {
+            var rows = Math.floor(this.rows / 2);
+            for (var i = 0; i < rows; ++i) {
+                for (var j = 0; j < this.columns; ++j) {
                     var typeIdx = Math.floor(Math.random() * types.length);
                     //only add source tiles in last row:
-                    if (i == 3 && typeIdx == 0)
+                    if ((i == rows - 1) && typeIdx == 0)
                         typeIdx += 1 + Math.floor(Math.random() * (types.length - 1));
                     var type = types[typeIdx];
                     var group = Math.floor(Math.random() * 3);
@@ -1747,6 +1780,7 @@ var CircuitFreaks;
             return false;
         };
         Board.prototype.hasDropTiles = function () {
+            return false;
             for (var i = 0; i < this.rows; ++i) {
                 for (var j = 0; j < this.columns; ++j) {
                     if (this.isDropTileSlot(i, j)) {
@@ -1873,6 +1907,41 @@ var CircuitFreaks;
             }
             // this.startDrag(pos);
             return false;
+        };
+        Board.prototype.tryPlaceTile = function (pos, td) {
+            var p = this.toLocal(pos, this.parent);
+            var coord = this.pointToCoord(p.x, p.y);
+            if (!this.isBoardCoord(coord))
+                return false;
+            var tile = this.slots[coord.x][coord.y];
+            var addTile = false;
+            if (tile == null) {
+                //unit was empty, add tile:
+                addTile = true;
+                this.tilesLayer.removeChild(tile);
+            }
+            else if (!tile.getTileDescriptor().equals(td)) {
+                //tile to be placed is different:
+                addTile = true;
+            }
+            if (addTile) {
+                var t = new CircuitFreaks.Tile(this.tileWidth, td);
+                this.tilesLayer.addChild(t);
+                t.position = this.toScreenPos(coord.x, coord.y);
+                this.slots[coord.x][coord.y] = t;
+            }
+            return addTile;
+        };
+        Board.prototype.clearTile = function (pos) {
+            var p = this.toLocal(pos, this.parent);
+            var coord = this.pointToCoord(p.x, p.y);
+            if (!this.isBoardCoord(coord))
+                return;
+            var tile = this.slots[coord.x][coord.y];
+            if (tile) {
+                this.tilesLayer.removeChild(tile);
+                this.slots[coord.x][coord.y] = null;
+            }
         };
         return Board;
     }(PIXI.Container));
@@ -2122,71 +2191,65 @@ var CircuitFreaks;
         };
         TilePanel.prototype.getNextType = function () {
             if (this.nextTypes.length == 0) {
-                // var topTypes = [ TileType.Curve_NE, TileType.Curve_NW, TileType.Curve_SE, TileType.Curve_SW, 
-                //                 TileType.Double_NW, TileType.Double_NE,
-                //                 TileType.Straight_H, TileType.Straight_V ];
-                var topTypes = []; //[ TileType.Path, TileType.Path, TileType.Path ];
-                var btmTypes = [];
-                for (var i = 0; i < 5; ++i) {
-                    for (var it = 0; it < 2; ++it) {
-                        var d1 = it == 0 ? CircuitFreaks.Direction.Down : CircuitFreaks.Direction.Up;
-                        var d2 = (d1 + 1 + i) % 6;
-                        var tile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
-                        tile.paths.push(new CircuitFreaks.TilePathDescriptor(d1, d2));
+                /*
+                var topTypes: TileDescriptor[] = [];
+                var btmTypes: TileDescriptor[] = [];
+                for (var i: number = 0; i < 5; ++i) {
+                    for (var it: number = 0; it < 2; ++it) {
+                        let d1: Direction = it == 0 ? Direction.Down : Direction.Up;
+                        let d2: Direction = (d1 + 1 + i) % 6;
+                        let tile = new TileDescriptor(TileType.Path, 0);
+                        tile.paths.push(new TilePathDescriptor(d1, d2));
                         if (it == 0)
                             topTypes.push(tile);
                         else
                             btmTypes.push(tile);
                     }
                 }
-                // var dirs = [ [ Direction.DownLeft, Direction.UpLeft], [Direction.Up, Direction.UpRight], [Direction.DownRight, Direction.Down]];
-                // for(let d of dirs) {
-                //     let desc = new TileDescriptor(TileType.Path, 0);
-                //     topTypes.push(new TileDescriptor(TileType.Path, 0));
-                // }
-                // if(Math.random() < .5) {
-                //     dirs = [ [ Direction.UpLeft, Direction.Up], [Direction.UpRight, Direction.DownRight], [Direction.Down, Direction.DownLeft]];
-                // }
-                // if(Math.random() < .1) {
-                //     dirs = [ [Direction.UpLeft, Direction.DownRight] ];
-                // }
-                // else if(Math.random() < .1) {
-                //     dirs = [ [Direction.UpLeft, Direction.UpRight] ];
-                // }
-                // let baseIdx = Math.floor(Math.random() * 3);
-                // let numReps = Math.random() < .2 ? dirs.length : 1;
-                // for(var i:number=0; i<numReps; ++i) {
-                //     let idx = (i + baseIdx) % dirs.length;
-                //     this.paths[i] = new TilePath(dirs[idx][0], dirs[idx][1]);
-                // }
-                // var btmTypes =  [...topTypes];
+
                 this.shuffle(btmTypes);
-                for (var i_1 in btmTypes)
-                    this.nextTypes.push([topTypes[i_1], btmTypes[i_1]]);
-                this.nextTypes.push([new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Wildcard, 0)]);
+
+                for (let i in btmTypes)
+                    this.nextTypes.push([topTypes[i], btmTypes[i]]);
+                    */
+                for (var i = 0; i < 3; ++i) {
+                    var topTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+                    topTile.paths.push(new CircuitFreaks.TilePathDescriptor(CircuitFreaks.Direction.Down, (CircuitFreaks.Direction.Down + 2 + i) % 6));
+                    for (var j = 0; j < 3 - i; ++j) {
+                        var btmTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+                        btmTile.paths.push(new CircuitFreaks.TilePathDescriptor(CircuitFreaks.Direction.Up, (CircuitFreaks.Direction.Up + 4 - j) % 6));
+                        this.nextTypes.push([topTile, btmTile]);
+                    }
+                }
+                // this.nextTypes.push([new TileDescriptor(TileType.Wildcard, 0)]);
                 // this.nextTypes.push([new TileDescriptor(TileType.Trash, 0)]);
-                var tripleTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+                /*
+                let tripleTile = new TileDescriptor(TileType.Path, 0);
                 this.nextTypes.push([tripleTile]);
-                for (var i = 0; i < 3; ++i) {
-                    tripleTile.paths.push(new CircuitFreaks.TilePathDescriptor(2 * i, 2 * i + 1));
+                for (var i: number = 0; i < 3; ++i) {
+                    tripleTile.paths.push(new TilePathDescriptor(2 * i, 2 * i + 1));
                 }
-                var straightTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+
+                let straightTile = new TileDescriptor(TileType.Path, 0);
                 this.nextTypes.push([straightTile]);
-                straightTile.paths.push(new CircuitFreaks.TilePathDescriptor(CircuitFreaks.Direction.Up, CircuitFreaks.Direction.Down));
-                for (var i = 0; i < 2; ++i) {
-                    straightTile.paths.push(new CircuitFreaks.TilePathDescriptor(3 * i + 1, 3 * i + 2));
+                straightTile.paths.push(new TilePathDescriptor(Direction.Up, Direction.Down));
+                for (var i: number = 0; i < 2; ++i) {
+                    straightTile.paths.push(new TilePathDescriptor(3 * i + 1, 3 * i + 2));
                 }
-                var doubleTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+
+                let doubleTile = new TileDescriptor(TileType.Path, 0);
                 this.nextTypes.push([doubleTile]);
-                for (var i = 0; i < 2; ++i) {
-                    doubleTile.paths.push(new CircuitFreaks.TilePathDescriptor(3 * i + 2, (3 * i + 4) % 6));
+                for (var i: number = 0; i < 2; ++i) {
+                    doubleTile.paths.push(new TilePathDescriptor(3 * i + 2, (3 * i + 4) % 6));
                 }
-                for (var i = 0; i < 3; ++i) {
-                    var baseTile = new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Path, 0);
+
+                for (var i: number = 0; i < 3; ++i) {
+                    let baseTile = new TileDescriptor(TileType.Path, 0);
                     this.nextTypes.push([baseTile]);
-                    var baseIdx = Math.floor(Math.random() * 6) % 6;
-                    baseTile.paths.push(new CircuitFreaks.TilePathDescriptor(baseIdx, (baseIdx + 1 + i) % 6));
+                    let baseIdx = Math.floor(Math.random() * 6) % 6;
+                    baseTile.paths.push(new TilePathDescriptor(baseIdx, (baseIdx + 1 + i) % 6));
                 }
+                */
                 this.shuffle(this.nextTypes);
             }
             var res = this.nextTypes[0];
@@ -2246,7 +2309,7 @@ var CircuitFreaks;
         }
         Button.prototype.hitTestPoint = function (p) {
             var toBtn = new PIXI.Point(p.x - this.position.x, p.y - this.position.y);
-            return Math.abs(toBtn.x) < this.visWidth / 2 && Math.abs(toBtn.y) < this.visHeight / 2;
+            return Math.abs(toBtn.x) < this.visWidth / 2 * this.scale.x && Math.abs(toBtn.y) < this.visHeight / 2 * this.scale.y;
         };
         Button.prototype.touchDown = function (p) {
             //OK
@@ -2303,7 +2366,7 @@ var CircuitFreaks;
                 for (var j = 0; j < cols; ++j) {
                     var x = panelLeft + (j + 1) / (cols + 1) * panelWidth;
                     var idx = i * cols + j + 1;
-                    var btn = new CircuitFreaks.Button('' + idx, _this.loadLevel, _this, i, 10, tileWidth, tileWidth);
+                    var btn = new CircuitFreaks.Button('' + idx, _this.loadLevel, _this, idx, 10, tileWidth, tileWidth);
                     btn.x = x;
                     btn.y = y;
                     _this.addChild(btn);
@@ -2377,6 +2440,38 @@ var CircuitFreaks;
             for (var i = 0; i < n; ++i)
                 this.tiles[i] = undefined;
         }
+        LevelData.prototype.serialize = function () {
+            var result = { rows: this.rows, columns: this.columns, tiles: [] };
+            var groups = ["y", "b", "r"];
+            for (var _i = 0, _a = this.tiles; _i < _a.length; _i++) {
+                var t = _a[_i];
+                var d = "--";
+                if (t) {
+                    switch (t.type) {
+                        case CircuitFreaks.TileType.Source:
+                            d = groups[t.groupIndex] + "1";
+                            break;
+                        case CircuitFreaks.TileType.DoubleSource:
+                            d = groups[t.groupIndex] + "2";
+                            break;
+                        case CircuitFreaks.TileType.TripleSource:
+                            d = groups[t.groupIndex] + "3";
+                            break;
+                        case CircuitFreaks.TileType.BombSource:
+                            d = groups[t.groupIndex] + "b";
+                            break;
+                        case CircuitFreaks.TileType.Blockade:
+                            d = "XX";
+                            break;
+                        case CircuitFreaks.TileType.Trash:
+                            d = "##";
+                            break;
+                    }
+                }
+                result.tiles.push(d);
+            }
+            return result;
+        };
         LevelData.deserializeTile = function (type) {
             switch (type) {
                 case 'y1':
@@ -2405,6 +2500,8 @@ var CircuitFreaks;
                     return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.BombSource, 2);
                 case '##':
                     return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Trash, 0);
+                case 'XX':
+                    return new CircuitFreaks.TileDescriptor(CircuitFreaks.TileType.Blockade, 0);
             }
             return undefined;
         };
@@ -2421,8 +2518,9 @@ var CircuitFreaks;
         //     }
         //     return '--';
         // }
-        LevelData.deserialize = function (data) {
+        LevelData.deserialize = function (index, data) {
             var result = new LevelData(data.rows, data.columns);
+            result.index = index;
             var n = result.rows * result.columns;
             for (var i = 0; i < n; ++i) {
                 result.tiles[i] = LevelData.deserializeTile(data.tiles[i]);
@@ -2439,23 +2537,74 @@ var CircuitFreaks;
             LevelLoader.instance = this;
         }
         LevelLoader.prototype.loadLevel = function (index) {
-            this.isDone = false;
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("POST", "scripts/loadLevel.php");
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    // console.log("GO!", this.response);
+                    var data = null;
+                    try {
+                        data = JSON.parse(this.response);
+                    }
+                    catch (e) {
+                        data = null;
+                    }
+                    if (data) {
+                        // console.log("istie dan:", data);
+                        var levelData = LevelData.deserialize(index, data);
+                        LevelLoader.instance.callback.call(LevelLoader.instance.listener, levelData);
+                    }
+                    else {
+                        var ld = new LevelData(5, 5);
+                        ld.index = index;
+                        LevelLoader.instance.callback.call(LevelLoader.instance.listener, ld);
+                    }
+                }
+            };
+            var formData = new FormData();
+            formData.append("index", '' + index);
+            xmlhttp.send(formData);
+            /*
             this.filePath = "levels/level" + index + ".json";
-            var currRes = PIXI.loader.resources[this.filePath];
+            let currRes = PIXI.loader.resources[this.filePath];
             if (currRes == undefined) {
+
+                let finish = () => {
+                    // let loader = LevelLoader.instance;
+                    let data = PIXI.loader.resources[this.filePath].data;
+                    if (data) {
+                        console.log("istie dan:", data);
+                        let levelData = LevelData.deserialize(index, data);
+                        this.callback.call(this.listener, levelData);
+                    }
+                    else {
+                        let ld = new LevelData(5, 5);
+                        ld.index = index;
+                        this.callback.call(this.listener, ld);
+                    }
+                }
+
                 PIXI.loader.add([this.filePath]);
-                PIXI.loader.load(LevelLoader.loadFinished);
+                PIXI.loader.load(finish);//LevelLoader.loadFinished);
             }
             else {
-                var levelData = LevelData.deserialize(currRes.data);
+                let levelData = LevelData.deserialize(index, currRes.data);
                 this.callback.call(this.listener, levelData);
             }
+            */
         };
-        LevelLoader.loadFinished = function () {
-            var loader = LevelLoader.instance;
-            var data = PIXI.loader.resources[loader.filePath].data;
-            var levelData = LevelData.deserialize(data);
-            loader.callback.call(loader.listener, levelData);
+        LevelLoader.prototype.saveLevel = function (data, index) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("POST", "scripts/storeLevel.php");
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log("store result", this.response);
+                }
+            };
+            var formData = new FormData();
+            formData.append("data", JSON.stringify(data));
+            formData.append("index", '' + index);
+            xmlhttp.send(formData);
         };
         return LevelLoader;
     }());
@@ -2532,6 +2681,157 @@ var CircuitFreaks;
     CircuitFreaks.TileHoverLayer = TileHoverLayer;
 })(CircuitFreaks || (CircuitFreaks = {}));
 ///<reference path="../../../pixi/pixi.js.d.ts"/>
+///<reference path="Defs.ts"/>
+///<reference path="Tile.ts"/>
+///<reference path="Button.ts"/>
+var CircuitFreaks;
+(function (CircuitFreaks) {
+    var EditorPanel = /** @class */ (function (_super) {
+        __extends(EditorPanel, _super);
+        function EditorPanel() {
+            var _this = _super.call(this) || this;
+            _this.types = [
+                CircuitFreaks.TileType.Source,
+                CircuitFreaks.TileType.DoubleSource,
+                CircuitFreaks.TileType.TripleSource,
+                CircuitFreaks.TileType.BombSource,
+                CircuitFreaks.TileType.Blockade,
+                CircuitFreaks.TileType.Trash
+            ];
+            _this.btns = [];
+            _this.groupIndex = 0;
+            _this.tileBtns = [];
+            _this.rows = 0;
+            _this.columns = 0;
+            _this.levelIndex = -1;
+            _this.tileIndex = 0;
+            EditorPanel.instance = _this;
+            _this.tileSelector = new PIXI.Graphics();
+            _this.addChild(_this.tileSelector);
+            _this.tileSelector.beginFill(0xffffff, 0.5);
+            _this.tileSelector.drawCircle(0, 0, 20);
+            var funcs = [
+                function () { _this.rows--; _this.sizeChanged(); },
+                function () { _this.rows++; _this.sizeChanged(); },
+                function () { _this.columns--; _this.sizeChanged(); },
+                function () { _this.columns++; _this.sizeChanged(); }
+            ];
+            //add row/col buttons:
+            for (var i = 0; i < 2; ++i) {
+                var y = (i - .5) * 30;
+                for (var j = 0; j < 2; ++j) {
+                    var idx = i * 2 + j;
+                    var btn = new CircuitFreaks.Button(j == 0 ? "-" : "+", funcs[idx], _this, 0, 10, 30, 30);
+                    btn.x = -200 + j * 80;
+                    btn.y = y;
+                    btn.scale = new PIXI.Point(.5, .5);
+                    _this.addChild(btn);
+                    _this.btns.push(btn);
+                }
+                var lbl = new PIXI.Text(i == 0 ? "rows" : "cols");
+                lbl.style.fontFamily = "groboldregular";
+                lbl.style.fontSize = 16;
+                lbl.style.fill = 0xffffff;
+                lbl.anchor.set(0.5, 0.5);
+                lbl.x = -160;
+                lbl.y = y;
+                _this.addChild(lbl);
+            }
+            var names = ["group", "store"];
+            var opts = [
+                _this.changeGroup,
+                _this.store
+            ];
+            //add operation buttons:
+            for (var i = 0; i < opts.length; ++i) {
+                var btn = new CircuitFreaks.Button(names[i], opts[i], _this, 0, 10, 120, 30);
+                btn.x = 180 + Math.floor(i / 2) * 60;
+                btn.y = (Math.floor(i % 2) - Math.floor(opts.length / 2.0) * .5) * 30;
+                btn.scale = new PIXI.Point(.5, .5);
+                _this.addChild(btn);
+                _this.btns.push(btn);
+            }
+            _this.updateTiles();
+            _this.levelText = new PIXI.Text();
+            _this.levelText.style.fontFamily = "groboldregular";
+            _this.levelText.style.fontSize = 16;
+            _this.levelText.style.fill = 0xffffff;
+            _this.levelText.anchor.set(0.5, 0.5);
+            _this.levelText.x = -100;
+            _this.levelText.y = -40;
+            _this.addChild(_this.levelText);
+            _this.setLevelIndex(-1);
+            _this.setTileIndex(0);
+            return _this;
+        }
+        EditorPanel.prototype.store = function () {
+            var data = this.serializeBoard();
+            CircuitFreaks.LevelLoader.instance.saveLevel(data, this.levelIndex);
+        };
+        EditorPanel.prototype.setLevelIndex = function (idx) {
+            this.levelText.text = "level: " + idx;
+            this.levelIndex = idx;
+        };
+        EditorPanel.prototype.changeGroup = function () {
+            this.groupIndex = (this.groupIndex + 1) % 3;
+            this.updateTiles();
+        };
+        EditorPanel.prototype.updateTiles = function () {
+            for (var _i = 0, _a = this.tileBtns; _i < _a.length; _i++) {
+                var t = _a[_i];
+                this.removeChild(t);
+            }
+            this.tileBtns = [];
+            for (var i = 0; i < this.types.length; ++i) {
+                var td = new CircuitFreaks.TileDescriptor(this.types[i], this.groupIndex);
+                var tile = new CircuitFreaks.Tile(30, td);
+                tile.x = 20 + (i - (this.types.length - 1) / 2.0) * 30;
+                tile.y = (i % 2) * 20;
+                this.addChild(tile);
+                this.tileBtns.push(tile);
+            }
+        };
+        EditorPanel.prototype.getTileDescriptor = function () {
+            return this.tileBtns[this.tileIndex].getTileDescriptor();
+        };
+        EditorPanel.prototype.hitTestPoint = function (p) {
+            return true;
+        };
+        EditorPanel.prototype.setTileIndex = function (idx) {
+            this.tileIndex = idx;
+            this.tileSelector.position = this.tileBtns[idx].position;
+        };
+        EditorPanel.prototype.touchDown = function (p) {
+            var pt = this.toLocal(p.position, this.parent);
+            for (var _i = 0, _a = this.btns; _i < _a.length; _i++) {
+                var b = _a[_i];
+                if (b.hitTestPoint(pt)) {
+                    b.touchUp(p);
+                    break;
+                }
+            }
+            //change button selection:
+            for (var i = 0; i < this.tileBtns.length; ++i) {
+                var b = this.tileBtns[i];
+                var toPt = b.toLocal(pt, this);
+                if (Math.sqrt(toPt.x * toPt.x + toPt.y * toPt.y) < 20) {
+                    this.setTileIndex(i);
+                    break;
+                }
+            }
+            this.dropTile(p);
+        };
+        EditorPanel.prototype.touchMove = function (p) {
+            this.dropTile(p);
+        };
+        EditorPanel.prototype.touchUp = function (p) {
+        };
+        EditorPanel.eraseMode = false;
+        return EditorPanel;
+    }(PIXI.Container));
+    CircuitFreaks.EditorPanel = EditorPanel;
+})(CircuitFreaks || (CircuitFreaks = {}));
+///<reference path="../../../pixi/pixi.js.d.ts"/>
 ///<reference path="Board.ts"/>
 ///<reference path="Tile.ts"/>
 ///<reference path="TilePanel.ts"/>
@@ -2539,12 +2839,14 @@ var CircuitFreaks;
 ///<reference path="LevelSelector.ts"/>
 ///<reference path="LevelLoader.ts"/>
 ///<reference path="TileHoverLayer.ts"/>
+///<reference path="EditorPanel.ts"/>
 var CircuitFreaks;
 (function (CircuitFreaks) {
     var Game = /** @class */ (function (_super) {
         __extends(Game, _super);
         function Game(w, h) {
             var _this = _super.call(this) || this;
+            _this.editMode = false;
             var background = new PIXI.Graphics();
             background.beginFill(0x00ff00, 0.5);
             background.drawRect(0, 0, w, h);
@@ -2574,10 +2876,43 @@ var CircuitFreaks;
             _this.tileHoverLayer = new CircuitFreaks.TileHoverLayer();
             _this.addChild(_this.tileHoverLayer);
             _this.inputPoint = new CircuitFreaks.InputPoint();
+            _this.editorPanel = new CircuitFreaks.EditorPanel();
+            _this.editorPanel.x = w / 2.0;
+            _this.editorPanel.y = h * .9;
+            _this.addChild(_this.editorPanel);
+            _this.editorPanel.visible = false;
+            _this.editorPanel.sizeChanged = function () {
+                _this.board.setBoardSize(_this.editorPanel.rows, _this.editorPanel.columns);
+            };
+            _this.editorPanel.dropTile = function (p) {
+                if (CircuitFreaks.EditorPanel.eraseMode)
+                    _this.board.clearTile(p.position);
+                else
+                    _this.board.tryPlaceTile(p.position, _this.editorPanel.getTileDescriptor());
+            };
+            _this.editorPanel.serializeBoard = function () {
+                return _this.board.serializeBoard();
+            };
+            _this.loadDefault();
             return _this;
         }
+        Game.prototype.toggleEditor = function () {
+            this.editMode = !this.editMode;
+            this.tilePanel.visible = !this.editMode;
+            this.editorPanel.visible = this.editMode;
+        };
+        Game.prototype.updateEditorPanel = function () {
+            this.editorPanel.rows = this.board.rows;
+            this.editorPanel.columns = this.board.columns;
+        };
         Game.prototype.loadLevel = function (data) {
-            this.board.loadBoard(data);
+            this.resetGame();
+            if (data)
+                this.board.loadBoard(data);
+            else
+                this.board.resetBoard();
+            this.updateEditorPanel();
+            this.editorPanel.setLevelIndex(data.index);
         };
         Game.prototype.openLevelSelect = function () {
             this.levelSelector.show();
@@ -2586,11 +2921,14 @@ var CircuitFreaks;
             this.board.clearBoard();
             this.tilePanel.resetPanel();
             this.board.createSnapshot(false);
+            this.updateEditorPanel();
         };
         Game.prototype.loadDefault = function () {
+            this.resetGame();
             this.board.resetBoard();
             this.tilePanel.resetPanel();
             this.board.createSnapshot(false);
+            this.updateEditorPanel();
         };
         Game.prototype.undo = function () {
             if (this.board.tileWasPushedTMP)
@@ -2611,6 +2949,8 @@ var CircuitFreaks;
                 if (btn.hitTestPoint(p))
                     return btn;
             }
+            if (this.editMode)
+                return this.editorPanel;
             return this.tilePanel.getInputListener(p);
             // var locPos = new PIXI.Point(p.x - this.tilePanel.position.x, p.y - this.tilePanel.position.y);
             // if(this.tilePanel.select(locPos))
@@ -2655,18 +2995,6 @@ var CircuitFreaks;
         Game.prototype.startDragTileSet = function (set) {
             this.tileHoverLayer.startDragging(set, this.board, this.tilePanel);
             this.currentInputListener = this.tileHoverLayer;
-        };
-        Game.prototype.left = function () {
-        };
-        Game.prototype.right = function () {
-        };
-        Game.prototype.up = function () {
-            this.resetGame();
-        };
-        Game.prototype.down = function () {
-        };
-        Game.prototype.rotate = function () {
-            this.loadDefault();
         };
         return Game;
     }(PIXI.Container));
@@ -2734,22 +3062,26 @@ var CircuitFreaks;
             this.game.addChild(this.debugGraphics);
         };
         GameContainer.prototype.keyDown = function (key) {
+            // console.log(key);
             switch (key) {
-                case 37: //left
-                    this.game.left();
+                case 127:
+                    this.game.toggleEditor();
                     break;
-                case 38: //up
-                    this.game.up();
-                    break;
-                case 39: //right
-                    this.game.right();
-                    break;
-                case 40: //down
-                    this.game.down();
-                    break;
-                case 32: //space
-                    this.game.rotate();
-                    break;
+                // case 37: //left
+                //     this.game.left();
+                //     break;
+                // case 38: //up
+                //     this.game.up();
+                //     break;
+                // case 39: //right
+                //     this.game.right();
+                //     break;
+                // case 40: //down
+                //     this.game.down();
+                //     break;
+                // case 32: //space
+                //     this.game.rotate();
+                //     break;
             }
         };
         GameContainer.prototype.pointerDown = function (event) {
@@ -2767,6 +3099,7 @@ var CircuitFreaks;
             touch.originX = pos.x;
             touch.originY = pos.y;
             touch.timeAlive = 0;
+            CircuitFreaks.EditorPanel.eraseMode = event.data.button == 2;
             this.touchPoints.push(touch);
             if (this.touchPoints.length == 1) {
                 this.hasFocusTouch = true;
@@ -2890,6 +3223,9 @@ function fitApp(app) {
     app.view.style.webkitTransformOrigin = app.view.style.transformOrigin = "0 0";
     app.resize(containerWidth, containerHeight, APP_WIDTH, APP_HEIGHT);
 }
+document.addEventListener('contextmenu', function (event) { if (CircuitFreaks.EditorPanel.instance.visible) {
+    event.preventDefault();
+} });
 window.onload = function () {
     disableScroll();
     var app = new CircuitFreaks.GameContainer(APP_WIDTH, APP_HEIGHT);

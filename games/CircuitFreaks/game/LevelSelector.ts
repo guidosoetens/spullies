@@ -3,19 +3,18 @@
 ///<reference path="Button.ts"/>
 ///<reference path="InputListener.ts"/>
 
-module CircuitFreaks
-{
+module CircuitFreaks {
     export class LevelSelector extends PIXI.Container {
 
-        fadeBackground:PIXI.Graphics;
-        background:PIXI.Graphics;
-        closeBtn:Button;
-        levelButtons:Button[];
+        fadeBackground: PIXI.Graphics;
+        background: PIXI.Graphics;
+        closeBtn: Button;
+        levelButtons: Button[];
 
-        loadLevelCallback:Function;
-        loadLevelListener:any;
+        loadLevelCallback: Function;
+        loadLevelListener: any;
 
-        constructor(w:number, h:number, loadLevelCallback:Function, loadLevelListener:any) {
+        constructor(w: number, h: number, loadLevelCallback: Function, loadLevelListener: any) {
             super();
 
             this.loadLevelCallback = loadLevelCallback;
@@ -47,14 +46,14 @@ module CircuitFreaks
             var panelLeft = .05 * w;
             var panelTop = .2 * h;
             this.levelButtons = [];
-            for(var i:number=0; i<rows; ++i) {
+            for (var i: number = 0; i < rows; ++i) {
                 var y = panelTop + (i + 1) / (rows + 1) * panelHeight;
-                for(var j:number=0; j<cols; ++j) {
+                for (var j: number = 0; j < cols; ++j) {
                     var x = panelLeft + (j + 1) / (cols + 1) * panelWidth;
 
                     var idx = i * cols + j + 1;
 
-                    var btn = new Button('' + idx, this.loadLevel, this, i, 10, tileWidth, tileWidth);
+                    var btn = new Button('' + idx, this.loadLevel, this, idx, 10, tileWidth, tileWidth);
                     btn.x = x;
                     btn.y = y;
                     this.addChild(btn);
@@ -67,22 +66,22 @@ module CircuitFreaks
             this.hide();
         }
 
-        loadLevel(idx:number) {
+        loadLevel(idx: number) {
             this.loadLevelCallback.call(this.loadLevelListener, idx);
             this.close();
         }
 
-        isEnabled() : boolean {
+        isEnabled(): boolean {
             return this.visible;
         }
 
-        getInputListener(p:PIXI.Point) : InputListener {
+        getInputListener(p: PIXI.Point): InputListener {
 
-            if(this.closeBtn.hitTestPoint(p))
+            if (this.closeBtn.hitTestPoint(p))
                 return this.closeBtn;
 
-            for(let btn of this.levelButtons) {
-                if(btn.hitTestPoint(p)) {
+            for (let btn of this.levelButtons) {
+                if (btn.hitTestPoint(p)) {
                     return btn;
                 }
             }
@@ -90,15 +89,15 @@ module CircuitFreaks
             return null;
         }
 
-        touchDown(p:PIXI.Point) : number {
-            if(this.closeBtn.hitTestPoint(p)) {
+        touchDown(p: PIXI.Point): number {
+            if (this.closeBtn.hitTestPoint(p)) {
                 this.close();
                 return -1;
             }
 
-            for(var i:number=0; i<this.levelButtons.length; ++i) {
+            for (var i: number = 0; i < this.levelButtons.length; ++i) {
                 let btn = this.levelButtons[i];
-                if(btn.hitTestPoint(p)) {
+                if (btn.hitTestPoint(p)) {
                     this.close();
                     return i;
                 }

@@ -6,25 +6,27 @@
 ///<reference path="LevelSelector.ts"/>
 ///<reference path="LevelLoader.ts"/>
 ///<reference path="TileHoverLayer.ts"/>
+///<reference path="EditorPanel.ts"/>
 
-module CircuitFreaks
-{
+module CircuitFreaks {
     export class Game extends PIXI.Container {
 
-        board:Board;
-        tilePanel:TilePanel;
-        buttons:Button[];
-        levelSelector:LevelSelector;
-        levelLoader:LevelLoader;
+        board: Board;
+        tilePanel: TilePanel;
+        buttons: Button[];
+        levelSelector: LevelSelector;
+        levelLoader: LevelLoader;
 
-        text:PIXI.Text;
+        text: PIXI.Text;
+        editMode: boolean = false;
+        editorPanel: EditorPanel;
 
         //input:
-        currentInputListener:InputListener;
-        inputPoint:InputPoint;
-        tileHoverLayer:TileHoverLayer;
+        currentInputListener: InputListener;
+        inputPoint: InputPoint;
+        tileHoverLayer: TileHoverLayer;
 
-        constructor(w:number, h:number) {
+        constructor(w: number, h: number) {
             super();
 
             var background = new PIXI.Graphics();
@@ -44,9 +46,9 @@ module CircuitFreaks
             this.addChild(this.board);
 
             this.buttons = [];
-            let txts:string[] = ['♚', '♞', '↺'];
-            let callbacks:Function[] = [ this.openLevelSelect, this.loadDefault, this.undo ];
-            for(var i:number=0; i<txts.length; ++i) {
+            let txts: string[] = ['♚', '♞', '↺'];
+            let callbacks: Function[] = [this.openLevelSelect, this.loadDefault, this.undo];
+            for (var i: number = 0; i < txts.length; ++i) {
                 var btn = new Button(txts[i], callbacks[i], this, i);
                 btn.x = w * (i + 1) / 4.0;
                 btn.y = h * .05;
@@ -61,10 +63,47 @@ module CircuitFreaks
             this.tileHoverLayer = new TileHoverLayer();
             this.addChild(this.tileHoverLayer);
             this.inputPoint = new InputPoint();
+
+            this.editorPanel = new EditorPanel();
+            this.editorPanel.x = w / 2.0;
+            this.editorPanel.y = h * .9;
+            this.addChild(this.editorPanel);
+            this.editorPanel.visible = false;
+            this.editorPanel.sizeChanged = () => {
+                this.board.setBoardSize(this.editorPanel.rows, this.editorPanel.columns);
+            };
+            this.editorPanel.dropTile = (p: InputPoint) => {
+                if (EditorPanel.eraseMode)
+                    this.board.clearTile(p.position);
+                else
+                    this.board.tryPlaceTile(p.position, this.editorPanel.getTileDescriptor());
+            };
+            this.editorPanel.serializeBoard = () => {
+                return this.board.serializeBoard();
+            };
+
+            this.loadDefault();
         }
 
-        loadLevel(data:LevelData) {
-            this.board.loadBoard(data);
+        toggleEditor() {
+            this.editMode = !this.editMode;
+            this.tilePanel.visible = !this.editMode;
+            this.editorPanel.visible = this.editMode;
+        }
+
+        updateEditorPanel() {
+            this.editorPanel.rows = this.board.rows;
+            this.editorPanel.columns = this.board.columns;
+        }
+
+        loadLevel(data: LevelData) {
+            this.resetGame();
+            if (data)
+                this.board.loadBoard(data);
+            else
+                this.board.resetBoard();
+            this.updateEditorPanel();
+            this.editorPanel.setLevelIndex(data.index);
         }
 
         openLevelSelect() {
@@ -75,37 +114,42 @@ module CircuitFreaks
             this.board.clearBoard();
             this.tilePanel.resetPanel();
             this.board.createSnapshot(false);
+            this.updateEditorPanel();
         }
 
         loadDefault() {
+            this.resetGame();
             this.board.resetBoard();
             this.tilePanel.resetPanel();
             this.board.createSnapshot(false);
+            this.updateEditorPanel();
         }
 
         undo() {
-            if(this.board.tileWasPushedTMP)
+            if (this.board.tileWasPushedTMP)
                 this.tilePanel.undo();
             this.board.undo();
         }
 
-        update(dt:number) {
+        update(dt: number) {
             this.board.update(dt);
             this.tilePanel.update(dt);
 
-            if(this.currentInputListener != null)
+            if (this.currentInputListener != null)
                 this.inputPoint.aliveTime += dt;
         }
 
-        getInputListenerAt(p:PIXI.Point) : InputListener {
-            if(this.levelSelector.isEnabled())
+        getInputListenerAt(p: PIXI.Point): InputListener {
+            if (this.levelSelector.isEnabled())
                 return this.levelSelector.getInputListener(p);
 
-            for(let btn of this.buttons) {
-                if(btn.hitTestPoint(p))
+            for (let btn of this.buttons) {
+                if (btn.hitTestPoint(p))
                     return btn;
             }
 
+            if (this.editMode)
+                return this.editorPanel;
             return this.tilePanel.getInputListener(p);
 
             // var locPos = new PIXI.Point(p.x - this.tilePanel.position.x, p.y - this.tilePanel.position.y);
@@ -119,32 +163,32 @@ module CircuitFreaks
             // }
         }
 
-        touchDown(p:PIXI.Point) {
+        touchDown(p: PIXI.Point) {
             this.currentInputListener = this.getInputListenerAt(p);
             this.inputPoint.reset(p.x, p.y);
-            if(this.currentInputListener != null) {
+            if (this.currentInputListener != null) {
                 this.inputPoint.reset(p.x, p.y);
                 this.currentInputListener.touchDown(this.inputPoint);
             }
 
-            if(this.inputPoint.cancelInput)
+            if (this.inputPoint.cancelInput)
                 this.currentInputListener = null;
         }
 
-        touchMove(p:PIXI.Point) {
-            if(this.currentInputListener != null) {
+        touchMove(p: PIXI.Point) {
+            if (this.currentInputListener != null) {
                 this.inputPoint.position.x = p.x;
                 this.inputPoint.position.y = p.y;
                 this.currentInputListener.touchMove(this.inputPoint);
-                if(this.inputPoint.cancelInput)
+                if (this.inputPoint.cancelInput)
                     this.currentInputListener = null;
             }
             // let locPos = new PIXI.Point(p.x - this.board.position.x, p.y - this.board.position.y);
             // this.board.dragTo(locPos);
         }
 
-        touchUp(p:PIXI.Point) {
-            if(this.currentInputListener != null) {
+        touchUp(p: PIXI.Point) {
+            if (this.currentInputListener != null) {
                 this.inputPoint.position.x = p.x;
                 this.inputPoint.position.y = p.y;
                 this.currentInputListener.touchUp(this.inputPoint);
@@ -154,29 +198,9 @@ module CircuitFreaks
             // this.board.dragEnd(locPos);
         }
 
-        startDragTileSet(set:TileSet) {
+        startDragTileSet(set: TileSet) {
             this.tileHoverLayer.startDragging(set, this.board, this.tilePanel);
             this.currentInputListener = this.tileHoverLayer;
-        }
-
-        left() {
-
-        }
-
-        right() {
-            
-        }
-
-        up() {
-            this.resetGame();
-        }
-
-        down() {
-            
-        }
-
-        rotate() {
-            this.loadDefault();
         }
     }
 }

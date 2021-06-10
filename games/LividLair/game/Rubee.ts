@@ -6,9 +6,17 @@ module LividLair {
     export class Rubee extends GameObject {
 
         animParam: number;
+        clr: number;
 
         constructor() {
-            super(PLAYER_WIDTH / 2, PLAYER_HEIGHT);
+            super(GRID_UNIT_SIZE * .3, GRID_UNIT_SIZE * .5);
+
+            if (Math.random() < .5)
+                this.clr = 0x33aa33;
+            else if (Math.random() < .5)
+                this.clr = 0x3333aa;
+            else
+                this.clr = 0xaa3333;
 
             this.animParam = 0;
             this.redraw();
@@ -28,7 +36,7 @@ module LividLair {
             let h3 = aabb.halfHeight - 1;
 
             this.lineStyle(0, 0xffffff);
-            this.beginFill(0x55aaff, 1);
+            this.beginFill(this.clr, 1);
             this.moveTo(0, h0);
             this.lineTo(left, h1);
             this.lineTo(left, h2);
@@ -38,7 +46,7 @@ module LividLair {
             this.closePath();
             this.endFill();
 
-            this.lineStyle(2, 0xaabbff);
+            this.lineStyle(2, 0xffffff, .5);
             this.moveTo(left, h1);
             this.lineTo(right, h1);
             this.moveTo(left, h2);
@@ -69,8 +77,9 @@ module LividLair {
             this.animParam = (this.animParam + dt / 2.0) % 1.0;
         }
 
-        bounceOffFloor() {
-
+        bounceOffPlatform() {
+            super.bounceOffPlatform();
+            this.velocity.x *= 0.9;
         }
     }
 }

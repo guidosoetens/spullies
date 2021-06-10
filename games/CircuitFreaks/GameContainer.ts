@@ -2,45 +2,44 @@
 ///<reference path="game/Game.ts"/>
 
 
-module CircuitFreaks
-{
+module CircuitFreaks {
     export class touchElement {
-        id:number;
-        currentX:number;
-        currentY:number;
-        originX:number;
-        originY:number;
-        timeAlive:number;
+        id: number;
+        currentX: number;
+        currentY: number;
+        originX: number;
+        originY: number;
+        timeAlive: number;
     }
 
     export class GameContainer extends PIXI.Application {
 
         //input tracking:
-        touchPoints:touchElement[];
+        touchPoints: touchElement[];
 
         //movement:
-        playerPos:PIXI.Point;
-        playerAngle:number;
-        playerDirection:PIXI.Point;
-        angularSpeed:number;
+        playerPos: PIXI.Point;
+        playerAngle: number;
+        playerDirection: PIXI.Point;
+        angularSpeed: number;
 
         //debug:
-        debugText:PIXI.Text;
-        debugGraphics:PIXI.Graphics;
+        debugText: PIXI.Text;
+        debugGraphics: PIXI.Graphics;
 
         //game components:
-        backgroundTexture:PIXI.Texture;
-        backgroundImage:PIXI.Sprite;
+        backgroundTexture: PIXI.Texture;
+        backgroundImage: PIXI.Sprite;
 
         // touchContainerGraphics:PIXI.Graphics;
-        componentMask:PIXI.Graphics;
-        game:Game;
-        componentBoundary:PIXI.Graphics;
+        componentMask: PIXI.Graphics;
+        game: Game;
+        componentBoundary: PIXI.Graphics;
 
-        hasFocusTouch:boolean;
+        hasFocusTouch: boolean;
 
-        constructor(w:number, h:number) {
-            super(w, h, { antialias: true, backgroundColor : 0x000000, transparent : false });
+        constructor(w: number, h: number) {
+            super(w, h, { antialias: true, backgroundColor: 0x000000, transparent: false });
 
             this.backgroundTexture = PIXI.Texture.fromImage('assets/background.png');
             this.backgroundImage = new PIXI.Sprite(this.backgroundTexture);
@@ -61,16 +60,16 @@ module CircuitFreaks
             this.stage.addChild(this.componentBoundary);
         }
 
-        setInnerAppSize(w:number, h:number) {
+        setInnerAppSize(w: number, h: number) {
             this.componentBoundary.clear();
             // var thickness:number[] = [20, 15, 4];
-            var thickness:number[] = [10, 8, 2];
-            var offset:number[] = [3, 3, 1];
-            var colors:number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
-            for(var i:number=0; i<2; ++i) {
+            var thickness: number[] = [10, 8, 2];
+            var offset: number[] = [3, 3, 1];
+            var colors: number[] = [0xaaaaaa, 0xffffff, 0xbbbbbb];
+            for (var i: number = 0; i < 2; ++i) {
                 var t = offset[i];
                 this.componentBoundary.lineStyle(thickness[i], colors[i]);
-                this.componentBoundary.drawRoundedRect(-w/2 - t, -h/2 - t, w + 2 * t, h + 2 * t, 20 + t);
+                this.componentBoundary.drawRoundedRect(-w / 2 - t, -h / 2 - t, w + 2 * t, h + 2 * t, 20 + t);
             }
 
             this.game.scale.x = w / 450;//800;
@@ -79,7 +78,7 @@ module CircuitFreaks
 
         setup() {
             this.ticker.add(this.update, this);
-            
+
             this.stage.interactive = true;
             this.stage.on("pointerdown", this.pointerDown, this);
             this.stage.on("pointermove", this.pointerMove, this);
@@ -99,29 +98,33 @@ module CircuitFreaks
             this.game.addChild(this.debugGraphics);
         }
 
-        keyDown(key:number) {
-            switch(key) {
-                case 37: //left
-                    this.game.left();
+        keyDown(key: number) {
+            // console.log(key);
+            switch (key) {
+                case 127:
+                    this.game.toggleEditor();
                     break;
-                case 38: //up
-                    this.game.up();
-                    break;
-                case 39: //right
-                    this.game.right();
-                    break;
-                case 40: //down
-                    this.game.down();
-                    break;
-                case 32: //space
-                    this.game.rotate();
-                    break;
+                // case 37: //left
+                //     this.game.left();
+                //     break;
+                // case 38: //up
+                //     this.game.up();
+                //     break;
+                // case 39: //right
+                //     this.game.right();
+                //     break;
+                // case 40: //down
+                //     this.game.down();
+                //     break;
+                // case 32: //space
+                //     this.game.rotate();
+                //     break;
             }
         }
 
-        pointerDown(event:PIXI.interaction.InteractionEvent) {
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+        pointerDown(event: PIXI.interaction.InteractionEvent) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
                     this.touchPoints.splice(i, 1);
                     --i;
                 }
@@ -129,7 +132,7 @@ module CircuitFreaks
 
             var pos = event.data.getLocalPosition(this.game);
 
-            var touch:touchElement = new touchElement();
+            var touch: touchElement = new touchElement();
             touch.id = event.data.identifier;
             touch.currentX = pos.x;
             touch.currentY = pos.y;
@@ -137,41 +140,43 @@ module CircuitFreaks
             touch.originY = pos.y;
             touch.timeAlive = 0;
 
+            EditorPanel.eraseMode = event.data.button == 2;
+
             this.touchPoints.push(touch);
 
-            if(this.touchPoints.length == 1) {
+            if (this.touchPoints.length == 1) {
                 this.hasFocusTouch = true;
                 this.game.touchDown(pos);
             }
         }
 
-        pointerMove(event:PIXI.interaction.InteractionEvent) {
+        pointerMove(event: PIXI.interaction.InteractionEvent) {
             var pos = event.data.getLocalPosition(this.game);
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
                     this.touchPoints[i].currentX = pos.x;
                     this.touchPoints[i].currentY = pos.y;
                 }
             }
 
-            if(this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
+            if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier)
                 this.game.touchMove(pos);
         }
 
-        pointerUp(event:PIXI.interaction.InteractionEvent) {
+        pointerUp(event: PIXI.interaction.InteractionEvent) {
 
-            if(this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier) {
+            if (this.hasFocusTouch && this.touchPoints[0].id == event.data.identifier) {
                 this.hasFocusTouch = false;
                 var pos = event.data.getLocalPosition(this.game);
                 this.game.touchUp(pos);
             }
 
-            for(var i:number=0; i<this.touchPoints.length; ++i) {
-                if(this.touchPoints[i].id == event.data.identifier) {
+            for (var i: number = 0; i < this.touchPoints.length; ++i) {
+                if (this.touchPoints[i].id == event.data.identifier) {
 
-                    if(this.touchPoints[i].timeAlive < .3) {
+                    if (this.touchPoints[i].timeAlive < .3) {
                         var dy = event.data.getLocalPosition(this.game).y - this.touchPoints[i].originY;
-                        if(dy < -5) {
+                        if (dy < -5) {
                             // var double = this.touchPoints.length > 1;
                             // this.player.jump(double);
                         }
@@ -183,7 +188,7 @@ module CircuitFreaks
             }
         }
 
-        resize(w:number, h:number, appWidth:number, appHeight:number) {
+        resize(w: number, h: number, appWidth: number, appHeight: number) {
             var bgScale = Math.max(w / 1920, h / 1080);
             this.backgroundImage.scale.x = bgScale;
             this.backgroundImage.scale.y = bgScale;

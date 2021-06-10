@@ -392,6 +392,7 @@ var Magneon;
             _this.velocity = new Magneon.Point(0, 0);
             _this.forceStickLocation = new Magneon.Point(0, 0);
             _this.forceStickEffect = 0;
+            _this.jumpEffect = 0;
             _this.forceStickDirection = new Magneon.Point(0, 0);
             _this.magnetVisual = new PIXI.Graphics();
             _this.addChild(_this.magnetVisual);
@@ -445,13 +446,20 @@ var Magneon;
             var calcEffect = Magneon.clamp(effect * (dir.length() - .7) / .3);
             this.setDirectionVisuals(this.forceStickDirection, Math.pow(calcEffect, .5));
         };
+        Ball.prototype.setJumpEffect = function (effect, dir) {
+            this.jumpEffect = effect;
+            var calcEffect = Magneon.clamp(effect * (dir.length() - .7) / .3);
+            this.forceStickDirection = dir;
+            this.setDirectionVisuals(this.forceStickDirection, Math.pow(calcEffect, .5));
+        };
         Ball.prototype.release = function () {
-            var shootEffect = this.forceStickEffect;
+            var calcEffect = Math.max(this.jumpEffect, this.forceStickEffect);
+            var shootEffect = calcEffect;
             if (this.forceStickDirection.length() > 0.7)
                 shootEffect *= (this.forceStickDirection.length() - .7) / .3;
             else
                 shootEffect = 0.0;
-            this.velocity.multiply(1 - this.forceStickEffect).add(this.forceStickDirection.normalize().multiply(-1000 * shootEffect));
+            this.velocity.multiply(1 - calcEffect).add(this.forceStickDirection.normalize().multiply(-1000 * shootEffect));
         };
         Ball.prototype.setMagnetVisuals = function (visibility, radius) {
             this.magnetVisual.clear();
@@ -510,7 +518,7 @@ var Magneon;
 ///<reference path="MagnetAnchor.ts"/>
 var Magneon;
 (function (Magneon) {
-    Magneon.touchRad = 50.0;
+    Magneon.touchRad = 150.0;
     var Level = /** @class */ (function (_super) {
         __extends(Level, _super);
         function Level(w, h, data) {
@@ -573,8 +581,15 @@ var Magneon;
                 }
             }
         };
-        Level.prototype.update = function (dt) {
-            this.railBuffer.push(this.rotationAngle);
+        Level.prototype.updateRotation = function () {
+            var clampedAng = this.rotationAngle;
+            if (clampedAng < -.1)
+                clampedAng += .1;
+            else if (clampedAng > .1)
+                clampedAng -= .1;
+            else
+                clampedAng = 0;
+            this.railBuffer.push(clampedAng);
             this.rotationAngle = 0;
             while (this.railBuffer.length > 20)
                 this.railBuffer.splice(0, 1);
@@ -587,13 +602,20 @@ var Magneon;
                 }
                 this.rotationSpeed /= this.railBuffer.length;
             }
-            // if(Math.abs(this.rotationSpeed) < .05)
-            //     this.rotationSpeed = 0;
+            if (Math.abs(this.rotationSpeed) < .1) {
+                this.rotationSpeed = 0;
+            }
+            else {
+                this.inputSource = this.inputLocation;
+            }
+        };
+        Level.prototype.update = function (dt) {
+            this.updateRotation();
             if (this.hasInput) {
                 this.inputTime += dt;
             }
-            for (var _b = 0, _c = this.borders; _b < _c.length; _b++) {
-                var b = _c[_b];
+            for (var _i = 0, _a = this.borders; _i < _a.length; _i++) {
+                var b = _a[_i];
                 b.update(dt);
             }
             //apply forces: 
@@ -604,8 +626,8 @@ var Magneon;
             var closestDistance = 0;
             var sumRailForce = new Magneon.Point(0, 0);
             var ballCenter = this.ball.getCenter();
-            for (var _d = 0, _e = this.borders; _d < _e.length; _d++) {
-                var b = _e[_d];
+            for (var _b = 0, _c = this.borders; _b < _c.length; _b++) {
+                var b = _c[_b];
                 var projection = b.projectPointToBorder(ballCenter);
                 var toPt = projection.clone().subtract(ballCenter);
                 var dist = toPt.length() - Magneon.BALL_RADIUS;
@@ -645,7 +667,7 @@ var Magneon;
                 }
             }
             this.bouncePending = false;
-            var max_magnet_dist = 1.5 * Magneon.BALL_RADIUS;
+            var max_magnet_dist = Magneon.BALL_RADIUS * .1;
             if (this.hasInput) {
                 //apply rail force:
                 this.ball.velocity.add(sumRailForce.multiply(dt * 30000 * this.rotationSpeed));
@@ -653,8 +675,8 @@ var Magneon;
             var forceStickMagnet = 0;
             //try to find magnet anchor that is even closer:
             if (this.hasInput) {
-                for (var _f = 0, _g = this.magnetAnchors; _f < _g.length; _f++) {
-                    var m = _g[_f];
+                for (var _d = 0, _e = this.magnetAnchors; _d < _e.length; _d++) {
+                    var m = _e[_d];
                     var pt = new Magneon.Point(m.x, m.y);
                     var dist = pt.clone().subtract(ballCenter).length();
                     if (dist < closestDistance) {
@@ -692,6 +714,13 @@ var Magneon;
                 this.ball.forceStick(closestPoint, forceStickMagnet, toPt);
             else
                 this.ball.forceStick(ballCenter, 0, toPt);
+            if (forceStickMagnet < 0.0001 && closestDistance < max_magnet_dist) {
+                console.log("closest dist:", closestDistance);
+                this.ball.setJumpEffect(toPt.length(), toPt);
+            }
+            // else {
+            //     this.ball.setJumpEffect(0, toPt);
+            // }
             /*
             // if(Math.abs(this.rotationSpeed) > 0 && this.hasInput) {
             //     let takeFrac = Math.min(30 * dt, 1.0);
@@ -742,6 +771,7 @@ var Magneon;
             var angleFactor = Magneon.clamp(3 * angle);
             if (currInputDir.clone().makePerpendicular().dot(inputDir) < 0)
                 angleFactor = -angleFactor;
+            console.log(distanceFactor, angleFactor);
             this.rotationAngle += angleFactor * distanceFactor;
             this.inputDirection = inputDir;
             var toPt = this.inputLocation.clone().subtract(this.inputSource);
@@ -772,7 +802,7 @@ var Magneon;
     Magneon.APP_HEIGHT = 800;
     Magneon.GRID_UNIT_SIZE = 25.0;
     Magneon.BALL_RADIUS = .999 * Magneon.GRID_UNIT_SIZE; //25.0;
-    Magneon.DEBUG_MODE = false;
+    Magneon.DEBUG_MODE = true;
     Magneon.CTRL_PRESSED = false;
     function clamp(n, floor, ceil) {
         if (floor === void 0) { floor = 0; }
@@ -1069,6 +1099,12 @@ var Magneon;
                 this.buttons.push(c);
             }
             var onLevelListLoaded = function (result) {
+                console.log(result);
+                if (!result) {
+                    console.log('no result');
+                    _this.isBusy = false;
+                    return;
+                }
                 result.sort(function (a, b) { return a - b; });
                 _this.text.text = '';
                 var _loop_1 = function (r) {

@@ -19,14 +19,11 @@ module LividLair {
             this.y = this.clampedPosition.y = p.y;
 
             this.aliveTime = 0;
+            this.bounceVelocityFrac = .9;
         }
 
         update(dt: number) {
             super.update(dt);
-        }
-
-        bounceOffFloor() {
-
         }
     }
 }
